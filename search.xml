@@ -4,6 +4,37 @@
   
     
     <entry>
+      <title>贝塔分布</title>
+      <link href="/2025/10/25/%E8%B4%9D%E5%A1%94%E5%88%86%E5%B8%83/"/>
+      <url>/2025/10/25/%E8%B4%9D%E5%A1%94%E5%88%86%E5%B8%83/</url>
+      
+        <content type="html"><![CDATA[<link rel="stylesheet" class="aplayer-secondary-style-marker" href="/assets/css/APlayer.min.css"><script src="/assets/js/APlayer.min.js" class="aplayer-secondary-script-marker"></script><h1 id="贝塔分布"><a href="#贝塔分布" class="headerlink" title="贝塔分布"></a>贝塔分布</h1><p>贝塔分布是一种连续概率分布，它描述了在一个固定区间内的随机变量的概率分布</p><p>贝塔分布由两个正数参数α(alpha)和β(beta)定义，这两个参数决定了分布的形状</p><p>它的概率密度函数 (PDF) 公式如下：</p><p>$$<br>f(x;\alpha, \beta) &#x3D; \frac{\Gamma(\alpha+\beta)}{\Gamma(\alpha)\Gamma(\beta)}x^{\alpha-1}(1-x)^{\beta-1}<br>$$</p><p>其中：<strong>x</strong>是一个介于0和1之间的随机变量</p><p>$\Gamma()$是伽马函数，根据其参数有两种不同的定义：</p><p>$$<br>\begin{cases}<br>\Gamma(n)&#x3D;(n-1)!\<br>\Gamma(z) &#x3D; \int_{0}^{\infty}t^{z-1}e^{-t}dt<br>\end{cases}<br>$$</p><p>其中：</p><ul><li><p>z为除去非正整数的整个复数域</p></li><li><p>n为正整数</p></li></ul><h3 id="主要性质与特征"><a href="#主要性质与特征" class="headerlink" title="主要性质与特征"></a>主要性质与特征</h3><p>贝塔分布具有一些重要的统计特性：</p><ul><li>期望：$E[x] &#x3D; \frac{\alpha}{\alpha+\beta}$</li></ul><ul><li><p>方差：$Var(x) &#x3D; \frac{\alpha\beta}{{(\alpha+\beta)}^2(\alpha+\beta+1)}$</p></li><li><p>众数：$\frac{\alpha-1}{\alpha+\beta-2}$</p></li></ul><blockquote><p>期望：是试验中每次可能的结果乘以其结果概率的总和<br>方差：描述的是一个随机变量的离散程度，即一组数字与其平均值之间的距离的度量，是随机变量与其总体均值或样本均值的离差的平方的期望<br>众数：指一组数据中出现次数最多的数据值</p></blockquote><p>贝塔分布的一个显著特点是其<strong>灵活性</strong>。通过调整 α 和 β 的值，可以得到各种形状的分布，例如：</p><ul><li><strong>α &#x3D; 1, β &#x3D; 1:</strong> 此时贝塔分布退化为 上的均匀分布。</li><li><strong>α &gt; 1, β &gt; 1:</strong> 分布呈现单峰形态。</li><li><strong>α &lt; 1, β &lt; 1:</strong> 分布呈现 U 形。</li><li><strong>α &#x3D; 1, β &gt; 1:</strong> 分布呈 J 形，向左偏斜。</li><li><strong>α &gt; 1, β &#x3D; 1:</strong> 分布呈反 J 形，向右偏斜。</li></ul><p>这种多变性使得贝塔分布能够模拟在 (0, 1) 区间内极大似然法可能求出的任意最大值点的概率值。</p><h3 id="为何使用贝塔分布？"><a href="#为何使用贝塔分布？" class="headerlink" title="为何使用贝塔分布？"></a>为何使用贝塔分布？</h3><p>贝塔分布在实际应用中非常有用，主要原因如下：</p><ol><li><p><strong>为概率建模:</strong> 由于其值域在0和1之间，它天然地适用于为某项实验的成功概率建模</p></li><li><p><strong>贝叶斯统计中的应用:</strong> 在贝叶斯推断中，贝塔分布是二项分布的<strong>共轭先验</strong>。 这意味着，如果使用贝塔分布作为二项分布中成功概率的先验分布，那么在观测到新数据后，其后验分布仍然是贝塔分布，这极大地简化了计算</p></li></ol><p><strong>举例说明：</strong><br>假设我们要预测一位棒球运动员的击球率。在没有观察任何比赛之前，我们可以根据历史数据或经验设定一个先验的贝塔分布（例如，平均击球率在 0.27 左右）。 当这位运动员进行了一些比赛后（例如，10 次击球，3 次命中），我们可以利用贝叶斯公式来更新这个分布。新的后验分布仍然是一个贝塔分布，但它的形状会根据新的数据进行调整，从而为我们提供一个更精确的击球率预测</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> 论文 </category>
+          
+          <category> 知识点 </category>
+          
+          <category> 数学 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> 概率论 </tag>
+            
+            <tag> 机器学习 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>第九届强网杯线上赛Pwn_flag-market</title>
       <link href="/2025/10/25/flag-market/"/>
       <url>/2025/10/25/flag-market/</url>
