@@ -1,0 +1,39 @@
+/* 容器 */
+.moments{max-width:860px;margin:0 auto}
+.moment{background:var(--card-bg,rgba(0,0,0,.03));border-radius:16px;padding:14px 16px;margin:14px 0;
+  box-shadow:0 2px 12px rgba(0,0,0,.06)}
+
+/* 头部：头像+昵称+时间 */
+.moment-head{display:flex;align-items:center;gap:12px}
+.moment-head .avatar{width:44px;height:44px;border-radius:50%;object-fit:cover}
+.moment-user{font-weight:600;font-size:1rem}
+.moment-time{color:#888;font-size:.82rem}
+
+/* 正文与九宫格 */
+.moment-text{margin:8px 0 10px;line-height:1.75}
+.moment-images{display:grid;gap:6px;grid-template-columns:repeat(3,1fr)}
+.moment-images a{display:block}
+.moment-images img{width:100%;height:100%;object-fit:cover;border-radius:12px;display:block}
+
+/* 单图/两图特殊排版（更接近朋友圈） */
+.moment-images.is-single{grid-template-columns:1fr}
+.moment-images.is-single img{max-height:460px;object-fit:cover;border-radius:14px}
+.moment-images.is-two{grid-template-columns:repeat(2,1fr)}
+
+/* 操作栏 */
+.moment-toolbar{display:flex;gap:14px;align-items:center;margin-top:8px;color:#666;font-size:.9rem}
+.moment-toolbar i{margin-right:6px}
+
+/* 相册首页卡片（可选，用于“相册入口”网格） */
+.album-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.album-card{display:block;background:var(--card-bg,rgba(0,0,0,.03));border-radius:14px;overflow:hidden;
+  box-shadow:0 2px 8px rgba(0,0,0,.06);text-decoration:none;color:inherit}
+.album-card img{width:100%;height:150px;object-fit:cover;display:block}
+.album-card h3{margin:10px 12px 4px;font-size:1rem}
+.album-card p{margin:0 12px 12px;color:#666;font-size:.875rem}
+
+/* 适配暗色（可选） */
+@media (prefers-color-scheme: dark){
+  .moment{box-shadow:0 2px 10px rgba(0,0,0,.3)}
+  .moment-time,.moment-toolbar{color:#9aa0a6}
+}
