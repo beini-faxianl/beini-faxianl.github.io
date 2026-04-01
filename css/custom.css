@@ -37,3 +37,26 @@
   .moment{box-shadow:0 2px 10px rgba(0,0,0,.3)}
   .moment-time,.moment-toolbar{color:#9aa0a6}
 }
+
+/* Live2D widget */
+#waifu {
+  left: auto !important;
+  right: 0 !important;
+  z-index: 1200 !important;
+}
+
+#waifu #waifu-message {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  #waifu {
+    transform: scale(.82);
+    transform-origin: right bottom;
+  }
+
+  #waifu .waifu-tool {
+    opacity: .35;
+  }
+}
