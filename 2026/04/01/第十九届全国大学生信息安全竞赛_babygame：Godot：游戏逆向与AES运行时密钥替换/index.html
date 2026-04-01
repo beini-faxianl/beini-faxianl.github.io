@@ -1,0 +1,392 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>第十九届全国大学生信息安全竞赛_babygame：Godot：游戏逆向与AES运行时密钥替换 | A Secret Site</title><meta name="author" content="谁把我灯关了"><meta name="copyright" content="谁把我灯关了"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="一、分析附件题目给了一个 .exe 文件，对于未知二进制的第一步不是上 IDA，而是先识别它是什么。 010 Editor 搜索关键字符串是成本最低的侦察手段，丢到 010 中分析一波：   在查找“flag”字符串的时候，发现了文件 flag.gd、flag.scn 文件，上网搜索之后得知这是一个 Godot 引擎打包的游戏：  与该引擎相关的文件后缀：    后缀 是什么 编译前版本    p">
+<meta property="og:type" content="article">
+<meta property="og:title" content="第十九届全国大学生信息安全竞赛_babygame：Godot：游戏逆向与AES运行时密钥替换">
+<meta property="og:url" content="https://beini-faxianl.github.io/2026/04/01/%E7%AC%AC%E5%8D%81%E4%B9%9D%E5%B1%8A%E5%85%A8%E5%9B%BD%E5%A4%A7%E5%AD%A6%E7%94%9F%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E7%AB%9E%E8%B5%9B_babygame%EF%BC%9AGodot%EF%BC%9A%E6%B8%B8%E6%88%8F%E9%80%86%E5%90%91%E4%B8%8EAES%E8%BF%90%E8%A1%8C%E6%97%B6%E5%AF%86%E9%92%A5%E6%9B%BF%E6%8D%A2/index.html">
+<meta property="og:site_name" content="A Secret Site">
+<meta property="og:description" content="一、分析附件题目给了一个 .exe 文件，对于未知二进制的第一步不是上 IDA，而是先识别它是什么。 010 Editor 搜索关键字符串是成本最低的侦察手段，丢到 010 中分析一波：   在查找“flag”字符串的时候，发现了文件 flag.gd、flag.scn 文件，上网搜索之后得知这是一个 Godot 引擎打包的游戏：  与该引擎相关的文件后缀：    后缀 是什么 编译前版本    p">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://beini-faxianl.github.io/img/%E7%AC%AC%E5%8D%81%E4%B9%9D%E5%B1%8A%E5%85%A8%E5%9B%BD%E5%A4%A7%E5%AD%A6%E7%94%9F%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E7%AB%9E%E8%B5%9B_babygame%EF%BC%9AGodot%EF%BC%9A%E6%B8%B8%E6%88%8F%E9%80%86%E5%90%91%E4%B8%8EAES%E8%BF%90%E8%A1%8C%E6%97%B6%E5%AF%86%E9%92%A5%E6%9B%BF%E6%8D%A2/cover.jpg">
+<meta property="article:published_time" content="2026-03-31T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-03-31T16:00:00.000Z">
+<meta property="article:author" content="谁把我灯关了">
+<meta property="article:tag" content="AES-ECB">
+<meta property="article:tag" content="CTF">
+<meta property="article:tag" content="GDScript">
+<meta property="article:tag" content="Godot">
+<meta property="article:tag" content="Reverse">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://beini-faxianl.github.io/img/%E7%AC%AC%E5%8D%81%E4%B9%9D%E5%B1%8A%E5%85%A8%E5%9B%BD%E5%A4%A7%E5%AD%A6%E7%94%9F%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E7%AB%9E%E8%B5%9B_babygame%EF%BC%9AGodot%EF%BC%9A%E6%B8%B8%E6%88%8F%E9%80%86%E5%90%91%E4%B8%8EAES%E8%BF%90%E8%A1%8C%E6%97%B6%E5%AF%86%E9%92%A5%E6%9B%BF%E6%8D%A2/cover.jpg"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "第十九届全国大学生信息安全竞赛_babygame：Godot：游戏逆向与AES运行时密钥替换",
+  "url": "https://beini-faxianl.github.io/2026/04/01/%E7%AC%AC%E5%8D%81%E4%B9%9D%E5%B1%8A%E5%85%A8%E5%9B%BD%E5%A4%A7%E5%AD%A6%E7%94%9F%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E7%AB%9E%E8%B5%9B_babygame%EF%BC%9AGodot%EF%BC%9A%E6%B8%B8%E6%88%8F%E9%80%86%E5%90%91%E4%B8%8EAES%E8%BF%90%E8%A1%8C%E6%97%B6%E5%AF%86%E9%92%A5%E6%9B%BF%E6%8D%A2/",
+  "image": "https://beini-faxianl.github.io/img/%E7%AC%AC%E5%8D%81%E4%B9%9D%E5%B1%8A%E5%85%A8%E5%9B%BD%E5%A4%A7%E5%AD%A6%E7%94%9F%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E7%AB%9E%E8%B5%9B_babygame%EF%BC%9AGodot%EF%BC%9A%E6%B8%B8%E6%88%8F%E9%80%86%E5%90%91%E4%B8%8EAES%E8%BF%90%E8%A1%8C%E6%97%B6%E5%AF%86%E9%92%A5%E6%9B%BF%E6%8D%A2/cover.jpg",
+  "datePublished": "2026-03-31T16:00:00.000Z",
+  "dateModified": "2026-03-31T16:00:00.000Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "谁把我灯关了",
+      "url": "https://beini-faxianl.github.io"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://beini-faxianl.github.io/2026/04/01/%E7%AC%AC%E5%8D%81%E4%B9%9D%E5%B1%8A%E5%85%A8%E5%9B%BD%E5%A4%A7%E5%AD%A6%E7%94%9F%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E7%AB%9E%E8%B5%9B_babygame%EF%BC%9AGodot%EF%BC%9A%E6%B8%B8%E6%88%8F%E9%80%86%E5%90%91%E4%B8%8EAES%E8%BF%90%E8%A1%8C%E6%97%B6%E5%AF%86%E9%92%A5%E6%9B%BF%E6%8D%A2/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=5.5.1"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":true},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.12.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '第十九届全国大学生信息安全竞赛_babygame：Godot：游戏逆向与AES运行时密钥替换',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/live2d-widget@3.1.4/autoload.js"></script><!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+<!-- hexo injector head_end end --><meta name="generator" content="Hexo 8.0.0"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/author.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">4</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">28</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">6</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fa fa-graduation-cap"></i><span> 博文</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/categories/"><i class="fa-fw fa fa-archive"></i><span> 分类</span></a></li><li><a class="site-page child" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="/archives/"><i class="fa-fw fa fa-folder-open"></i><span> 归档</span></a></li></ul></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-list"></i><span> 生活</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/shuoshuo/"><i class="fa-fw fas fa-coffee"></i><span> 分享</span></a></li><li><a class="site-page child" href="/photos/"><i class="fa-fw fa fa-camera-retro"></i><span> 相册</span></a></li><li><a class="site-page child" href="/music/"><i class="fa-fw fa fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 影视</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/links/"><i class="fa-fw fa fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/comment/"><i class="fa-fw fa fa-paper-plane"></i><span> 留言板</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于笔者</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg fixed" id="page-header" style="background-image: url(/img/%E7%AC%AC%E5%8D%81%E4%B9%9D%E5%B1%8A%E5%85%A8%E5%9B%BD%E5%A4%A7%E5%AD%A6%E7%94%9F%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E7%AB%9E%E8%B5%9B_babygame%EF%BC%9AGodot%EF%BC%9A%E6%B8%B8%E6%88%8F%E9%80%86%E5%90%91%E4%B8%8EAES%E8%BF%90%E8%A1%8C%E6%97%B6%E5%AF%86%E9%92%A5%E6%9B%BF%E6%8D%A2/cover.jpg);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">A Secret Site</span></a><a class="nav-page-title" href="/"><span class="site-name">第十九届全国大学生信息安全竞赛_babygame：Godot：游戏逆向与AES运行时密钥替换</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fa fa-graduation-cap"></i><span> 博文</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/categories/"><i class="fa-fw fa fa-archive"></i><span> 分类</span></a></li><li><a class="site-page child" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="/archives/"><i class="fa-fw fa fa-folder-open"></i><span> 归档</span></a></li></ul></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-list"></i><span> 生活</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/shuoshuo/"><i class="fa-fw fas fa-coffee"></i><span> 分享</span></a></li><li><a class="site-page child" href="/photos/"><i class="fa-fw fa fa-camera-retro"></i><span> 相册</span></a></li><li><a class="site-page child" href="/music/"><i class="fa-fw fa fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 影视</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/links/"><i class="fa-fw fa fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/comment/"><i class="fa-fw fa fa-paper-plane"></i><span> 留言板</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于笔者</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">第十九届全国大学生信息安全竞赛_babygame：Godot：游戏逆向与AES运行时密钥替换</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-03-31T16:00:00.000Z" title="发表于 2026-04-01 00:00:00">2026-04-01</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-03-31T16:00:00.000Z" title="更新于 2026-04-01 00:00:00">2026-04-01</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/CTF/">CTF</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/CTF/Reverse/">Reverse</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">总字数:</span><span class="word-count">2k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>9分钟</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h2 id="一、分析附件"><a href="#一、分析附件" class="headerlink" title="一、分析附件"></a>一、分析附件</h2><p>题目给了一个 <code>.exe</code> 文件，对于未知二进制的第一步不是上 IDA，而是先识别它是什么。</p>
+<p>010 Editor 搜索关键字符串是成本最低的侦察手段，丢到 010 中分析一波：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E7%AC%AC%E5%8D%81%E4%B9%9D%E5%B1%8A%E5%85%A8%E5%9B%BD%E5%A4%A7%E5%AD%A6%E7%94%9F%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E7%AB%9E%E8%B5%9B_babygame%EF%BC%9AGodot%EF%BC%9A%E6%B8%B8%E6%88%8F%E9%80%86%E5%90%91%E4%B8%8EAES%E8%BF%90%E8%A1%8C%E6%97%B6%E5%AF%86%E9%92%A5%E6%9B%BF%E6%8D%A2/file-20260401193318610.png" alt="file-20260401193318610"></p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E7%AC%AC%E5%8D%81%E4%B9%9D%E5%B1%8A%E5%85%A8%E5%9B%BD%E5%A4%A7%E5%AD%A6%E7%94%9F%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E7%AB%9E%E8%B5%9B_babygame%EF%BC%9AGodot%EF%BC%9A%E6%B8%B8%E6%88%8F%E9%80%86%E5%90%91%E4%B8%8EAES%E8%BF%90%E8%A1%8C%E6%97%B6%E5%AF%86%E9%92%A5%E6%9B%BF%E6%8D%A2/file-20260401193559321.png" alt="file-20260401193559321"></p>
+<p>在查找“flag”字符串的时候，发现了文件 <code>flag.gd</code>、<code>flag.scn</code> 文件，上网搜索之后得知这是一个 Godot 引擎打包的游戏：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E7%AC%AC%E5%8D%81%E4%B9%9D%E5%B1%8A%E5%85%A8%E5%9B%BD%E5%A4%A7%E5%AD%A6%E7%94%9F%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E7%AB%9E%E8%B5%9B_babygame%EF%BC%9AGodot%EF%BC%9A%E6%B8%B8%E6%88%8F%E9%80%86%E5%90%91%E4%B8%8EAES%E8%BF%90%E8%A1%8C%E6%97%B6%E5%AF%86%E9%92%A5%E6%9B%BF%E6%8D%A2/file-20260401194504463.png" alt="file-20260401194504463"></p>
+<p>与该引擎相关的文件后缀：</p>
+<table>
+<thead>
+<tr>
+<th>后缀</th>
+<th>是什么</th>
+<th>编译前版本</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>project.godot</code></td>
+<td>项目配置，文本</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>project.binary</code></td>
+<td>项目配置，二进制</td>
+<td><code>project.godot</code></td>
+</tr>
+<tr>
+<td><code>.gd</code></td>
+<td>GDScript 源码</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>.gdc</code></td>
+<td>GDScript 字节码</td>
+<td><code>.gd</code></td>
+</tr>
+<tr>
+<td><code>.tscn</code></td>
+<td>场景文件，文本</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>.scn</code></td>
+<td>场景文件，二进制</td>
+<td><code>.tscn</code></td>
+</tr>
+<tr>
+<td><code>.tres</code></td>
+<td>资源文件，文本</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>.res</code></td>
+<td>资源文件，二进制</td>
+<td><code>.tres</code></td>
+</tr>
+<tr>
+<td><code>.remap</code></td>
+<td>资源重定向索引</td>
+<td>-</td>
+</tr>
+</tbody></table>
+<p>关于该引擎有专门的工具用于反编译，我这用的是”gdsdecomp”</p>
+<blockquote>
+<p>项目地址：<a target="_blank" rel="noopener" href="https://github.com/GDRETools/gdsdecomp">https://github.com/GDRETools/gdsdecomp</a></p>
+</blockquote>
+<h2 id="二、反编译"><a href="#二、反编译" class="headerlink" title="二、反编译"></a>二、反编译</h2><p>将游戏文件拖入工具中：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E7%AC%AC%E5%8D%81%E4%B9%9D%E5%B1%8A%E5%85%A8%E5%9B%BD%E5%A4%A7%E5%AD%A6%E7%94%9F%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E7%AB%9E%E8%B5%9B_babygame%EF%BC%9AGodot%EF%BC%9A%E6%B8%B8%E6%88%8F%E9%80%86%E5%90%91%E4%B8%8EAES%E8%BF%90%E8%A1%8C%E6%97%B6%E5%AF%86%E9%92%A5%E6%9B%BF%E6%8D%A2/file-20260401194924303.png" alt="file-20260401194924303"></p>
+<h3 id="1、查看项目入口"><a href="#1、查看项目入口" class="headerlink" title="1、查看项目入口"></a>1、查看项目入口</h3><p>上面提到 <code>.binary</code> 是项目入口，查看其代码（工具会帮我们反编译成 <code>.godot</code> 文件）：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">; Engine configuration file.</span><br><span class="line">; It&#x27;s best edited using the editor UI and not directly,</span><br><span class="line">; since the parameters that go here are not all obvious.</span><br><span class="line">;</span><br><span class="line">; Format:</span><br><span class="line">;   [section] ; section goes between []</span><br><span class="line">;   param=value ; assign values to parameters</span><br><span class="line"></span><br><span class="line">config_version=5</span><br><span class="line"></span><br><span class="line">[application]</span><br><span class="line"></span><br><span class="line">config/name=&quot;babygame&quot;</span><br><span class="line">run/main_scene=&quot;uid://4oheuinvn0ol&quot;</span><br><span class="line">config/features=PackedStringArray(&quot;4.5&quot;, &quot;Forward Plus&quot;)</span><br><span class="line">config/icon=&quot;res://icon.svg&quot;</span><br><span class="line"></span><br><span class="line">[autoload]</span><br><span class="line"></span><br><span class="line">Music=&quot;*res://scenes/music.tscn&quot;</span><br><span class="line">Flag=&quot;*res://scenes/flag.tscn&quot;</span><br><span class="line"></span><br><span class="line">[dotnet]</span><br><span class="line"></span><br><span class="line">project/assembly_name=&quot;first-game&quot;</span><br><span class="line"></span><br><span class="line">[input]</span><br><span class="line"></span><br><span class="line">jump=&#123;</span><br><span class="line">&quot;deadzone&quot;: 0.2,</span><br><span class="line">&quot;events&quot;: [Object(InputEventKey,&quot;resource_local_to_scene&quot;:false,&quot;resource_name&quot;:&quot;&quot;,&quot;device&quot;:-1,&quot;window_id&quot;:0,&quot;alt_pressed&quot;:false,&quot;shift_pressed&quot;:false,&quot;ctrl_pressed&quot;:false,&quot;meta_pressed&quot;:false,&quot;pressed&quot;:false,&quot;keycode&quot;:0,&quot;physical_keycode&quot;:32,&quot;key_label&quot;:0,&quot;unicode&quot;:32,&quot;location&quot;:0,&quot;echo&quot;:false,&quot;script&quot;:null)</span><br><span class="line">]</span><br><span class="line">&#125;</span><br><span class="line">move_left=&#123;</span><br><span class="line">&quot;deadzone&quot;: 0.2,</span><br><span class="line">&quot;events&quot;: [Object(InputEventKey,&quot;resource_local_to_scene&quot;:false,&quot;resource_name&quot;:&quot;&quot;,&quot;device&quot;:-1,&quot;window_id&quot;:0,&quot;alt_pressed&quot;:false,&quot;shift_pressed&quot;:false,&quot;ctrl_pressed&quot;:false,&quot;meta_pressed&quot;:false,&quot;pressed&quot;:false,&quot;keycode&quot;:0,&quot;physical_keycode&quot;:4194319,&quot;key_label&quot;:0,&quot;unicode&quot;:0,&quot;location&quot;:0,&quot;echo&quot;:false,&quot;script&quot;:null)</span><br><span class="line">, Object(InputEventKey,&quot;resource_local_to_scene&quot;:false,&quot;resource_name&quot;:&quot;&quot;,&quot;device&quot;:-1,&quot;window_id&quot;:0,&quot;alt_pressed&quot;:false,&quot;shift_pressed&quot;:false,&quot;ctrl_pressed&quot;:false,&quot;meta_pressed&quot;:false,&quot;pressed&quot;:false,&quot;keycode&quot;:0,&quot;physical_keycode&quot;:65,&quot;key_label&quot;:0,&quot;unicode&quot;:97,&quot;location&quot;:0,&quot;echo&quot;:false,&quot;script&quot;:null)</span><br><span class="line">]</span><br><span class="line">&#125;</span><br><span class="line">move_right=&#123;</span><br><span class="line">&quot;deadzone&quot;: 0.2,</span><br><span class="line">&quot;events&quot;: [Object(InputEventKey,&quot;resource_local_to_scene&quot;:false,&quot;resource_name&quot;:&quot;&quot;,&quot;device&quot;:-1,&quot;window_id&quot;:0,&quot;alt_pressed&quot;:false,&quot;shift_pressed&quot;:false,&quot;ctrl_pressed&quot;:false,&quot;meta_pressed&quot;:false,&quot;pressed&quot;:false,&quot;keycode&quot;:0,&quot;physical_keycode&quot;:4194321,&quot;key_label&quot;:0,&quot;unicode&quot;:0,&quot;location&quot;:0,&quot;echo&quot;:false,&quot;script&quot;:null)</span><br><span class="line">, Object(InputEventKey,&quot;resource_local_to_scene&quot;:false,&quot;resource_name&quot;:&quot;&quot;,&quot;device&quot;:-1,&quot;window_id&quot;:0,&quot;alt_pressed&quot;:false,&quot;shift_pressed&quot;:false,&quot;ctrl_pressed&quot;:false,&quot;meta_pressed&quot;:false,&quot;pressed&quot;:false,&quot;keycode&quot;:0,&quot;physical_keycode&quot;:68,&quot;key_label&quot;:0,&quot;unicode&quot;:100,&quot;location&quot;:0,&quot;echo&quot;:false,&quot;script&quot;:null)</span><br><span class="line">]</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">[rendering]</span><br><span class="line"></span><br><span class="line">textures/canvas_textures/default_texture_filter=0</span><br><span class="line">textures/vram_compression/import_etc2_astc=true</span><br></pre></td></tr></table></figure>
+
+<p>关键信息：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">[autoload]</span><br><span class="line">Music=&quot;*res://scenes/music.tscn&quot;</span><br><span class="line">Flag=&quot;*res://scenes/flag.tscn&quot;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>autoload 单例会在游戏启动就创建，直到游戏关闭才销毁。任何场景、任何脚本都可以直接用 <code>Flag.xxx</code> 访问它的变量。</p>
+</blockquote>
+<p>找到文件 <code>/scenes/flag.tscn</code>（只能找到 <code>/scenes/flag.tscn.remap</code>）：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">[remap]</span><br><span class="line"></span><br><span class="line">path=&quot;res://.godot/exported/133200997/export-ed01e640138f262d3a3519429431a67d-flag.scn&quot;</span><br></pre></td></tr></table></figure>
+
+<p>从之前的后缀说明可以看出这是起重定向的作用，接着找 <code>/.godot/exported/133200997/export-ed01e640138f262d3a3519429431a67d-flag.scn</code> 这个文件，其代码：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">[gd_scene load_steps=2 format=3 uid=&quot;uid://dkq0of6k4nvab&quot;]</span><br><span class="line"></span><br><span class="line">[ext_resource type=&quot;Script&quot; uid=&quot;uid://dguwugfoefc7s&quot; path=&quot;res://scripts/flag.gd&quot; id=&quot;1&quot;]</span><br><span class="line"></span><br><span class="line">[node name=&quot;Flag&quot; type=&quot;CenterContainer&quot;]</span><br><span class="line">anchor_right = 1.0</span><br><span class="line">anchor_bottom = 1.0</span><br><span class="line">grow_horizontal = 2</span><br><span class="line">grow_vertical = 2</span><br><span class="line">script = ExtResource(&quot;1&quot;)</span><br><span class="line"></span><br><span class="line">[node name=&quot;PanelContainer&quot; type=&quot;PanelContainer&quot; parent=&quot;.&quot;]</span><br><span class="line">layout_mode = 2</span><br><span class="line"></span><br><span class="line">[node name=&quot;VBoxContainer&quot; type=&quot;VBoxContainer&quot; parent=&quot;PanelContainer&quot;]</span><br><span class="line">layout_mode = 2</span><br><span class="line"></span><br><span class="line">[node name=&quot;Label&quot; type=&quot;Label&quot; parent=&quot;PanelContainer/VBoxContainer&quot;]</span><br><span class="line">layout_mode = 2</span><br><span class="line">theme_override_font_sizes/font_size = 32</span><br><span class="line">text = &quot;Please input your flag:&quot;</span><br><span class="line"></span><br><span class="line">[node name=&quot;FlagTextEdit&quot; type=&quot;TextEdit&quot; parent=&quot;PanelContainer/VBoxContainer&quot;]</span><br><span class="line">custom_minimum_size = Vector2(800, 42)</span><br><span class="line">layout_mode = 2</span><br><span class="line">theme_override_font_sizes/font_size = 32</span><br><span class="line"></span><br><span class="line">[node name=&quot;Label2&quot; type=&quot;Label&quot; parent=&quot;PanelContainer/VBoxContainer&quot;]</span><br><span class="line">visible = false</span><br><span class="line">layout_mode = 2</span><br><span class="line">theme_override_colors/font_color = Color(0.886275, 0.937255, 0.478431, 1)</span><br><span class="line">theme_override_font_sizes/font_size = 24</span><br><span class="line">text = &quot;you are great~!&quot;</span><br><span class="line"></span><br><span class="line">[node name=&quot;HBoxContainer&quot; type=&quot;HBoxContainer&quot; parent=&quot;PanelContainer/VBoxContainer&quot;]</span><br><span class="line">layout_mode = 2</span><br><span class="line">size_flags_horizontal = 4</span><br><span class="line"></span><br><span class="line">[node name=&quot;Button&quot; type=&quot;Button&quot; parent=&quot;PanelContainer/VBoxContainer/HBoxContainer&quot;]</span><br><span class="line">custom_minimum_size = Vector2(100, 42)</span><br><span class="line">layout_mode = 2</span><br><span class="line">theme_override_font_sizes/font_size = 24</span><br><span class="line">text = &quot;Submit&quot;</span><br><span class="line"></span><br><span class="line">[node name=&quot;Button2&quot; type=&quot;Button&quot; parent=&quot;PanelContainer/VBoxContainer/HBoxContainer&quot;]</span><br><span class="line">custom_minimum_size = Vector2(100, 42)</span><br><span class="line">layout_mode = 2</span><br><span class="line">theme_override_font_sizes/font_size = 24</span><br><span class="line">text = &quot;Back&quot;</span><br><span class="line"></span><br><span class="line">[connection signal=&quot;ready&quot; from=&quot;.&quot; to=&quot;.&quot; method=&quot;_on_ready&quot;]</span><br><span class="line">[connection signal=&quot;pressed&quot; from=&quot;PanelContainer/VBoxContainer/HBoxContainer/Button&quot; to=&quot;.&quot; method=&quot;submit&quot;]</span><br><span class="line">[connection signal=&quot;pressed&quot; from=&quot;PanelContainer/VBoxContainer/HBoxContainer/Button2&quot; to=&quot;.&quot; method=&quot;back&quot;]</span><br></pre></td></tr></table></figure>
+
+<p>根据内部的英文提示词：</p>
+<ul>
+<li>“you are great~!”</li>
+<li>“Please input your flag:”</li>
+</ul>
+<p>我们大致可以猜出获得 flag 的流程应该是：输入 $\to$ 校验 $\to$ 输出</p>
+<p>聚焦：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">[node name=&quot;Label2&quot; type=&quot;Label&quot; parent=&quot;PanelContainer/VBoxContainer&quot;]</span><br><span class="line">visible = false</span><br><span class="line">layout_mode = 2</span><br><span class="line">theme_override_colors/font_color = Color(0.886275, 0.937255, 0.478431, 1)</span><br><span class="line">theme_override_font_sizes/font_size = 24</span><br><span class="line">text = &quot;you are great~!&quot;</span><br></pre></td></tr></table></figure>
+
+<p><code>Label2</code> 并不可见（<code>visible = false</code>），说明游戏中并不能看到关键信息（顺带一提，我的一个队友按要求通关游戏之后，屏幕显示了“flag”，之后的事情，想必大家都知道了 ^-^）。</p>
+<p>聚焦文件的开头：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">res://scripts/flag.gd</span><br></pre></td></tr></table></figure>
+
+<p>这就是我们在 010 中看到的那个，并且根据后缀可知，这是 GDScript 源码，必然成为重点。</p>
+<h2 id="三、AES"><a href="#三、AES" class="headerlink" title="三、AES"></a>三、AES</h2><p>点开文件 <code>/scripts/flag.gd</code>（工具中看到的是 <code>flag.gdc</code>，点开后自动反编译成 <code>flag.gd</code>，后面不再提及此时，请自行注意）：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">extends CenterContainer</span><br><span class="line"></span><br><span class="line">@onready var flagTextEdit: Node = <span class="variable">$PanelContainer</span> / VBoxContainer / FlagTextEdit</span><br><span class="line">@onready var label2: Node = <span class="variable">$PanelContainer</span> / VBoxContainer / Label2</span><br><span class="line"></span><br><span class="line">static var key = <span class="string">&quot;FanAglFanAglOoO!&quot;</span></span><br><span class="line">var data = <span class="string">&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">func _on_ready() -&gt; void :</span><br><span class="line">    Flag.hide()</span><br><span class="line"></span><br><span class="line">func get_key() -&gt; String:</span><br><span class="line">    <span class="built_in">return</span> key</span><br><span class="line"></span><br><span class="line">func submit() -&gt; void :</span><br><span class="line">    data = flagTextEdit.text</span><br><span class="line"></span><br><span class="line">    var aes = AESContext.new()</span><br><span class="line">    aes.start(AESContext.MODE_ECB_ENCRYPT, key.to_utf8_buffer())</span><br><span class="line">    var encrypted = aes.update(data.to_utf8_buffer())</span><br><span class="line">    aes.finish()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> encrypted.hex_encode() == <span class="string">&quot;d458af702a680ae4d089ce32fc39945d&quot;</span>:</span><br><span class="line">        label2.show()</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        label2.hide()</span><br><span class="line"></span><br><span class="line">func back() -&gt; void :</span><br><span class="line">    get_tree().change_scene_to_file(<span class="string">&quot;res://scenes/menu.tscn&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>关键信息：</p>
+<ul>
+<li>AES，模式为 ECB，并且告知密钥为 <code>FanAglFanAglOoO!</code></li>
+<li><code>label2.show()</code>：我们期望看到的秘密</li>
+<li>检验方式：<code>if encrypted.hex_encode() == &quot;d458af702a680ae4d089ce32fc39945d&quot;</code></li>
+</ul>
+<p>总结一下就是，需要对 ciphertext 进行 AES 解密，将解密后的结果作为输入，以此来使验证成立，最终显示出秘密数据。</p>
+<h2 id="四、坑点"><a href="#四、坑点" class="headerlink" title="四、坑点"></a>四、坑点</h2><p>坑点出现了，根据已有信息进行解密输出的结果是不可读的：</p>
+<p>尝试：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">from</span> Crypto.Cipher <span class="keyword">import</span> AES</span><br><span class="line"></span><br><span class="line">key = <span class="string">b&quot;FanAglFanAglOoO!&quot;</span></span><br><span class="line">ciphertext = <span class="string">&quot;d458af702a680ae4d089ce32fc39945d&quot;</span></span><br><span class="line"></span><br><span class="line">cipher = AES.new(key,AES.MODE_ECB)</span><br><span class="line">ciphertext = <span class="built_in">bytes</span>.fromhex(ciphertext)</span><br><span class="line">plaintext = cipher.decrypt(ciphertext)</span><br><span class="line"><span class="built_in">print</span>(plaintext)</span><br></pre></td></tr></table></figure>
+
+<p>输出：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">┌──(penv)─(zyf㉿zhengyifeng)-[~/Templates]</span><br><span class="line">└─$ python decode.py</span><br><span class="line">b<span class="string">&#x27;i1$\xa2\xf1\x84\xb3\xe5\xda\x0f\x89\\!bC\xf7&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<p>密文是写死的，但是回想初始 key 是 <code>static var</code>，挂在全局单例 <code>Flag</code> 上，理论上可以被任何脚本修改。因此不能只看 <code>flag.gd</code>，需要排查所有可能修改 <code>Flag.key</code> 的脚本。</p>
+<p>回到题目的提示信息上”请找出隐藏的Flag。请注意只有收集了所有的金币，才能验证flag。”</p>
+<p>难道和金币有关系？</p>
+<p>金币的英文 coin，通过文件名找到 <code>coin.gdc</code>：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">extends Area2D</span><br><span class="line"></span><br><span class="line">@onready var game_manager: Node = %GameManager</span><br><span class="line">@onready var animation_player: AnimationPlayer = $AnimationPlayer</span><br><span class="line"></span><br><span class="line">func _on_body_entered(body: Node2D) -&gt; void :</span><br><span class="line">    game_manager.add_point()</span><br><span class="line">    animation_player.play(&quot;pickup&quot;)</span><br></pre></td></tr></table></figure>
+
+<p>这里调用了 <code>add_point()</code> 这个方法，去找找 <code>game_manager</code> 这个类。</p>
+<p>根据文件名可以直接定位（<code>game_manager,.gdc</code>），其代码：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">extends Node</span><br><span class="line"></span><br><span class="line">@onready var fan = $&quot;../Fan&quot;</span><br><span class="line"></span><br><span class="line">var score = 0</span><br><span class="line"></span><br><span class="line">func add_point():</span><br><span class="line">    score += 1</span><br><span class="line">    if score == 1:</span><br><span class="line">        Flag.key = Flag.key.replace(&quot;A&quot;, &quot;B&quot;)</span><br><span class="line">        fan.visible = true</span><br></pre></td></tr></table></figure>
+
+<p>拨云见日，原来当金币+1的时候，就会将 Flag.key 中的”A”都换成”B”，那么吃完所有的金币 score 值必然大于等于 1，换言之 key 必然变成：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">FanBglFanBglOoO!</span><br></pre></td></tr></table></figure>
+
+<h2 id="五、获得-Flag"><a href="#五、获得-Flag" class="headerlink" title="五、获得 Flag"></a>五、获得 Flag</h2><p>修改脚本：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">from</span> Crypto.Cipher <span class="keyword">import</span> AES</span><br><span class="line"></span><br><span class="line">key = <span class="string">b&quot;FanBglFanBglOoO!&quot;</span></span><br><span class="line">ciphertext = <span class="string">&quot;d458af702a680ae4d089ce32fc39945d&quot;</span></span><br><span class="line"></span><br><span class="line">cipher = AES.new(key,AES.MODE_ECB)</span><br><span class="line">ciphertext = <span class="built_in">bytes</span>.fromhex(ciphertext)</span><br><span class="line">plaintext = cipher.decrypt(ciphertext)</span><br><span class="line"><span class="built_in">print</span>(plaintext)</span><br></pre></td></tr></table></figure>
+
+<p>输出：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">┌──(penv)─(zyf㉿zhengyifeng)-[~/Templates]</span><br><span class="line">└─$ python decode.py</span><br><span class="line">b<span class="string">&#x27;wOW~youAregrEaT!&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<p>成功！</p>
+<h2 id="六、启发"><a href="#六、启发" class="headerlink" title="六、启发"></a>六、启发</h2><ol>
+<li>看到校验逻辑时，永远问”这个关键变量在运行时会被改吗”。静态初始值不等于运行时实际值。</li>
+<li>工具选择依赖目标识别，目标识别先于工具选择。不知道目标是什么之前，用最轻量的侦察手段，而不是上最重的工具。</li>
+</ol>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://beini-faxianl.github.io">谁把我灯关了</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://beini-faxianl.github.io/2026/04/01/%E7%AC%AC%E5%8D%81%E4%B9%9D%E5%B1%8A%E5%85%A8%E5%9B%BD%E5%A4%A7%E5%AD%A6%E7%94%9F%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E7%AB%9E%E8%B5%9B_babygame%EF%BC%9AGodot%EF%BC%9A%E6%B8%B8%E6%88%8F%E9%80%86%E5%90%91%E4%B8%8EAES%E8%BF%90%E8%A1%8C%E6%97%B6%E5%AF%86%E9%92%A5%E6%9B%BF%E6%8D%A2/">https://beini-faxianl.github.io/2026/04/01/%E7%AC%AC%E5%8D%81%E4%B9%9D%E5%B1%8A%E5%85%A8%E5%9B%BD%E5%A4%A7%E5%AD%A6%E7%94%9F%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E7%AB%9E%E8%B5%9B_babygame%EF%BC%9AGodot%EF%BC%9A%E6%B8%B8%E6%88%8F%E9%80%86%E5%90%91%E4%B8%8EAES%E8%BF%90%E8%A1%8C%E6%97%B6%E5%AF%86%E9%92%A5%E6%9B%BF%E6%8D%A2/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://beini-faxianl.github.io" target="_blank">A Secret Site</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/CTF/">CTF</a><a class="post-meta__tags" href="/tags/Reverse/">Reverse</a><a class="post-meta__tags" href="/tags/Godot/">Godot</a><a class="post-meta__tags" href="/tags/GDScript/">GDScript</a><a class="post-meta__tags" href="/tags/AES-ECB/">AES-ECB</a></div><div class="post-share"><div class="social-share" data-image="/img/%E7%AC%AC%E5%8D%81%E4%B9%9D%E5%B1%8A%E5%85%A8%E5%9B%BD%E5%A4%A7%E5%AD%A6%E7%94%9F%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E7%AB%9E%E8%B5%9B_babygame%EF%BC%9AGodot%EF%BC%9A%E6%B8%B8%E6%88%8F%E9%80%86%E5%90%91%E4%B8%8EAES%E8%BF%90%E8%A1%8C%E6%97%B6%E5%AF%86%E9%92%A5%E6%9B%BF%E6%8D%A2/cover.jpg" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related" href="/2026/04/01/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%BA%8C%EF%BC%9AWebLogic-CVE-2019-2725-%E5%88%B0%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7%E5%85%A8%E6%B5%81%E7%A8%8B/" title="红日靶场二：WebLogic CVE-2019-2725 到域控沦陷全流程"><img class="cover" src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%BA%8C%EF%BC%9AWebLogic-CVE-2019-2725-%E5%88%B0%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7%E5%85%A8%E6%B5%81%E7%A8%8B/cover.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="info"><div class="info-1"><div class="info-item-1">上一篇</div><div class="info-item-2">红日靶场二：WebLogic CVE-2019-2725 到域控沦陷全流程</div></div><div class="info-2"><div class="info-item-1">一、靶场信息 相关注意事项：   二、信息搜集1、TCP 端口扫描 + 指纹识别 + 操作系统识别工具：rustscan + nmap nmap 带上 -Pn 参数，表示不进行主机发现，这是为了避免主机发现失败导致的指纹探测失败。 因为 nmap 的默认扫描逻辑是这样的： 主机存活探测（ICMP ping / TCP ping）        ↓    没有响应？        ↓认为主机已下线 → 直接跳过，不扫端口  问题在于，很多主机（尤其是 Windows、有防火墙的服务器）会屏蔽 ICMP，但端口服务完全正常运行。Nmap 误判主机离线，导致你什么都扫不到。 命令： sudo rustscan -a 192.168.111.80 -r 1-65535 -- -sV -O -Pn -n  输出（由于输出很长，只是截取了关键的部分）： PORT      STATE SERVICE        REASON         VERSION80/tcp    open  http           syn-ack ttl 63 Microsoft IIS httpd 7....</div></div></div></a><a class="pagination-related" href="/2026/04/01/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%B8%80/" title="红日靶场一"><img class="cover" src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%B8%80/cover.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">红日靶场一</div></div><div class="info-2"><div class="info-item-1">靶场信息：   靶场的相关说明：   一、端口扫描使用工具 rustscan，命令： rustscan -a 192.168.111.20 --top  结果： PORT    STATE SERVICE      REASON80/tcp  open  http         syn-ack ttl 127135/tcp open  msrpc        syn-ack ttl 127139/tcp open  netbios-ssn  syn-ack ttl 127445/tcp open  microsoft-ds syn-ack ttl 127  二、永恒之蓝看到 445 端口开着，条件反射去看看有没有存在永恒之蓝漏洞。 在 nmap 的脚本目录下找到对应检测脚本： ┌──(penv)─(zyf㉿kali)-[/usr/share/nmap/scripts]└─$ ls | grep ms17-010smb-vuln-ms17-010.nse  利用 nmap 验证： nmap --script smb-vuln-ms17-010 192.168.111.20 -p...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2026/04/01/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%BA%8C%EF%BC%9AWebLogic-CVE-2019-2725-%E5%88%B0%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7%E5%85%A8%E6%B5%81%E7%A8%8B/" title="红日靶场二：WebLogic CVE-2019-2725 到域控沦陷全流程"><img class="cover" src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%BA%8C%EF%BC%9AWebLogic-CVE-2019-2725-%E5%88%B0%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7%E5%85%A8%E6%B5%81%E7%A8%8B/cover.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-04-01</div><div class="info-item-2">红日靶场二：WebLogic CVE-2019-2725 到域控沦陷全流程</div></div><div class="info-2"><div class="info-item-1">一、靶场信息 相关注意事项：   二、信息搜集1、TCP 端口扫描 + 指纹识别 + 操作系统识别工具：rustscan + nmap nmap 带上 -Pn 参数，表示不进行主机发现，这是为了避免主机发现失败导致的指纹探测失败。 因为 nmap 的默认扫描逻辑是这样的： 主机存活探测（ICMP ping / TCP ping）        ↓    没有响应？        ↓认为主机已下线 → 直接跳过，不扫端口  问题在于，很多主机（尤其是 Windows、有防火墙的服务器）会屏蔽 ICMP，但端口服务完全正常运行。Nmap 误判主机离线，导致你什么都扫不到。 命令： sudo rustscan -a 192.168.111.80 -r 1-65535 -- -sV -O -Pn -n  输出（由于输出很长，只是截取了关键的部分）： PORT      STATE SERVICE        REASON         VERSION80/tcp    open  http           syn-ack ttl 63 Microsoft IIS httpd 7....</div></div></div></a></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/author.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">谁把我灯关了</div><div class="author-info-description">不以物喜，不以己悲。</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">4</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">28</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">6</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/beini-faxianl"><i class="fab fa-github"></i><span>Visit GitHub</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/beini-faxianl" target="_blank" title="Github"><i class="fab fa-github" style="color: #24292e;"></i></a><a class="social-icon" href="https://blog.csdn.net/2301_76794844?type=blog" target="_blank" title="CSDN"><i class="fa fa-book-open"></i></a><a class="social-icon" href="https://www.cnblogs.com/youdiscovered1t" target="_blank" title="博客园"><i class="fa fa-pen-nib"></i></a><a class="social-icon" href="mailto:1436319009@qq.com" target="_blank" title="Email"><i class="fas fa-envelope-open-text"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">CTF / Security / Notes / Life</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E5%88%86%E6%9E%90%E9%99%84%E4%BB%B6"><span class="toc-number">1.</span> <span class="toc-text">一、分析附件</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E5%8F%8D%E7%BC%96%E8%AF%91"><span class="toc-number">2.</span> <span class="toc-text">二、反编译</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1%E3%80%81%E6%9F%A5%E7%9C%8B%E9%A1%B9%E7%9B%AE%E5%85%A5%E5%8F%A3"><span class="toc-number">2.1.</span> <span class="toc-text">1、查看项目入口</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81AES"><span class="toc-number">3.</span> <span class="toc-text">三、AES</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%E5%9D%91%E7%82%B9"><span class="toc-number">4.</span> <span class="toc-text">四、坑点</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E8%8E%B7%E5%BE%97-Flag"><span class="toc-number">5.</span> <span class="toc-text">五、获得 Flag</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E5%90%AF%E5%8F%91"><span class="toc-number">6.</span> <span class="toc-text">六、启发</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2026/04/01/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%BA%8C%EF%BC%9AWebLogic-CVE-2019-2725-%E5%88%B0%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7%E5%85%A8%E6%B5%81%E7%A8%8B/" title="红日靶场二：WebLogic CVE-2019-2725 到域控沦陷全流程"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%BA%8C%EF%BC%9AWebLogic-CVE-2019-2725-%E5%88%B0%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7%E5%85%A8%E6%B5%81%E7%A8%8B/cover.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="红日靶场二：WebLogic CVE-2019-2725 到域控沦陷全流程"/></a><div class="content"><a class="title" href="/2026/04/01/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%BA%8C%EF%BC%9AWebLogic-CVE-2019-2725-%E5%88%B0%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7%E5%85%A8%E6%B5%81%E7%A8%8B/" title="红日靶场二：WebLogic CVE-2019-2725 到域控沦陷全流程">红日靶场二：WebLogic CVE-2019-2725 到域控沦陷全流程</a><time datetime="2026-04-01T13:00:00.000Z" title="发表于 2026-04-01 21:00:00">2026-04-01</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/04/01/easy_time/" title="easy_time"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/easy_time/cover.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="easy_time"/></a><div class="content"><a class="title" href="/2026/04/01/easy_time/" title="easy_time">easy_time</a><time datetime="2026-03-31T16:00:00.000Z" title="发表于 2026-04-01 00:00:00">2026-04-01</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/04/01/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%B8%80/" title="红日靶场一"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%B8%80/cover.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="红日靶场一"/></a><div class="content"><a class="title" href="/2026/04/01/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%B8%80/" title="红日靶场一">红日靶场一</a><time datetime="2026-03-31T16:00:00.000Z" title="发表于 2026-04-01 00:00:00">2026-04-01</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/04/01/%E7%AC%AC%E5%8D%81%E4%B9%9D%E5%B1%8A%E5%85%A8%E5%9B%BD%E5%A4%A7%E5%AD%A6%E7%94%9F%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E7%AB%9E%E8%B5%9B_babygame%EF%BC%9AGodot%EF%BC%9A%E6%B8%B8%E6%88%8F%E9%80%86%E5%90%91%E4%B8%8EAES%E8%BF%90%E8%A1%8C%E6%97%B6%E5%AF%86%E9%92%A5%E6%9B%BF%E6%8D%A2/" title="第十九届全国大学生信息安全竞赛_babygame：Godot：游戏逆向与AES运行时密钥替换"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E7%AC%AC%E5%8D%81%E4%B9%9D%E5%B1%8A%E5%85%A8%E5%9B%BD%E5%A4%A7%E5%AD%A6%E7%94%9F%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E7%AB%9E%E8%B5%9B_babygame%EF%BC%9AGodot%EF%BC%9A%E6%B8%B8%E6%88%8F%E9%80%86%E5%90%91%E4%B8%8EAES%E8%BF%90%E8%A1%8C%E6%97%B6%E5%AF%86%E9%92%A5%E6%9B%BF%E6%8D%A2/cover.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="第十九届全国大学生信息安全竞赛_babygame：Godot：游戏逆向与AES运行时密钥替换"/></a><div class="content"><a class="title" href="/2026/04/01/%E7%AC%AC%E5%8D%81%E4%B9%9D%E5%B1%8A%E5%85%A8%E5%9B%BD%E5%A4%A7%E5%AD%A6%E7%94%9F%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E7%AB%9E%E8%B5%9B_babygame%EF%BC%9AGodot%EF%BC%9A%E6%B8%B8%E6%88%8F%E9%80%86%E5%90%91%E4%B8%8EAES%E8%BF%90%E8%A1%8C%E6%97%B6%E5%AF%86%E9%92%A5%E6%9B%BF%E6%8D%A2/" title="第十九届全国大学生信息安全竞赛_babygame：Godot：游戏逆向与AES运行时密钥替换">第十九届全国大学生信息安全竞赛_babygame：Godot：游戏逆向与AES运行时密钥替换</a><time datetime="2026-03-31T16:00:00.000Z" title="发表于 2026-04-01 00:00:00">2026-04-01</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By 谁把我灯关了</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 8.0.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.1</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.5.1"></script><script src="/js/main.js?v=5.5.1"></script><div class="js-pjax"><script>(() => {
+  const loadMathjax = () => {
+    if (!window.MathJax) {
+      window.MathJax = {
+        loader: {
+          load: [
+            // Four font extension packages (optional)
+            //- '[tex]/bbm',
+            //- '[tex]/bboldx',
+            //- '[tex]/dsfont',
+            '[tex]/mhchem'
+          ],
+          paths: {
+            'mathjax-newcm': '[mathjax]/../@mathjax/mathjax-newcm-font',
+
+            //- // Four font extension packages (optional)
+            //- 'mathjax-bbm-extension': '[mathjax]/../@mathjax/mathjax-bbm-font-extension',
+            //- 'mathjax-bboldx-extension': '[mathjax]/../@mathjax/mathjax-bboldx-font-extension',
+            //- 'mathjax-dsfont-extension': '[mathjax]/../@mathjax/mathjax-dsfont-font-extension',
+            'mathjax-mhchem-extension': '[mathjax]/../@mathjax/mathjax-mhchem-font-extension'
+          }
+        },
+        output: {
+          font: 'mathjax-newcm',
+        },
+        tex: {
+          inlineMath: [['$', '$'], ['\\(', '\\)']],
+          tags: 'none',
+          packages: {
+            '[+]': [
+              'mhchem'
+            ]
+          }
+        },
+        chtml: {
+          scale: 1.1
+        },
+        options: {
+          enableMenu: true,
+          menuOptions: {
+            settings: {
+              enrich: false  // Turn off Braille and voice narration text automatic generation
+            }
+          },
+          renderActions: {
+            findScript: [10, doc => {
+              for (const node of document.querySelectorAll('script[type^="math/tex"]')) {
+                const display = !!node.type.match(/; *mode=display/)
+                const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display)
+                const text = document.createTextNode('')
+                node.parentNode.replaceChild(text, node)
+                math.start = {node: text, delim: '', n: 0}
+                math.end = {node: text, delim: '', n: 0}
+                doc.math.push(math)
+              }
+            }, '']
+          }
+        }
+      }
+
+      const script = document.createElement('script')
+      script.src = 'https://cdn.jsdelivr.net/npm/mathjax@4.0.0/tex-mml-chtml.min.js'
+      script.id = 'MathJax-script'
+      script.async = true
+      document.head.appendChild(script)
+    } else {
+      MathJax.startup.document.state(0)
+      MathJax.texReset()
+      MathJax.typesetPromise()
+    }
+  }
+
+  btf.addGlobalFn('encrypt', loadMathjax, 'mathjax')
+  window.pjax ? loadMathjax() : window.addEventListener('load', loadMathjax)
+})()</script></div><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div>
+        <style>
+            [bg-lazy] {
+                background-image: none !important;
+                background-color: #eee !important;
+            }
+        </style>
+        <script>
+            window.imageLazyLoadSetting = {
+                isSPA: false,
+                preloadRatio: 1,
+                processImages: null,
+            };
+        </script><script>window.addEventListener("load",function(){var t=/\.(gif|jpg|jpeg|tiff|png)$/i,r=/^data:image\/[a-z\d\-\.\+]+;base64,/;Array.prototype.slice.call(document.querySelectorAll("img[data-original]")).forEach(function(a){var e=a.parentNode;"A"===e.tagName&&(t.test(e.href)||r.test(e.href))&&(e.href=a.dataset.original)})});</script><script>(r=>{r.imageLazyLoadSetting.processImages=t;var a=r.imageLazyLoadSetting.isSPA,o=r.imageLazyLoadSetting.preloadRatio||1,d=i();function i(){var t=Array.prototype.slice.call(document.querySelectorAll("img[data-original]")),e=Array.prototype.slice.call(document.querySelectorAll("[bg-lazy]"));return t.concat(e)}function t(t){(a||t)&&(d=i());for(var e,n=0;n<d.length;n++)0<=(e=(e=d[n]).getBoundingClientRect()).bottom&&0<=e.left&&e.top<=(r.innerHeight*o||document.documentElement.clientHeight*o)&&(()=>{var t,e,a,o,i=d[n];e=function(){d=d.filter(function(t){return i!==t}),r.imageLazyLoadSetting.onImageLoaded&&r.imageLazyLoadSetting.onImageLoaded(i)},(t=i).dataset.loaded||(t.hasAttribute("bg-lazy")?(t.removeAttribute("bg-lazy"),e&&e()):(a=new Image,o=t.getAttribute("data-original"),a.onload=function(){t.src=o,t.removeAttribute("data-original"),t.setAttribute("data-loaded",!0),e&&e()},a.onerror=function(){t.removeAttribute("data-original"),t.setAttribute("data-loaded",!1),t.src=o},t.src!==o&&(a.src=o)))})()}function e(){clearTimeout(t.tId),t.tId=setTimeout(t,500)}t(),document.addEventListener("scroll",e),r.addEventListener("resize",e),r.addEventListener("orientationchange",e)})(this);</script></body></html>
