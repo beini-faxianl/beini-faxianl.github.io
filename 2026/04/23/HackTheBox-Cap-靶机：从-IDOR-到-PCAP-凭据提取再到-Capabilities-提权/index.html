@@ -1,0 +1,366 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>HackTheBox Cap 靶机：从 IDOR 到 PCAP 凭据提取再到 Capabilities 提权 | A Secret Site</title><meta name="author" content="谁把我灯关了"><meta name="copyright" content="谁把我灯关了"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="本文详细记录了 HackTheBox 靶机 Cap 的完整渗透过程。通过端口扫描发现目标运行 Gunicorn Web 应用及 FTP&#x2F;SSH 服务。在 Web 端利用 IDOR 漏洞遍历 &#x2F;data&#x2F;0 越权下载其他用户的网络抓包文件（PCAP），经 Wireshark 流量分析提取出 FTP 明文凭据。利用账密复用成功通过 SSH 获得立足点，最终在系统内通过 getcap 发现 Python">
+<meta property="og:type" content="article">
+<meta property="og:title" content="HackTheBox Cap 靶机：从 IDOR 到 PCAP 凭据提取再到 Capabilities 提权">
+<meta property="og:url" content="https://beini-faxianl.github.io/2026/04/23/HackTheBox-Cap-%E9%9D%B6%E6%9C%BA%EF%BC%9A%E4%BB%8E-IDOR-%E5%88%B0-PCAP-%E5%87%AD%E6%8D%AE%E6%8F%90%E5%8F%96%E5%86%8D%E5%88%B0-Capabilities-%E6%8F%90%E6%9D%83/index.html">
+<meta property="og:site_name" content="A Secret Site">
+<meta property="og:description" content="本文详细记录了 HackTheBox 靶机 Cap 的完整渗透过程。通过端口扫描发现目标运行 Gunicorn Web 应用及 FTP&#x2F;SSH 服务。在 Web 端利用 IDOR 漏洞遍历 &#x2F;data&#x2F;0 越权下载其他用户的网络抓包文件（PCAP），经 Wireshark 流量分析提取出 FTP 明文凭据。利用账密复用成功通过 SSH 获得立足点，最终在系统内通过 getcap 发现 Python">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://beini-faxianl.github.io/img/HackTheBox-Cap-%E9%9D%B6%E6%9C%BA%EF%BC%9A%E4%BB%8E-IDOR-%E5%88%B0-PCAP-%E5%87%AD%E6%8D%AE%E6%8F%90%E5%8F%96%E5%86%8D%E5%88%B0-Capabilities-%E6%8F%90%E6%9D%83/cover.jpg">
+<meta property="article:published_time" content="2026-04-23T03:00:00.000Z">
+<meta property="article:modified_time" content="2026-04-23T03:00:00.000Z">
+<meta property="article:author" content="谁把我灯关了">
+<meta property="article:tag" content="CTF">
+<meta property="article:tag" content="Credential Reuse">
+<meta property="article:tag" content="FTP">
+<meta property="article:tag" content="Gunicorn">
+<meta property="article:tag" content="HackTheBox">
+<meta property="article:tag" content="IDOR">
+<meta property="article:tag" content="Linux Capabilities">
+<meta property="article:tag" content="PCAP Analysis">
+<meta property="article:tag" content="Privilege Escalation">
+<meta property="article:tag" content="Python">
+<meta property="article:tag" content="SSH">
+<meta property="article:tag" content="Traffic Forensics">
+<meta property="article:tag" content="Wireshark">
+<meta property="article:tag" content="Writeup">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://beini-faxianl.github.io/img/HackTheBox-Cap-%E9%9D%B6%E6%9C%BA%EF%BC%9A%E4%BB%8E-IDOR-%E5%88%B0-PCAP-%E5%87%AD%E6%8D%AE%E6%8F%90%E5%8F%96%E5%86%8D%E5%88%B0-Capabilities-%E6%8F%90%E6%9D%83/cover.jpg"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "HackTheBox Cap 靶机：从 IDOR 到 PCAP 凭据提取再到 Capabilities 提权",
+  "url": "https://beini-faxianl.github.io/2026/04/23/HackTheBox-Cap-%E9%9D%B6%E6%9C%BA%EF%BC%9A%E4%BB%8E-IDOR-%E5%88%B0-PCAP-%E5%87%AD%E6%8D%AE%E6%8F%90%E5%8F%96%E5%86%8D%E5%88%B0-Capabilities-%E6%8F%90%E6%9D%83/",
+  "image": "https://beini-faxianl.github.io/img/HackTheBox-Cap-%E9%9D%B6%E6%9C%BA%EF%BC%9A%E4%BB%8E-IDOR-%E5%88%B0-PCAP-%E5%87%AD%E6%8D%AE%E6%8F%90%E5%8F%96%E5%86%8D%E5%88%B0-Capabilities-%E6%8F%90%E6%9D%83/cover.jpg",
+  "datePublished": "2026-04-23T03:00:00.000Z",
+  "dateModified": "2026-04-23T03:00:00.000Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "谁把我灯关了",
+      "url": "https://beini-faxianl.github.io"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://beini-faxianl.github.io/2026/04/23/HackTheBox-Cap-%E9%9D%B6%E6%9C%BA%EF%BC%9A%E4%BB%8E-IDOR-%E5%88%B0-PCAP-%E5%87%AD%E6%8D%AE%E6%8F%90%E5%8F%96%E5%86%8D%E5%88%B0-Capabilities-%E6%8F%90%E6%9D%83/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=5.5.1"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":true},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.12.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'HackTheBox Cap 靶机：从 IDOR 到 PCAP 凭据提取再到 Capabilities 提权',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><style>@import url("/css/custom.css?v=20260401-2");</style><script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/gh/stevenjoezhang/live2d-widget@0.9.0/autoload.js"></script><!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+<!-- hexo injector head_end end --><meta name="generator" content="Hexo 8.0.0"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/author.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">9</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">82</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">7</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fa fa-graduation-cap"></i><span> 博文</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/categories/"><i class="fa-fw fa fa-archive"></i><span> 分类</span></a></li><li><a class="site-page child" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="/archives/"><i class="fa-fw fa fa-folder-open"></i><span> 归档</span></a></li></ul></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-list"></i><span> 生活</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/shuoshuo/"><i class="fa-fw fas fa-coffee"></i><span> 分享</span></a></li><li><a class="site-page child" href="/photos/"><i class="fa-fw fa fa-camera-retro"></i><span> 相册</span></a></li><li><a class="site-page child" href="/music/"><i class="fa-fw fa fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 影视</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/links/"><i class="fa-fw fa fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/comment/"><i class="fa-fw fa fa-paper-plane"></i><span> 留言板</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于笔者</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg fixed" id="page-header" style="background-image: url(/img/HackTheBox-Cap-%E9%9D%B6%E6%9C%BA%EF%BC%9A%E4%BB%8E-IDOR-%E5%88%B0-PCAP-%E5%87%AD%E6%8D%AE%E6%8F%90%E5%8F%96%E5%86%8D%E5%88%B0-Capabilities-%E6%8F%90%E6%9D%83/cover.jpg);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">A Secret Site</span></a><a class="nav-page-title" href="/"><span class="site-name">HackTheBox Cap 靶机：从 IDOR 到 PCAP 凭据提取再到 Capabilities 提权</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fa fa-graduation-cap"></i><span> 博文</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/categories/"><i class="fa-fw fa fa-archive"></i><span> 分类</span></a></li><li><a class="site-page child" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="/archives/"><i class="fa-fw fa fa-folder-open"></i><span> 归档</span></a></li></ul></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-list"></i><span> 生活</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/shuoshuo/"><i class="fa-fw fas fa-coffee"></i><span> 分享</span></a></li><li><a class="site-page child" href="/photos/"><i class="fa-fw fa fa-camera-retro"></i><span> 相册</span></a></li><li><a class="site-page child" href="/music/"><i class="fa-fw fa fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 影视</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/links/"><i class="fa-fw fa fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/comment/"><i class="fa-fw fa fa-paper-plane"></i><span> 留言板</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于笔者</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">HackTheBox Cap 靶机：从 IDOR 到 PCAP 凭据提取再到 Capabilities 提权</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-04-23T03:00:00.000Z" title="发表于 2026-04-23 11:00:00">2026-04-23</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-04-23T03:00:00.000Z" title="更新于 2026-04-23 11:00:00">2026-04-23</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E9%9D%B6%E5%9C%BA/">靶场</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">总字数:</span><span class="word-count">1.3k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>5分钟</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/HackTheBox-Cap-%E9%9D%B6%E6%9C%BA%EF%BC%9A%E4%BB%8E-IDOR-%E5%88%B0-PCAP-%E5%87%AD%E6%8D%AE%E6%8F%90%E5%8F%96%E5%86%8D%E5%88%B0-Capabilities-%E6%8F%90%E6%9D%83/file-20260423101950012.png" alt="file-20260423101950012"></p>
+<h2 id="一、题目信息"><a href="#一、题目信息" class="headerlink" title="一、题目信息"></a>一、题目信息</h2><p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/HackTheBox-Cap-%E9%9D%B6%E6%9C%BA%EF%BC%9A%E4%BB%8E-IDOR-%E5%88%B0-PCAP-%E5%87%AD%E6%8D%AE%E6%8F%90%E5%8F%96%E5%86%8D%E5%88%B0-Capabilities-%E6%8F%90%E6%9D%83/file-20260423102346966.png" alt="file-20260423102346966"></p>
+<h2 id="二、信息搜集"><a href="#二、信息搜集" class="headerlink" title="二、信息搜集"></a>二、信息搜集</h2><p>TCP 全端口扫描 + 指纹识别 + 操作系统识别：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">sudo</span> rustscan -a 10.129.35.25 -r 1-65535 -- -sV -O -Pn -n</span><br></pre></td></tr></table></figure>
+
+<p>输出（关键部分）：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">PORT   STATE SERVICE REASON         VERSION</span><br><span class="line">21/tcp open  ftp     syn-ack ttl 63 vsftpd 3.0.3</span><br><span class="line">22/tcp open  ssh     syn-ack ttl 63 OpenSSH 8.2p1 Ubuntu 4ubuntu0.2 (Ubuntu Linux; protocol 2.0)</span><br><span class="line">80/tcp open  http    syn-ack ttl 63 Gunicorn</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>目标 OS：Ubuntu</li>
+<li>80 指纹：Gunicorn，这是 Python 的 WSGI HTTP 服务器，通常作为 Web 应用与反向代理（如 Nginx）之间的中间层运行（但是在本题中是直接作为后端服务器存在）</li>
+<li>21 端口可以尝试 ftp 匿名登入</li>
+</ul>
+<p>补一波 UDP 高价值（top 20）端口扫描 + 指纹识别：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">sudo</span> nmap -sU -sV -Pn -n 10.129.35.25 -vvv --top-ports 20</span><br></pre></td></tr></table></figure>
+
+<p>输出：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">PORT      STATE         SERVICE      REASON              VERSION</span><br><span class="line">53/udp    open|filtered domain       no-response</span><br><span class="line">67/udp    closed        dhcps        port-unreach ttl 63</span><br><span class="line">68/udp    open|filtered dhcpc        no-response</span><br><span class="line">69/udp    closed        tftp         port-unreach ttl 63</span><br><span class="line">123/udp   closed        ntp          port-unreach ttl 63</span><br><span class="line">135/udp   open|filtered msrpc        no-response</span><br><span class="line">137/udp   closed        netbios-ns   port-unreach ttl 63</span><br><span class="line">138/udp   closed        netbios-dgm  port-unreach ttl 63</span><br><span class="line">139/udp   closed        netbios-ssn  port-unreach ttl 63</span><br><span class="line">161/udp   closed        snmp         port-unreach ttl 63</span><br><span class="line">162/udp   closed        snmptrap     port-unreach ttl 63</span><br><span class="line">445/udp   closed        microsoft-ds port-unreach ttl 63</span><br><span class="line">500/udp   closed        isakmp       port-unreach ttl 63</span><br><span class="line">514/udp   closed        syslog       port-unreach ttl 63</span><br><span class="line">520/udp   closed        route        port-unreach ttl 63</span><br><span class="line">631/udp   closed        ipp          port-unreach ttl 63</span><br><span class="line">1434/udp  closed        ms-sql-m     port-unreach ttl 63</span><br><span class="line">1900/udp  closed        upnp         port-unreach ttl 63</span><br><span class="line">4500/udp  closed        nat-t-ike    port-unreach ttl 63</span><br><span class="line">49152/udp closed        unknown      port-unreach ttl 63</span><br></pre></td></tr></table></figure>
+
+<p>目前来看，UDP 这块并没有高价值的信息，优先考虑打 TCP 端口，如果 TCP 那边没有思路，可以回到 UDP 端口用专门的工具进行验证。</p>
+<h2 id="三、验证-FTP-匿名登入"><a href="#三、验证-FTP-匿名登入" class="headerlink" title="三、验证 FTP 匿名登入"></a>三、验证 FTP 匿名登入</h2><p>尝试：</p>
+<ul>
+<li>用户名：anonymous</li>
+<li>密码：空，直接回车</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">ftp anonymous@10.129.35.25</span><br><span class="line">Connected to 10.129.35.25.</span><br><span class="line">220 (vsFTPd 3.0.3)</span><br><span class="line">331 Please specify the password.</span><br><span class="line">Password: </span><br><span class="line">530 Login incorrect.</span><br><span class="line">ftp: Login failed</span><br><span class="line">ftp&gt; quit</span><br><span class="line">221 Goodbye.</span><br></pre></td></tr></table></figure>
+
+<p>失败了，服务器应该开启了禁止匿名登入。</p>
+<p>再次验证，这次将密码输入成合法邮箱格式，但是依旧失败了。</p>
+<blockquote>
+<p>极少数非标准场景，密码可能会要求“邮箱格式”。</p>
+</blockquote>
+<p>将目标转移到 80 端口。</p>
+<h2 id="四、80-端口突破"><a href="#四、80-端口突破" class="headerlink" title="四、80 端口突破"></a>四、80 端口突破</h2><h3 id="1、功能一览"><a href="#1、功能一览" class="headerlink" title="1、功能一览"></a>1、功能一览</h3><p>浏览器访问 80 端口，可以看到一个仪表盘界面：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/HackTheBox-Cap-%E9%9D%B6%E6%9C%BA%EF%BC%9A%E4%BB%8E-IDOR-%E5%88%B0-PCAP-%E5%87%AD%E6%8D%AE%E6%8F%90%E5%8F%96%E5%86%8D%E5%88%B0-Capabilities-%E6%8F%90%E6%9D%83/file-20260423104519705.png" alt="file-20260423104519705"></p>
+<p>用户栏和搜索功能是没有作用的：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/HackTheBox-Cap-%E9%9D%B6%E6%9C%BA%EF%BC%9A%E4%BB%8E-IDOR-%E5%88%B0-PCAP-%E5%87%AD%E6%8D%AE%E6%8F%90%E5%8F%96%E5%86%8D%E5%88%B0-Capabilities-%E6%8F%90%E6%9D%83/file-20260423104614694.png" alt="file-20260423104614694"></p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/HackTheBox-Cap-%E9%9D%B6%E6%9C%BA%EF%BC%9A%E4%BB%8E-IDOR-%E5%88%B0-PCAP-%E5%87%AD%E6%8D%AE%E6%8F%90%E5%8F%96%E5%86%8D%E5%88%B0-Capabilities-%E6%8F%90%E6%9D%83/file-20260423104626137.png" alt="file-20260423104626137"></p>
+<p>点了没反应，burp 也没有显示出对应的请求，说明这并不是我们需要关注的点。</p>
+<p>左侧汉堡菜单，点开后：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/HackTheBox-Cap-%E9%9D%B6%E6%9C%BA%EF%BC%9A%E4%BB%8E-IDOR-%E5%88%B0-PCAP-%E5%87%AD%E6%8D%AE%E6%8F%90%E5%8F%96%E5%86%8D%E5%88%B0-Capabilities-%E6%8F%90%E6%9D%83/file-20260423104805262.png" alt="file-20260423104805262"></p>
+<p>这里的几个功能都是可以正常使用的，对于：</p>
+<ul>
+<li>IP Config</li>
+<li>Network Status</li>
+</ul>
+<p>就是一个指定命令执行的接口，后端将指定命令执行的结果返回给用户。</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/HackTheBox-Cap-%E9%9D%B6%E6%9C%BA%EF%BC%9A%E4%BB%8E-IDOR-%E5%88%B0-PCAP-%E5%87%AD%E6%8D%AE%E6%8F%90%E5%8F%96%E5%86%8D%E5%88%B0-Capabilities-%E6%8F%90%E6%9D%83/file-20260423105111164.png" alt="file-20260423105111164"></p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/HackTheBox-Cap-%E9%9D%B6%E6%9C%BA%EF%BC%9A%E4%BB%8E-IDOR-%E5%88%B0-PCAP-%E5%87%AD%E6%8D%AE%E6%8F%90%E5%8F%96%E5%86%8D%E5%88%B0-Capabilities-%E6%8F%90%E6%9D%83/file-20260423105124773.png" alt="file-20260423105124773"></p>
+<p>观察 URL 可以发现：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/ip</span><br><span class="line">/netstat</span><br></pre></td></tr></table></figure>
+
+<p>这虽然不是准确的命令，但是也可能存在隐藏接口去执行隐藏命令，现在还看不出来有什么特别的。</p>
+<p>重头戏在：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Security Snapshot (5 Second PCAP + Analysis)</span><br></pre></td></tr></table></figure>
+
+<p>点开后可以看到：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/HackTheBox-Cap-%E9%9D%B6%E6%9C%BA%EF%BC%9A%E4%BB%8E-IDOR-%E5%88%B0-PCAP-%E5%87%AD%E6%8D%AE%E6%8F%90%E5%8F%96%E5%86%8D%E5%88%B0-Capabilities-%E6%8F%90%E6%9D%83/file-20260423105544942.png" alt="file-20260423105544942"></p>
+<p>下面有个下载按钮，点击下载后，得到一个流量包，用 wireshark 打开：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/HackTheBox-Cap-%E9%9D%B6%E6%9C%BA%EF%BC%9A%E4%BB%8E-IDOR-%E5%88%B0-PCAP-%E5%87%AD%E6%8D%AE%E6%8F%90%E5%8F%96%E5%86%8D%E5%88%B0-Capabilities-%E6%8F%90%E6%9D%83/file-20260423105745025.png" alt="file-20260423105745025"></p>
+<p>并没有有用的信息。</p>
+<h3 id="2、IDOR"><a href="#2、IDOR" class="headerlink" title="2、IDOR"></a>2、IDOR</h3><p>观察 URL：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http://10.129.35.25/data/2</span><br></pre></td></tr></table></figure>
+
+<p>可能存在 IDOR</p>
+<blockquote>
+<p>IDOR（Insecure Direct Object Reference，不安全的直接对象引用）是一种访问控制漏洞。应用系统通过用户可控的标识符（如数字 ID、文件名、UUID）来定位资源，但没有验证当前用户是否有权访问该资源，导致攻击者通过篡改标识符就能越权查看或操作他人的数据。</p>
+</blockquote>
+<p>而且经过几个的测试后，发现：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/HackTheBox-Cap-%E9%9D%B6%E6%9C%BA%EF%BC%9A%E4%BB%8E-IDOR-%E5%88%B0-PCAP-%E5%87%AD%E6%8D%AE%E6%8F%90%E5%8F%96%E5%86%8D%E5%88%B0-Capabilities-%E6%8F%90%E6%9D%83/file-20260423110224643.png" alt="file-20260423110224643"></p>
+<p>Value 的值应该就是代表流量包中是否存在信息。</p>
+<p>最终发现：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http://10.129.35.25/data/0</span><br></pre></td></tr></table></figure>
+
+<p>这个页面下载得到的流量包是有内容的：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/HackTheBox-Cap-%E9%9D%B6%E6%9C%BA%EF%BC%9A%E4%BB%8E-IDOR-%E5%88%B0-PCAP-%E5%87%AD%E6%8D%AE%E6%8F%90%E5%8F%96%E5%86%8D%E5%88%B0-Capabilities-%E6%8F%90%E6%9D%83/file-20260423110305414.png" alt="file-20260423110305414"></p>
+<h2 id="五、流量分析"><a href="#五、流量分析" class="headerlink" title="五、流量分析"></a>五、流量分析</h2><p>流量不多，简单查看后，不难发现登入 ftp 的明文用户名和密码就在里面：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/HackTheBox-Cap-%E9%9D%B6%E6%9C%BA%EF%BC%9A%E4%BB%8E-IDOR-%E5%88%B0-PCAP-%E5%87%AD%E6%8D%AE%E6%8F%90%E5%8F%96%E5%86%8D%E5%88%B0-Capabilities-%E6%8F%90%E6%9D%83/file-20260423110417486.png" alt="file-20260423110417486"></p>
+<blockquote>
+<p>FTP 是明文协议，这意味着任何能嗅探到流量的中间人，都能直接看到你的凭据和传输的文件，我们在 <code>.pcap</code> 抓包中提取出 <code>nathan:Buck3tH4TF0RM3!</code>，就是 FTP 明文特性的直接后果。</p>
+</blockquote>
+<p>现在有一个直接思路就是用账户密码直接登入 ftp。</p>
+<p>但是转念一想，账号密码复用的概率非常大，而且本靶机开放了 22 端口。</p>
+<p>因此，最高的优先级是“账密复用 + ssh 尝试登入”。</p>
+<h2 id="六、ssh-登入"><a href="#六、ssh-登入" class="headerlink" title="六、ssh 登入"></a>六、ssh 登入</h2><p>经过检验，果然存在账密复用的现象，直接获得了用户 nathan 的 shell：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/HackTheBox-Cap-%E9%9D%B6%E6%9C%BA%EF%BC%9A%E4%BB%8E-IDOR-%E5%88%B0-PCAP-%E5%87%AD%E6%8D%AE%E6%8F%90%E5%8F%96%E5%86%8D%E5%88%B0-Capabilities-%E6%8F%90%E6%9D%83/file-20260423110849906.png" alt="file-20260423110849906"></p>
+<p>在家目录下有 <code>user.txt</code> 文件，查看其中的内容，得到的就是 user flag：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/HackTheBox-Cap-%E9%9D%B6%E6%9C%BA%EF%BC%9A%E4%BB%8E-IDOR-%E5%88%B0-PCAP-%E5%87%AD%E6%8D%AE%E6%8F%90%E5%8F%96%E5%86%8D%E5%88%B0-Capabilities-%E6%8F%90%E6%9D%83/file-20260423111306349.png" alt="file-20260423111306349"></p>
+<p>接下来的 root flag 就需要提权获得了。</p>
+<h2 id="七、提权"><a href="#七、提权" class="headerlink" title="七、提权"></a>七、提权</h2><p>本题的题名为 Cap，很可能提示的就是 Capabilities 提权思路。</p>
+<p>查找设置了 Capabilities 的文件：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">getcap</span> -r / 2&gt;/dev/null</span><br></pre></td></tr></table></figure>
+
+<p>输出：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nathan@cap:~$ getcap -r / 2&gt;/dev/null</span><br><span class="line">/usr/bin/python3.8 = cap_setuid,cap_net_bind_service+eip</span><br><span class="line">/usr/bin/ping = cap_net_raw+ep</span><br><span class="line">/usr/bin/traceroute6.iputils = cap_net_raw+ep</span><br><span class="line">/usr/bin/mtr-packet = cap_net_raw+ep</span><br><span class="line">/usr/lib/x86_64-linux-gnu/gstreamer1.0/gstreamer-1.0/gst-ptp-helper = cap_net_bind_service,cap_net_admin+ep</span><br></pre></td></tr></table></figure>
+
+<p>发现 <code>Python3.8</code> 有 <code>cap_setuid</code>（允许进程更改自身的 UID），这是可以直接提权的。</p>
+<p>去网站（<code>https://gtfobins.org/</code>）查找 payload：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/HackTheBox-Cap-%E9%9D%B6%E6%9C%BA%EF%BC%9A%E4%BB%8E-IDOR-%E5%88%B0-PCAP-%E5%87%AD%E6%8D%AE%E6%8F%90%E5%8F%96%E5%86%8D%E5%88%B0-Capabilities-%E6%8F%90%E6%9D%83/file-20260423111705261.png" alt="file-20260423111705261"></p>
+<p>应用：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/HackTheBox-Cap-%E9%9D%B6%E6%9C%BA%EF%BC%9A%E4%BB%8E-IDOR-%E5%88%B0-PCAP-%E5%87%AD%E6%8D%AE%E6%8F%90%E5%8F%96%E5%86%8D%E5%88%B0-Capabilities-%E6%8F%90%E6%9D%83/file-20260423111825891.png" alt="file-20260423111825891"></p>
+<p>成功，并且获取了 root flag。</p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://beini-faxianl.github.io">谁把我灯关了</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://beini-faxianl.github.io/2026/04/23/HackTheBox-Cap-%E9%9D%B6%E6%9C%BA%EF%BC%9A%E4%BB%8E-IDOR-%E5%88%B0-PCAP-%E5%87%AD%E6%8D%AE%E6%8F%90%E5%8F%96%E5%86%8D%E5%88%B0-Capabilities-%E6%8F%90%E6%9D%83/">https://beini-faxianl.github.io/2026/04/23/HackTheBox-Cap-%E9%9D%B6%E6%9C%BA%EF%BC%9A%E4%BB%8E-IDOR-%E5%88%B0-PCAP-%E5%87%AD%E6%8D%AE%E6%8F%90%E5%8F%96%E5%86%8D%E5%88%B0-Capabilities-%E6%8F%90%E6%9D%83/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://beini-faxianl.github.io" target="_blank">A Secret Site</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/CTF/">CTF</a><a class="post-meta__tags" href="/tags/Writeup/">Writeup</a><a class="post-meta__tags" href="/tags/HackTheBox/">HackTheBox</a><a class="post-meta__tags" href="/tags/IDOR/">IDOR</a><a class="post-meta__tags" href="/tags/PCAP-Analysis/">PCAP Analysis</a><a class="post-meta__tags" href="/tags/Traffic-Forensics/">Traffic Forensics</a><a class="post-meta__tags" href="/tags/Credential-Reuse/">Credential Reuse</a><a class="post-meta__tags" href="/tags/Linux-Capabilities/">Linux Capabilities</a><a class="post-meta__tags" href="/tags/Privilege-Escalation/">Privilege Escalation</a><a class="post-meta__tags" href="/tags/Python/">Python</a><a class="post-meta__tags" href="/tags/Gunicorn/">Gunicorn</a><a class="post-meta__tags" href="/tags/Wireshark/">Wireshark</a><a class="post-meta__tags" href="/tags/FTP/">FTP</a><a class="post-meta__tags" href="/tags/SSH/">SSH</a></div><div class="post-share"><div class="social-share" data-image="/img/HackTheBox-Cap-%E9%9D%B6%E6%9C%BA%EF%BC%9A%E4%BB%8E-IDOR-%E5%88%B0-PCAP-%E5%87%AD%E6%8D%AE%E6%8F%90%E5%8F%96%E5%86%8D%E5%88%B0-Capabilities-%E6%8F%90%E6%9D%83/cover.jpg" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/2026/04/15/%E7%AC%AC%E4%B9%9D%E5%B1%8A%E5%BC%BA%E7%BD%91%E6%9D%AF-%C2%B7-SecretVault-WP%EF%BC%9AHTTP-Connection-%E5%A4%B4%E7%BB%95%E8%BF%87-JWT-%E5%8F%8D%E4%BB%A3%E8%BA%AB%E4%BB%BD%E6%A0%A1%E9%AA%8C/" title="第九届强网杯 · SecretVault WP：HTTP Connection 头绕过 JWT 反代身份校验"><img class="cover" src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E7%AC%AC%E4%B9%9D%E5%B1%8A%E5%BC%BA%E7%BD%91%E6%9D%AF-%C2%B7-SecretVault-WP%EF%BC%9AHTTP-Connection-%E5%A4%B4%E7%BB%95%E8%BF%87-JWT-%E5%8F%8D%E4%BB%A3%E8%BA%AB%E4%BB%BD%E6%A0%A1%E9%AA%8C/cover.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">第九届强网杯 · SecretVault WP：HTTP Connection 头绕过 JWT 反代身份校验</div></div><div class="info-2"><div class="info-item-1">一、yml 文件分析题目给了源码，并且给了 docker-compose.yml 文件，我们可以直接在本地起环境。 在运行容器之前，先看看 .yml 文件中的内容： services:  secretvault:    build:      context: .    container_name: secretvault    environment:      ICQ_FLAG: flag&#123;test&#125;    ports:      - &quot;5555:5555&quot;  得到的信息：  本地 flag 为：flag{test} 容器内部的 5555 端口映射到宿主机的 5555端口  二、登入界面分析1、简单浏览把容器跑起来： # 在 docker-compose.yml 文件所在目录运行docker compose up  由于端口仅映射了 5555 端口，那么直接浏览器访问： http://127.0.0.1:5555  看到的是一个登入界面，并且含注册功能：  CTRL + U 查看页面源码没有发现“注释信息泄露关键信息”的情况。 弱密码...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2026/04/09/%E6%98%A5%E7%A7%8B%E4%BA%91%E5%A2%83-Initial-%E9%9D%B6%E5%9C%BA-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E7%BD%91%E6%A8%AA%E5%90%91-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/" title="春秋云境 Initial 靶场 WP：ThinkPHP RCE → 内网横向 → 域控沦陷"><img class="cover" src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E6%98%A5%E7%A7%8B%E4%BA%91%E5%A2%83-Initial-%E9%9D%B6%E5%9C%BA-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E7%BD%91%E6%A8%AA%E5%90%91-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/3.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-04-09</div><div class="info-item-2">春秋云境 Initial 靶场 WP：ThinkPHP RCE → 内网横向 → 域控沦陷</div></div><div class="info-2"><div class="info-item-1">一、靶场介绍 &amp; 环境信息春秋云境 $\to$ 仿真场景 $\to$ 专业徽章 $\to$ Initial：  开启场景后，给了一个 IP 地址：  39.99.151.82  重要提醒： 由于我写 WP 并非一次性写完，而靶场一直开着会消耗沙砾（╯︿╰），每次重开靶场给的目标 IP 地址会有区别，请大家见谅。但是，内网地址都是稳定。 二、信息搜集Rustscan 配合 Nmap 进行 TCP 全端口扫描 + 指纹识别 + 操作系统识别： sudo rustscan -a 39.99.151.82 -r 1-65535 -- -sV -O -Pn -n -oA 39.99.151.82_TCP_Ports  结果信息： PORT   STATE SERVICE VERSION22/tcp open  ssh     OpenSSH 8.2p1 Ubuntu 4ubuntu0.5 (Ubuntu Linux; protocol 2.0)80/tcp open  http    Apache httpd 2.4.41 ((Ubuntu))  根据端口指纹可以判断对方的操作系统...</div></div></div></a><a class="pagination-related" href="/2026/04/04/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%BA%94-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E6%A0%B8%E6%8F%90%E6%9D%83-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/" title="红日靶场五 WP：ThinkPHP RCE → 内核提权 → 域控沦陷"><img class="cover" src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%BA%94-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E6%A0%B8%E6%8F%90%E6%9D%83-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/cover.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-04-04</div><div class="info-item-2">红日靶场五 WP：ThinkPHP RCE → 内核提权 → 域控沦陷</div></div><div class="info-2"><div class="info-item-1">一、靶场信息我打的是无境靶场中的红日靶场五，其靶机地址和本机地址分别为：  靶场的相关注意事项：   二、信息搜集1、TCP 全端口扫描 + 指纹识别 + 操作系统识别：命令： sudo rustscan -a 192.168.111.150 -r 1-65535 -- -sV -O -Pn -n -oA 192.168.111.150_TCP_ports  输出（仅列举有效信息）： PORT     STATE SERVICE REASON          VERSION80/tcp   open  http    syn-ack ttl 127 Apache httpd 2.4.23 ((Win32) OpenSSL/1.0.2j PHP/5.5.38)3306/tcp open  mysql?  syn-ack ttl 127  OS: Windows Server 2008 R2 or Windows 7 SP1 (96%)  这些信息凝聚成一块得到的结论就是：集成环境 为什么？  原生生态冲突： Windows Server 的“亲儿子”生态是什么？是 IIS Web...</div></div></div></a><a class="pagination-related" href="/2026/04/11/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%B8%83%EF%BC%9A%E4%BB%8E%E5%A4%96%E7%BD%91%E5%85%A5%E5%8F%A3%E3%80%81%E5%AE%B9%E5%99%A8%E9%80%83%E9%80%B8%E5%88%B0-AD-%E6%8E%A5%E7%AE%A1%E7%9A%84%E5%AE%8C%E6%95%B4%E5%88%A9%E7%94%A8%E9%93%BE%E5%A4%8D%E7%9B%98/" title="红日靶场七：从外网入口、容器逃逸到 AD 接管的完整利用链复盘"><img class="cover" src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%B8%83%EF%BC%9A%E4%BB%8E%E5%A4%96%E7%BD%91%E5%85%A5%E5%8F%A3%E3%80%81%E5%AE%B9%E5%99%A8%E9%80%83%E9%80%B8%E5%88%B0-AD-%E6%8E%A5%E7%AE%A1%E7%9A%84%E5%AE%8C%E6%95%B4%E5%88%A9%E7%94%A8%E9%93%BE%E5%A4%8D%E7%9B%98/cover.png" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-04-11</div><div class="info-item-2">红日靶场七：从外网入口、容器逃逸到 AD 接管的完整利用链复盘</div></div><div class="info-2"><div class="info-item-1">一、靶场相关信息   二、信息搜集TCP 端口扫描 + 指纹识别 + 操作系统识别： sudo rustscan -a 192.168.111.20 -r 1-65535 -- -sV -O -Pn -n -oA TCP_PORTS_NAMP  输出（仅列举部分）： PORT     STATE SERVICE REASON         VERSION22/tcp   open  ssh     syn-ack ttl 63 OpenSSH 7.6p1 Ubuntu 4ubuntu0.4 (Ubuntu Linux; protocol 2.0)80/tcp   open  http    syn-ack ttl 63 nginx 1.14.0 (Ubuntu)81/tcp   open  http    syn-ack ttl 63 nginx 1.14.0 (Ubuntu)6379/tcp open  redis   syn-ack ttl 63 Redis key-value store 2.8.17  关机信息：  OS：Ubuntu 6379 端口：年代久远，默认配置...</div></div></div></a><a class="pagination-related" href="/2026/04/15/%E7%AC%AC%E4%B9%9D%E5%B1%8A%E5%BC%BA%E7%BD%91%E6%9D%AF-%C2%B7-SecretVault-WP%EF%BC%9AHTTP-Connection-%E5%A4%B4%E7%BB%95%E8%BF%87-JWT-%E5%8F%8D%E4%BB%A3%E8%BA%AB%E4%BB%BD%E6%A0%A1%E9%AA%8C/" title="第九届强网杯 · SecretVault WP：HTTP Connection 头绕过 JWT 反代身份校验"><img class="cover" src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E7%AC%AC%E4%B9%9D%E5%B1%8A%E5%BC%BA%E7%BD%91%E6%9D%AF-%C2%B7-SecretVault-WP%EF%BC%9AHTTP-Connection-%E5%A4%B4%E7%BB%95%E8%BF%87-JWT-%E5%8F%8D%E4%BB%A3%E8%BA%AB%E4%BB%BD%E6%A0%A1%E9%AA%8C/cover.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-04-15</div><div class="info-item-2">第九届强网杯 · SecretVault WP：HTTP Connection 头绕过 JWT 反代身份校验</div></div><div class="info-2"><div class="info-item-1">一、yml 文件分析题目给了源码，并且给了 docker-compose.yml 文件，我们可以直接在本地起环境。 在运行容器之前，先看看 .yml 文件中的内容： services:  secretvault:    build:      context: .    container_name: secretvault    environment:      ICQ_FLAG: flag&#123;test&#125;    ports:      - &quot;5555:5555&quot;  得到的信息：  本地 flag 为：flag{test} 容器内部的 5555 端口映射到宿主机的 5555端口  二、登入界面分析1、简单浏览把容器跑起来： # 在 docker-compose.yml 文件所在目录运行docker compose up  由于端口仅映射了 5555 端口，那么直接浏览器访问： http://127.0.0.1:5555  看到的是一个登入界面，并且含注册功能：  CTRL + U 查看页面源码没有发现“注释信息泄露关键信息”的情况。 弱密码...</div></div></div></a><a class="pagination-related" href="/2026/04/01/%E7%AC%AC%E5%8D%81%E4%B9%9D%E5%B1%8A%E5%85%A8%E5%9B%BD%E5%A4%A7%E5%AD%A6%E7%94%9F%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E7%AB%9E%E8%B5%9B_babygame%EF%BC%9AGodot%EF%BC%9A%E6%B8%B8%E6%88%8F%E9%80%86%E5%90%91%E4%B8%8EAES%E8%BF%90%E8%A1%8C%E6%97%B6%E5%AF%86%E9%92%A5%E6%9B%BF%E6%8D%A2/" title="第十九届全国大学生信息安全竞赛_babygame：Godot：游戏逆向与AES运行时密钥替换"><img class="cover" src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E7%AC%AC%E5%8D%81%E4%B9%9D%E5%B1%8A%E5%85%A8%E5%9B%BD%E5%A4%A7%E5%AD%A6%E7%94%9F%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8%E7%AB%9E%E8%B5%9B_babygame%EF%BC%9AGodot%EF%BC%9A%E6%B8%B8%E6%88%8F%E9%80%86%E5%90%91%E4%B8%8EAES%E8%BF%90%E8%A1%8C%E6%97%B6%E5%AF%86%E9%92%A5%E6%9B%BF%E6%8D%A2/cover.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-04-01</div><div class="info-item-2">第十九届全国大学生信息安全竞赛_babygame：Godot：游戏逆向与AES运行时密钥替换</div></div><div class="info-2"><div class="info-item-1">一、分析附件题目给了一个 .exe 文件，对于未知二进制的第一步不是上 IDA，而是先识别它是什么。 010 Editor 搜索关键字符串是成本最低的侦察手段，丢到 010 中分析一波：   在查找“flag”字符串的时候，发现了文件 flag.gd、flag.scn 文件，上网搜索之后得知这是一个 Godot 引擎打包的游戏：  与该引擎相关的文件后缀：    后缀 是什么 编译前版本    project.godot 项目配置，文本 -   project.binary 项目配置，二进制 project.godot   .gd GDScript 源码 -   .gdc GDScript 字节码 .gd   .tscn 场景文件，文本 -   .scn 场景文件，二进制 .tscn   .tres 资源文件，文本 -   .res 资源文件，二进制 .tres   .remap 资源重定向索引 -   关于该引擎有专门的工具用于反编译，我这用的是”gdsdecomp”  项目地址：https://github.com/GDRETools/gdsdecomp  二、反编译将游戏文...</div></div></div></a><a class="pagination-related" href="/2026/04/01/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%BA%8C%EF%BC%9AWebLogic-CVE-2019-2725-%E5%88%B0%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7%E5%85%A8%E6%B5%81%E7%A8%8B/" title="红日靶场二：WebLogic CVE-2019-2725 到域控沦陷全流程"><img class="cover" src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%BA%8C%EF%BC%9AWebLogic-CVE-2019-2725-%E5%88%B0%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7%E5%85%A8%E6%B5%81%E7%A8%8B/cover.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-04-01</div><div class="info-item-2">红日靶场二：WebLogic CVE-2019-2725 到域控沦陷全流程</div></div><div class="info-2"><div class="info-item-1">一、靶场信息 相关注意事项：   二、信息搜集1、TCP 端口扫描 + 指纹识别 + 操作系统识别工具：rustscan + nmap nmap 带上 -Pn 参数，表示不进行主机发现，这是为了避免主机发现失败导致的指纹探测失败。 因为 nmap 的默认扫描逻辑是这样的： 主机存活探测（ICMP ping / TCP ping）        ↓    没有响应？        ↓认为主机已下线 → 直接跳过，不扫端口  问题在于，很多主机（尤其是 Windows、有防火墙的服务器）会屏蔽 ICMP，但端口服务完全正常运行。Nmap 误判主机离线，导致你什么都扫不到。 命令： sudo rustscan -a 192.168.111.80 -r 1-65535 -- -sV -O -Pn -n  输出（由于输出很长，只是截取了关键的部分）： PORT      STATE SERVICE        REASON         VERSION80/tcp    open  http           syn-ack ttl 63 Microsoft IIS httpd 7....</div></div></div></a></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/author.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">谁把我灯关了</div><div class="author-info-description">??????????</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">9</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">82</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">7</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/beini-faxianl"><i class="fab fa-github"></i><span>Visit GitHub</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/beini-faxianl" target="_blank" title="Github"><i class="fab fa-github" style="color: #24292e;"></i></a><a class="social-icon" href="https://blog.csdn.net/2301_76794844?type=blog" target="_blank" title="CSDN"><i class="fa fa-book-open"></i></a><a class="social-icon" href="https://www.cnblogs.com/youdiscovered1t" target="_blank" title="博客园"><i class="fa fa-pen-nib"></i></a><a class="social-icon" href="mailto:1436319009@qq.com" target="_blank" title="Email"><i class="fas fa-envelope-open-text"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">CTF / Security / Notes / Life</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E9%A2%98%E7%9B%AE%E4%BF%A1%E6%81%AF"><span class="toc-number">1.</span> <span class="toc-text">一、题目信息</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E4%BF%A1%E6%81%AF%E6%90%9C%E9%9B%86"><span class="toc-number">2.</span> <span class="toc-text">二、信息搜集</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E9%AA%8C%E8%AF%81-FTP-%E5%8C%BF%E5%90%8D%E7%99%BB%E5%85%A5"><span class="toc-number">3.</span> <span class="toc-text">三、验证 FTP 匿名登入</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%8180-%E7%AB%AF%E5%8F%A3%E7%AA%81%E7%A0%B4"><span class="toc-number">4.</span> <span class="toc-text">四、80 端口突破</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1%E3%80%81%E5%8A%9F%E8%83%BD%E4%B8%80%E8%A7%88"><span class="toc-number">4.1.</span> <span class="toc-text">1、功能一览</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2%E3%80%81IDOR"><span class="toc-number">4.2.</span> <span class="toc-text">2、IDOR</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E6%B5%81%E9%87%8F%E5%88%86%E6%9E%90"><span class="toc-number">5.</span> <span class="toc-text">五、流量分析</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81ssh-%E7%99%BB%E5%85%A5"><span class="toc-number">6.</span> <span class="toc-text">六、ssh 登入</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E6%8F%90%E6%9D%83"><span class="toc-number">7.</span> <span class="toc-text">七、提权</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2026/04/23/HackTheBox-Cap-%E9%9D%B6%E6%9C%BA%EF%BC%9A%E4%BB%8E-IDOR-%E5%88%B0-PCAP-%E5%87%AD%E6%8D%AE%E6%8F%90%E5%8F%96%E5%86%8D%E5%88%B0-Capabilities-%E6%8F%90%E6%9D%83/" title="HackTheBox Cap 靶机：从 IDOR 到 PCAP 凭据提取再到 Capabilities 提权"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/HackTheBox-Cap-%E9%9D%B6%E6%9C%BA%EF%BC%9A%E4%BB%8E-IDOR-%E5%88%B0-PCAP-%E5%87%AD%E6%8D%AE%E6%8F%90%E5%8F%96%E5%86%8D%E5%88%B0-Capabilities-%E6%8F%90%E6%9D%83/cover.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="HackTheBox Cap 靶机：从 IDOR 到 PCAP 凭据提取再到 Capabilities 提权"/></a><div class="content"><a class="title" href="/2026/04/23/HackTheBox-Cap-%E9%9D%B6%E6%9C%BA%EF%BC%9A%E4%BB%8E-IDOR-%E5%88%B0-PCAP-%E5%87%AD%E6%8D%AE%E6%8F%90%E5%8F%96%E5%86%8D%E5%88%B0-Capabilities-%E6%8F%90%E6%9D%83/" title="HackTheBox Cap 靶机：从 IDOR 到 PCAP 凭据提取再到 Capabilities 提权">HackTheBox Cap 靶机：从 IDOR 到 PCAP 凭据提取再到 Capabilities 提权</a><time datetime="2026-04-23T03:00:00.000Z" title="发表于 2026-04-23 11:00:00">2026-04-23</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/04/15/%E7%AC%AC%E4%B9%9D%E5%B1%8A%E5%BC%BA%E7%BD%91%E6%9D%AF-%C2%B7-SecretVault-WP%EF%BC%9AHTTP-Connection-%E5%A4%B4%E7%BB%95%E8%BF%87-JWT-%E5%8F%8D%E4%BB%A3%E8%BA%AB%E4%BB%BD%E6%A0%A1%E9%AA%8C/" title="第九届强网杯 · SecretVault WP：HTTP Connection 头绕过 JWT 反代身份校验"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E7%AC%AC%E4%B9%9D%E5%B1%8A%E5%BC%BA%E7%BD%91%E6%9D%AF-%C2%B7-SecretVault-WP%EF%BC%9AHTTP-Connection-%E5%A4%B4%E7%BB%95%E8%BF%87-JWT-%E5%8F%8D%E4%BB%A3%E8%BA%AB%E4%BB%BD%E6%A0%A1%E9%AA%8C/cover.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="第九届强网杯 · SecretVault WP：HTTP Connection 头绕过 JWT 反代身份校验"/></a><div class="content"><a class="title" href="/2026/04/15/%E7%AC%AC%E4%B9%9D%E5%B1%8A%E5%BC%BA%E7%BD%91%E6%9D%AF-%C2%B7-SecretVault-WP%EF%BC%9AHTTP-Connection-%E5%A4%B4%E7%BB%95%E8%BF%87-JWT-%E5%8F%8D%E4%BB%A3%E8%BA%AB%E4%BB%BD%E6%A0%A1%E9%AA%8C/" title="第九届强网杯 · SecretVault WP：HTTP Connection 头绕过 JWT 反代身份校验">第九届强网杯 · SecretVault WP：HTTP Connection 头绕过 JWT 反代身份校验</a><time datetime="2026-04-15T06:00:00.000Z" title="发表于 2026-04-15 14:00:00">2026-04-15</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/04/11/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%B8%83%EF%BC%9A%E4%BB%8E%E5%A4%96%E7%BD%91%E5%85%A5%E5%8F%A3%E3%80%81%E5%AE%B9%E5%99%A8%E9%80%83%E9%80%B8%E5%88%B0-AD-%E6%8E%A5%E7%AE%A1%E7%9A%84%E5%AE%8C%E6%95%B4%E5%88%A9%E7%94%A8%E9%93%BE%E5%A4%8D%E7%9B%98/" title="红日靶场七：从外网入口、容器逃逸到 AD 接管的完整利用链复盘"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%B8%83%EF%BC%9A%E4%BB%8E%E5%A4%96%E7%BD%91%E5%85%A5%E5%8F%A3%E3%80%81%E5%AE%B9%E5%99%A8%E9%80%83%E9%80%B8%E5%88%B0-AD-%E6%8E%A5%E7%AE%A1%E7%9A%84%E5%AE%8C%E6%95%B4%E5%88%A9%E7%94%A8%E9%93%BE%E5%A4%8D%E7%9B%98/cover.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="红日靶场七：从外网入口、容器逃逸到 AD 接管的完整利用链复盘"/></a><div class="content"><a class="title" href="/2026/04/11/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%B8%83%EF%BC%9A%E4%BB%8E%E5%A4%96%E7%BD%91%E5%85%A5%E5%8F%A3%E3%80%81%E5%AE%B9%E5%99%A8%E9%80%83%E9%80%B8%E5%88%B0-AD-%E6%8E%A5%E7%AE%A1%E7%9A%84%E5%AE%8C%E6%95%B4%E5%88%A9%E7%94%A8%E9%93%BE%E5%A4%8D%E7%9B%98/" title="红日靶场七：从外网入口、容器逃逸到 AD 接管的完整利用链复盘">红日靶场七：从外网入口、容器逃逸到 AD 接管的完整利用链复盘</a><time datetime="2026-04-11T12:00:00.000Z" title="发表于 2026-04-11 20:00:00">2026-04-11</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/04/09/%E6%98%A5%E7%A7%8B%E4%BA%91%E5%A2%83-Initial-%E9%9D%B6%E5%9C%BA-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E7%BD%91%E6%A8%AA%E5%90%91-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/" title="春秋云境 Initial 靶场 WP：ThinkPHP RCE → 内网横向 → 域控沦陷"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E6%98%A5%E7%A7%8B%E4%BA%91%E5%A2%83-Initial-%E9%9D%B6%E5%9C%BA-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E7%BD%91%E6%A8%AA%E5%90%91-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/3.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="春秋云境 Initial 靶场 WP：ThinkPHP RCE → 内网横向 → 域控沦陷"/></a><div class="content"><a class="title" href="/2026/04/09/%E6%98%A5%E7%A7%8B%E4%BA%91%E5%A2%83-Initial-%E9%9D%B6%E5%9C%BA-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E7%BD%91%E6%A8%AA%E5%90%91-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/" title="春秋云境 Initial 靶场 WP：ThinkPHP RCE → 内网横向 → 域控沦陷">春秋云境 Initial 靶场 WP：ThinkPHP RCE → 内网横向 → 域控沦陷</a><time datetime="2026-04-09T10:50:00.000Z" title="发表于 2026-04-09 18:50:00">2026-04-09</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/04/04/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%BA%94-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E6%A0%B8%E6%8F%90%E6%9D%83-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/" title="红日靶场五 WP：ThinkPHP RCE → 内核提权 → 域控沦陷"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%BA%94-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E6%A0%B8%E6%8F%90%E6%9D%83-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/cover.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="红日靶场五 WP：ThinkPHP RCE → 内核提权 → 域控沦陷"/></a><div class="content"><a class="title" href="/2026/04/04/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%BA%94-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E6%A0%B8%E6%8F%90%E6%9D%83-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/" title="红日靶场五 WP：ThinkPHP RCE → 内核提权 → 域控沦陷">红日靶场五 WP：ThinkPHP RCE → 内核提权 → 域控沦陷</a><time datetime="2026-04-04T12:50:00.000Z" title="发表于 2026-04-04 20:50:00">2026-04-04</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By 谁把我灯关了</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 8.0.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.1</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.5.1"></script><script src="/js/main.js?v=5.5.1"></script><div class="js-pjax"><script>(() => {
+  const loadMathjax = () => {
+    if (!window.MathJax) {
+      window.MathJax = {
+        loader: {
+          load: [
+            // Four font extension packages (optional)
+            //- '[tex]/bbm',
+            //- '[tex]/bboldx',
+            //- '[tex]/dsfont',
+            '[tex]/mhchem'
+          ],
+          paths: {
+            'mathjax-newcm': '[mathjax]/../@mathjax/mathjax-newcm-font',
+
+            //- // Four font extension packages (optional)
+            //- 'mathjax-bbm-extension': '[mathjax]/../@mathjax/mathjax-bbm-font-extension',
+            //- 'mathjax-bboldx-extension': '[mathjax]/../@mathjax/mathjax-bboldx-font-extension',
+            //- 'mathjax-dsfont-extension': '[mathjax]/../@mathjax/mathjax-dsfont-font-extension',
+            'mathjax-mhchem-extension': '[mathjax]/../@mathjax/mathjax-mhchem-font-extension'
+          }
+        },
+        output: {
+          font: 'mathjax-newcm',
+        },
+        tex: {
+          inlineMath: [['$', '$'], ['\\(', '\\)']],
+          tags: 'none',
+          packages: {
+            '[+]': [
+              'mhchem'
+            ]
+          }
+        },
+        chtml: {
+          scale: 1.1
+        },
+        options: {
+          enableMenu: true,
+          menuOptions: {
+            settings: {
+              enrich: false  // Turn off Braille and voice narration text automatic generation
+            }
+          },
+          renderActions: {
+            findScript: [10, doc => {
+              for (const node of document.querySelectorAll('script[type^="math/tex"]')) {
+                const display = !!node.type.match(/; *mode=display/)
+                const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display)
+                const text = document.createTextNode('')
+                node.parentNode.replaceChild(text, node)
+                math.start = {node: text, delim: '', n: 0}
+                math.end = {node: text, delim: '', n: 0}
+                doc.math.push(math)
+              }
+            }, '']
+          }
+        }
+      }
+
+      const script = document.createElement('script')
+      script.src = 'https://cdn.jsdelivr.net/npm/mathjax@4.0.0/tex-mml-chtml.min.js'
+      script.id = 'MathJax-script'
+      script.async = true
+      document.head.appendChild(script)
+    } else {
+      MathJax.startup.document.state(0)
+      MathJax.texReset()
+      MathJax.typesetPromise()
+    }
+  }
+
+  btf.addGlobalFn('encrypt', loadMathjax, 'mathjax')
+  window.pjax ? loadMathjax() : window.addEventListener('load', loadMathjax)
+})()</script></div><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div>
+        <style>
+            [bg-lazy] {
+                background-image: none !important;
+                background-color: #eee !important;
+            }
+        </style>
+        <script>
+            window.imageLazyLoadSetting = {
+                isSPA: false,
+                preloadRatio: 1,
+                processImages: null,
+            };
+        </script><script>window.addEventListener("load",function(){var t=/\.(gif|jpg|jpeg|tiff|png)$/i,r=/^data:image\/[a-z\d\-\.\+]+;base64,/;Array.prototype.slice.call(document.querySelectorAll("img[data-original]")).forEach(function(a){var e=a.parentNode;"A"===e.tagName&&(t.test(e.href)||r.test(e.href))&&(e.href=a.dataset.original)})});</script><script>(r=>{r.imageLazyLoadSetting.processImages=t;var a=r.imageLazyLoadSetting.isSPA,o=r.imageLazyLoadSetting.preloadRatio||1,d=i();function i(){var t=Array.prototype.slice.call(document.querySelectorAll("img[data-original]")),e=Array.prototype.slice.call(document.querySelectorAll("[bg-lazy]"));return t.concat(e)}function t(t){(a||t)&&(d=i());for(var e,n=0;n<d.length;n++)0<=(e=(e=d[n]).getBoundingClientRect()).bottom&&0<=e.left&&e.top<=(r.innerHeight*o||document.documentElement.clientHeight*o)&&(()=>{var t,e,a,o,i=d[n];e=function(){d=d.filter(function(t){return i!==t}),r.imageLazyLoadSetting.onImageLoaded&&r.imageLazyLoadSetting.onImageLoaded(i)},(t=i).dataset.loaded||(t.hasAttribute("bg-lazy")?(t.removeAttribute("bg-lazy"),e&&e()):(a=new Image,o=t.getAttribute("data-original"),a.onload=function(){t.src=o,t.removeAttribute("data-original"),t.setAttribute("data-loaded",!0),e&&e()},a.onerror=function(){t.removeAttribute("data-original"),t.setAttribute("data-loaded",!1),t.src=o},t.src!==o&&(a.src=o)))})()}function e(){clearTimeout(t.tId),t.tId=setTimeout(t,500)}t(),document.addEventListener("scroll",e),r.addEventListener("resize",e),r.addEventListener("orientationchange",e)})(this);</script></body></html>
