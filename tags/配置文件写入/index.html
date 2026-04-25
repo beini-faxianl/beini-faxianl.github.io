@@ -1,0 +1,185 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>标签: 配置文件写入 | A Secret Site</title><meta name="author" content="谁把我灯关了"><meta name="copyright" content="谁把我灯关了"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="明于世，严于己，宽于人。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="A Secret Site">
+<meta property="og:url" content="https://beini-faxianl.github.io/tags/%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E5%86%99%E5%85%A5/index.html">
+<meta property="og:site_name" content="A Secret Site">
+<meta property="og:description" content="明于世，严于己，宽于人。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://beini-faxianl.github.io/img/author.png">
+<meta property="article:author" content="谁把我灯关了">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://beini-faxianl.github.io/img/author.png"><script type="application/ld+json"></script><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://beini-faxianl.github.io/tags/%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E5%86%99%E5%85%A5/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=5.5.1"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":true},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.12.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '标签: 配置文件写入',
+  isHighlightShrink: false,
+  isToc: false,
+  pageType: 'tag'
+}</script><style>@import url("/css/custom.css?v=20260401-2");</style><script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/gh/stevenjoezhang/live2d-widget@0.9.0/autoload.js"></script><!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+<!-- hexo injector head_end end --><meta name="generator" content="Hexo 8.0.0"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/author.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">10</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">93</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">8</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fa fa-graduation-cap"></i><span> 博文</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/categories/"><i class="fa-fw fa fa-archive"></i><span> 分类</span></a></li><li><a class="site-page child" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="/archives/"><i class="fa-fw fa fa-folder-open"></i><span> 归档</span></a></li></ul></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-list"></i><span> 生活</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/shuoshuo/"><i class="fa-fw fas fa-coffee"></i><span> 分享</span></a></li><li><a class="site-page child" href="/photos/"><i class="fa-fw fa fa-camera-retro"></i><span> 相册</span></a></li><li><a class="site-page child" href="/music/"><i class="fa-fw fa fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 影视</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/links/"><i class="fa-fw fa fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/comment/"><i class="fa-fw fa fa-paper-plane"></i><span> 留言板</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于笔者</span></a></div></div></div></div><div class="page" id="body-wrap"><header class="not-home-page fixed" id="page-header" style="background-image: url(/img/top.png);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">A Secret Site</span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fa fa-graduation-cap"></i><span> 博文</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/categories/"><i class="fa-fw fa fa-archive"></i><span> 分类</span></a></li><li><a class="site-page child" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="/archives/"><i class="fa-fw fa fa-folder-open"></i><span> 归档</span></a></li></ul></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-list"></i><span> 生活</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/shuoshuo/"><i class="fa-fw fas fa-coffee"></i><span> 分享</span></a></li><li><a class="site-page child" href="/photos/"><i class="fa-fw fa fa-camera-retro"></i><span> 相册</span></a></li><li><a class="site-page child" href="/music/"><i class="fa-fw fa fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 影视</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/links/"><i class="fa-fw fa fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/comment/"><i class="fa-fw fa fa-paper-plane"></i><span> 留言板</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于笔者</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="page-site-info"><h1 id="site-title">配置文件写入</h1></div></header><main class="layout" id="content-inner"><div id="tag"><div class="article-sort-title">标签 - 配置文件写入</div><div class="article-sort"><div class="article-sort-item year">2026</div><div class="article-sort-item"><a class="article-sort-item-img" href="/2026/04/25/CVE-2023-1773-%E6%B7%B1%E5%BA%A6%E5%A4%8D%E7%8E%B0%EF%BC%9A%E4%BB%8E-REIM-%E5%9B%9E%E8%B0%83%E6%9C%AA%E6%8E%88%E6%9D%83%E5%88%B0%E4%BF%A1%E5%91%BC-OA-%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E4%BB%A3%E7%A0%81%E6%B3%A8%E5%85%A5/" title="CVE-2023-1773 深度复现：从 REIM 回调未授权到信呼 OA 配置文件代码注入"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/CVE-2023-1773-%E6%B7%B1%E5%BA%A6%E5%A4%8D%E7%8E%B0%EF%BC%9A%E4%BB%8E-REIM-%E5%9B%9E%E8%B0%83%E6%9C%AA%E6%8E%88%E6%9D%83%E5%88%B0%E4%BF%A1%E5%91%BC-OA-%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E4%BB%A3%E7%A0%81%E6%B3%A8%E5%85%A5/cover.jpg" alt="CVE-2023-1773 深度复现：从 REIM 回调未授权到信呼 OA 配置文件代码注入" onerror="this.onerror=null;this.src='/img/404.jpg'"></a><div class="article-sort-item-info"><div class="article-sort-item-time"><i class="far fa-calendar-alt"></i><time class="post-meta-date-created" datetime="2026-04-25T09:00:00.000Z" title="发表于 2026-04-25 17:00:00">2026-04-25</time></div><a class="article-sort-item-title" href="/2026/04/25/CVE-2023-1773-%E6%B7%B1%E5%BA%A6%E5%A4%8D%E7%8E%B0%EF%BC%9A%E4%BB%8E-REIM-%E5%9B%9E%E8%B0%83%E6%9C%AA%E6%8E%88%E6%9D%83%E5%88%B0%E4%BF%A1%E5%91%BC-OA-%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E4%BB%A3%E7%A0%81%E6%B3%A8%E5%85%A5/" title="CVE-2023-1773 深度复现：从 REIM 回调未授权到信呼 OA 配置文件代码注入">CVE-2023-1773 深度复现：从 REIM 回调未授权到信呼 OA 配置文件代码注入</a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/author.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">谁把我灯关了</div><div class="author-info-description">??????????</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">10</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">93</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">8</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/beini-faxianl"><i class="fab fa-github"></i><span>Visit GitHub</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/beini-faxianl" target="_blank" title="Github"><i class="fab fa-github" style="color: #24292e;"></i></a><a class="social-icon" href="https://blog.csdn.net/2301_76794844?type=blog" target="_blank" title="CSDN"><i class="fa fa-book-open"></i></a><a class="social-icon" href="https://www.cnblogs.com/youdiscovered1t" target="_blank" title="博客园"><i class="fa fa-pen-nib"></i></a><a class="social-icon" href="mailto:1436319009@qq.com" target="_blank" title="Email"><i class="fas fa-envelope-open-text"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">CTF / Security / Notes / Life</div></div><div class="sticky_layout"><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2026/04/25/CVE-2023-1773-%E6%B7%B1%E5%BA%A6%E5%A4%8D%E7%8E%B0%EF%BC%9A%E4%BB%8E-REIM-%E5%9B%9E%E8%B0%83%E6%9C%AA%E6%8E%88%E6%9D%83%E5%88%B0%E4%BF%A1%E5%91%BC-OA-%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E4%BB%A3%E7%A0%81%E6%B3%A8%E5%85%A5/" title="CVE-2023-1773 深度复现：从 REIM 回调未授权到信呼 OA 配置文件代码注入"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/CVE-2023-1773-%E6%B7%B1%E5%BA%A6%E5%A4%8D%E7%8E%B0%EF%BC%9A%E4%BB%8E-REIM-%E5%9B%9E%E8%B0%83%E6%9C%AA%E6%8E%88%E6%9D%83%E5%88%B0%E4%BF%A1%E5%91%BC-OA-%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E4%BB%A3%E7%A0%81%E6%B3%A8%E5%85%A5/cover.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="CVE-2023-1773 深度复现：从 REIM 回调未授权到信呼 OA 配置文件代码注入"/></a><div class="content"><a class="title" href="/2026/04/25/CVE-2023-1773-%E6%B7%B1%E5%BA%A6%E5%A4%8D%E7%8E%B0%EF%BC%9A%E4%BB%8E-REIM-%E5%9B%9E%E8%B0%83%E6%9C%AA%E6%8E%88%E6%9D%83%E5%88%B0%E4%BF%A1%E5%91%BC-OA-%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E4%BB%A3%E7%A0%81%E6%B3%A8%E5%85%A5/" title="CVE-2023-1773 深度复现：从 REIM 回调未授权到信呼 OA 配置文件代码注入">CVE-2023-1773 深度复现：从 REIM 回调未授权到信呼 OA 配置文件代码注入</a><time datetime="2026-04-25T09:00:00.000Z" title="发表于 2026-04-25 17:00:00">2026-04-25</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/04/23/HackTheBox-Cap-%E9%9D%B6%E6%9C%BA%EF%BC%9A%E4%BB%8E-IDOR-%E5%88%B0-PCAP-%E5%87%AD%E6%8D%AE%E6%8F%90%E5%8F%96%E5%86%8D%E5%88%B0-Capabilities-%E6%8F%90%E6%9D%83/" title="HackTheBox Cap 靶机：从 IDOR 到 PCAP 凭据提取再到 Capabilities 提权"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/HackTheBox-Cap-%E9%9D%B6%E6%9C%BA%EF%BC%9A%E4%BB%8E-IDOR-%E5%88%B0-PCAP-%E5%87%AD%E6%8D%AE%E6%8F%90%E5%8F%96%E5%86%8D%E5%88%B0-Capabilities-%E6%8F%90%E6%9D%83/cover.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="HackTheBox Cap 靶机：从 IDOR 到 PCAP 凭据提取再到 Capabilities 提权"/></a><div class="content"><a class="title" href="/2026/04/23/HackTheBox-Cap-%E9%9D%B6%E6%9C%BA%EF%BC%9A%E4%BB%8E-IDOR-%E5%88%B0-PCAP-%E5%87%AD%E6%8D%AE%E6%8F%90%E5%8F%96%E5%86%8D%E5%88%B0-Capabilities-%E6%8F%90%E6%9D%83/" title="HackTheBox Cap 靶机：从 IDOR 到 PCAP 凭据提取再到 Capabilities 提权">HackTheBox Cap 靶机：从 IDOR 到 PCAP 凭据提取再到 Capabilities 提权</a><time datetime="2026-04-23T03:00:00.000Z" title="发表于 2026-04-23 11:00:00">2026-04-23</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/04/15/%E7%AC%AC%E4%B9%9D%E5%B1%8A%E5%BC%BA%E7%BD%91%E6%9D%AF-%C2%B7-SecretVault-WP%EF%BC%9AHTTP-Connection-%E5%A4%B4%E7%BB%95%E8%BF%87-JWT-%E5%8F%8D%E4%BB%A3%E8%BA%AB%E4%BB%BD%E6%A0%A1%E9%AA%8C/" title="第九届强网杯 · SecretVault WP：HTTP Connection 头绕过 JWT 反代身份校验"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E7%AC%AC%E4%B9%9D%E5%B1%8A%E5%BC%BA%E7%BD%91%E6%9D%AF-%C2%B7-SecretVault-WP%EF%BC%9AHTTP-Connection-%E5%A4%B4%E7%BB%95%E8%BF%87-JWT-%E5%8F%8D%E4%BB%A3%E8%BA%AB%E4%BB%BD%E6%A0%A1%E9%AA%8C/cover.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="第九届强网杯 · SecretVault WP：HTTP Connection 头绕过 JWT 反代身份校验"/></a><div class="content"><a class="title" href="/2026/04/15/%E7%AC%AC%E4%B9%9D%E5%B1%8A%E5%BC%BA%E7%BD%91%E6%9D%AF-%C2%B7-SecretVault-WP%EF%BC%9AHTTP-Connection-%E5%A4%B4%E7%BB%95%E8%BF%87-JWT-%E5%8F%8D%E4%BB%A3%E8%BA%AB%E4%BB%BD%E6%A0%A1%E9%AA%8C/" title="第九届强网杯 · SecretVault WP：HTTP Connection 头绕过 JWT 反代身份校验">第九届强网杯 · SecretVault WP：HTTP Connection 头绕过 JWT 反代身份校验</a><time datetime="2026-04-15T06:00:00.000Z" title="发表于 2026-04-15 14:00:00">2026-04-15</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/04/11/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%B8%83%EF%BC%9A%E4%BB%8E%E5%A4%96%E7%BD%91%E5%85%A5%E5%8F%A3%E3%80%81%E5%AE%B9%E5%99%A8%E9%80%83%E9%80%B8%E5%88%B0-AD-%E6%8E%A5%E7%AE%A1%E7%9A%84%E5%AE%8C%E6%95%B4%E5%88%A9%E7%94%A8%E9%93%BE%E5%A4%8D%E7%9B%98/" title="红日靶场七：从外网入口、容器逃逸到 AD 接管的完整利用链复盘"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%B8%83%EF%BC%9A%E4%BB%8E%E5%A4%96%E7%BD%91%E5%85%A5%E5%8F%A3%E3%80%81%E5%AE%B9%E5%99%A8%E9%80%83%E9%80%B8%E5%88%B0-AD-%E6%8E%A5%E7%AE%A1%E7%9A%84%E5%AE%8C%E6%95%B4%E5%88%A9%E7%94%A8%E9%93%BE%E5%A4%8D%E7%9B%98/cover.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="红日靶场七：从外网入口、容器逃逸到 AD 接管的完整利用链复盘"/></a><div class="content"><a class="title" href="/2026/04/11/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%B8%83%EF%BC%9A%E4%BB%8E%E5%A4%96%E7%BD%91%E5%85%A5%E5%8F%A3%E3%80%81%E5%AE%B9%E5%99%A8%E9%80%83%E9%80%B8%E5%88%B0-AD-%E6%8E%A5%E7%AE%A1%E7%9A%84%E5%AE%8C%E6%95%B4%E5%88%A9%E7%94%A8%E9%93%BE%E5%A4%8D%E7%9B%98/" title="红日靶场七：从外网入口、容器逃逸到 AD 接管的完整利用链复盘">红日靶场七：从外网入口、容器逃逸到 AD 接管的完整利用链复盘</a><time datetime="2026-04-11T12:00:00.000Z" title="发表于 2026-04-11 20:00:00">2026-04-11</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/04/09/%E6%98%A5%E7%A7%8B%E4%BA%91%E5%A2%83-Initial-%E9%9D%B6%E5%9C%BA-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E7%BD%91%E6%A8%AA%E5%90%91-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/" title="春秋云境 Initial 靶场 WP：ThinkPHP RCE → 内网横向 → 域控沦陷"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E6%98%A5%E7%A7%8B%E4%BA%91%E5%A2%83-Initial-%E9%9D%B6%E5%9C%BA-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E7%BD%91%E6%A8%AA%E5%90%91-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/3.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="春秋云境 Initial 靶场 WP：ThinkPHP RCE → 内网横向 → 域控沦陷"/></a><div class="content"><a class="title" href="/2026/04/09/%E6%98%A5%E7%A7%8B%E4%BA%91%E5%A2%83-Initial-%E9%9D%B6%E5%9C%BA-WP%EF%BC%9AThinkPHP-RCE-%E2%86%92-%E5%86%85%E7%BD%91%E6%A8%AA%E5%90%91-%E2%86%92-%E5%9F%9F%E6%8E%A7%E6%B2%A6%E9%99%B7/" title="春秋云境 Initial 靶场 WP：ThinkPHP RCE → 内网横向 → 域控沦陷">春秋云境 Initial 靶场 WP：ThinkPHP RCE → 内网横向 → 域控沦陷</a><time datetime="2026-04-09T10:50:00.000Z" title="发表于 2026-04-09 18:50:00">2026-04-09</time></div></div></div></div><div class="card-widget card-categories"><div class="item-headline">
+            <i class="fas fa-folder-open"></i>
+            <span>分类</span>
+            
+          </div>
+          <ul class="card-category-list" id="aside-cat-list">
+            <li class="card-category-list-item "><a class="card-category-list-link" href="/categories/AWDP/"><span class="card-category-list-name">AWDP</span><span class="card-category-list-count">1</span></a><ul class="card-category-list child"><li class="card-category-list-item "><a class="card-category-list-link" href="/categories/AWDP/Web/"><span class="card-category-list-name">Web</span><span class="card-category-list-count">1</span></a></li></ul></li><li class="card-category-list-item "><a class="card-category-list-link" href="/categories/CTF/"><span class="card-category-list-name">CTF</span><span class="card-category-list-count">2</span></a><ul class="card-category-list child"><li class="card-category-list-item "><a class="card-category-list-link" href="/categories/CTF/Reverse/"><span class="card-category-list-name">Reverse</span><span class="card-category-list-count">1</span></a></li><li class="card-category-list-item "><a class="card-category-list-link" href="/categories/CTF/Web/"><span class="card-category-list-name">Web</span><span class="card-category-list-count">1</span></a></li></ul></li><li class="card-category-list-item "><a class="card-category-list-link" href="/categories/CVE/"><span class="card-category-list-name">CVE</span><span class="card-category-list-count">1</span></a></li><li class="card-category-list-item "><a class="card-category-list-link" href="/categories/%E9%9D%B6%E5%9C%BA/"><span class="card-category-list-name">靶场</span><span class="card-category-list-count">6</span></a><ul class="card-category-list child"><li class="card-category-list-item "><a class="card-category-list-link" href="/categories/%E9%9D%B6%E5%9C%BA/%E5%86%85%E7%BD%91%E9%9D%B6%E5%9C%BA/"><span class="card-category-list-name">内网靶场</span><span class="card-category-list-count">4</span></a></li></ul></li>
+          </ul></div><div class="card-widget card-tags"><div class="item-headline"><i class="fas fa-tags"></i><span>标签</span></div><div class="card-tag-cloud"><a href="/tags/Redis/" style="font-size: 1.1em; color: #999">Redis</a> <a href="/tags/Lateral-Movement/" style="font-size: 1.23em; color: #999ea6">Lateral Movement</a> <a href="/tags/Active-Directory/" style="font-size: 1.5em; color: #99a9bf">Active Directory</a> <a href="/tags/Go/" style="font-size: 1.1em; color: #999">Go</a> <a href="/tags/PHP%E6%BA%90%E7%A0%81%E5%AE%A1%E8%AE%A1/" style="font-size: 1.1em; color: #999">PHP源码审计</a> <a href="/tags/%E7%99%BD%E7%9B%92%E5%AE%A1%E8%AE%A1/" style="font-size: 1.1em; color: #999">白盒审计</a> <a href="/tags/Pivoting/" style="font-size: 1.1em; color: #999">Pivoting</a> <a href="/tags/360/" style="font-size: 1.1em; color: #999">360</a> <a href="/tags/%E4%BF%A1%E5%91%BCOA/" style="font-size: 1.23em; color: #999ea6">信呼OA</a> <a href="/tags/Web%E5%AE%89%E5%85%A8/" style="font-size: 1.1em; color: #999">Web安全</a> <a href="/tags/Linux-Capabilities/" style="font-size: 1.1em; color: #999">Linux Capabilities</a> <a href="/tags/%E5%86%85%E7%BD%91%E6%B8%97%E9%80%8F/" style="font-size: 1.23em; color: #999ea6">内网渗透</a> <a href="/tags/Red-Team/" style="font-size: 1.1em; color: #999">Red Team</a> <a href="/tags/%E5%AF%86%E7%A0%81%E5%A4%8D%E7%94%A8/" style="font-size: 1.1em; color: #999">密码复用</a> <a href="/tags/Web/" style="font-size: 1.1em; color: #999">Web</a> <a href="/tags/Metasploit/" style="font-size: 1.37em; color: #99a4b2">Metasploit</a> <a href="/tags/%E4%BB%A3%E7%90%86%E9%9A%A7%E9%81%93/" style="font-size: 1.1em; color: #999">代理隧道</a> <a href="/tags/Traffic-Forensics/" style="font-size: 1.1em; color: #999">Traffic Forensics</a> <a href="/tags/%E5%87%AD%E8%AF%81%E6%8A%93%E5%8F%96/" style="font-size: 1.1em; color: #999">凭证抓取</a> <a href="/tags/ZIP/" style="font-size: 1.1em; color: #999">ZIP</a> <a href="/tags/CVE-2021-3129/" style="font-size: 1.1em; color: #999">CVE-2021-3129</a> <a href="/tags/Laravel/" style="font-size: 1.1em; color: #999">Laravel</a> <a href="/tags/REIM/" style="font-size: 1.1em; color: #999">REIM</a> <a href="/tags/%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E5%86%99%E5%85%A5/" style="font-size: 1.1em; color: #999">配置文件写入</a> <a href="/tags/Authentication-Bypass/" style="font-size: 1.1em; color: #999">Authentication Bypass</a> <a href="/tags/DCSync/" style="font-size: 1.1em; color: #999">DCSync</a> <a href="/tags/PHP%E5%AE%89%E5%85%A8/" style="font-size: 1.1em; color: #999">PHP安全</a> <a href="/tags/QiangWangCup/" style="font-size: 1.1em; color: #999">QiangWangCup</a> <a href="/tags/CVE-2019-2725/" style="font-size: 1.1em; color: #999">CVE-2019-2725</a> <a href="/tags/SQL%E6%B3%A8%E5%85%A5/" style="font-size: 1.1em; color: #999">SQL注入</a> <a href="/tags/EternalBlue/" style="font-size: 1.1em; color: #999">EternalBlue</a> <a href="/tags/%E9%9D%B6%E5%9C%BA/" style="font-size: 1.1em; color: #999">靶场</a> <a href="/tags/Docker-Escape/" style="font-size: 1.1em; color: #999">Docker Escape</a> <a href="/tags/WMIExec/" style="font-size: 1.1em; color: #999">WMIExec</a> <a href="/tags/ThinkPHP/" style="font-size: 1.23em; color: #999ea6">ThinkPHP</a> <a href="/tags/Reverse/" style="font-size: 1.1em; color: #999">Reverse</a> <a href="/tags/%E6%8F%90%E6%9D%83/" style="font-size: 1.1em; color: #999">提权</a> <a href="/tags/pypykatz/" style="font-size: 1.1em; color: #999">pypykatz</a> <a href="/tags/Hop-by-Hop/" style="font-size: 1.1em; color: #999">Hop-by-Hop</a> <a href="/tags/SSH-Key-Injection/" style="font-size: 1.1em; color: #999">SSH Key Injection</a></div></div><div class="card-widget card-archives">
+    <div class="item-headline">
+      <i class="fas fa-archive"></i>
+      <span>归档</span>
+      
+    </div>
+  
+    <ul class="card-archive-list">
+      
+        <li class="card-archive-list-item">
+          <a class="card-archive-list-link" href="/archives/2026/04/">
+            <span class="card-archive-list-date">
+              四月 2026
+            </span>
+            <span class="card-archive-list-count">10</span>
+          </a>
+        </li>
+      
+    </ul>
+  </div><div class="card-widget card-webinfo"><div class="item-headline"><i class="fas fa-chart-line"></i><span>网站信息</span></div><div class="webinfo"><div class="webinfo-item"><div class="item-name">文章数目 :</div><div class="item-count">10</div></div><div class="webinfo-item"><div class="item-name">本站总字数 :</div><div class="item-count">52.1k</div></div><div class="webinfo-item"><div class="item-name">本站访客数 :</div><div class="item-count" id="busuanzi_value_site_uv"><i class="fa-solid fa-spinner fa-spin"></i></div></div><div class="webinfo-item"><div class="item-name">本站总浏览量 :</div><div class="item-count" id="busuanzi_value_site_pv"><i class="fa-solid fa-spinner fa-spin"></i></div></div><div class="webinfo-item"><div class="item-name">最后更新时间 :</div><div class="item-count" id="last-push-date" data-lastPushDate="2026-04-25T09:29:24.240Z"><i class="fa-solid fa-spinner fa-spin"></i></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By 谁把我灯关了</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 8.0.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.1</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.5.1"></script><script src="/js/main.js?v=5.5.1"></script><div class="js-pjax"></div><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div>
+        <style>
+            [bg-lazy] {
+                background-image: none !important;
+                background-color: #eee !important;
+            }
+        </style>
+        <script>
+            window.imageLazyLoadSetting = {
+                isSPA: false,
+                preloadRatio: 1,
+                processImages: null,
+            };
+        </script><script>window.addEventListener("load",function(){var t=/\.(gif|jpg|jpeg|tiff|png)$/i,r=/^data:image\/[a-z\d\-\.\+]+;base64,/;Array.prototype.slice.call(document.querySelectorAll("img[data-original]")).forEach(function(a){var e=a.parentNode;"A"===e.tagName&&(t.test(e.href)||r.test(e.href))&&(e.href=a.dataset.original)})});</script><script>(r=>{r.imageLazyLoadSetting.processImages=t;var a=r.imageLazyLoadSetting.isSPA,o=r.imageLazyLoadSetting.preloadRatio||1,d=i();function i(){var t=Array.prototype.slice.call(document.querySelectorAll("img[data-original]")),e=Array.prototype.slice.call(document.querySelectorAll("[bg-lazy]"));return t.concat(e)}function t(t){(a||t)&&(d=i());for(var e,n=0;n<d.length;n++)0<=(e=(e=d[n]).getBoundingClientRect()).bottom&&0<=e.left&&e.top<=(r.innerHeight*o||document.documentElement.clientHeight*o)&&(()=>{var t,e,a,o,i=d[n];e=function(){d=d.filter(function(t){return i!==t}),r.imageLazyLoadSetting.onImageLoaded&&r.imageLazyLoadSetting.onImageLoaded(i)},(t=i).dataset.loaded||(t.hasAttribute("bg-lazy")?(t.removeAttribute("bg-lazy"),e&&e()):(a=new Image,o=t.getAttribute("data-original"),a.onload=function(){t.src=o,t.removeAttribute("data-original"),t.setAttribute("data-loaded",!0),e&&e()},a.onerror=function(){t.removeAttribute("data-original"),t.setAttribute("data-loaded",!1),t.src=o},t.src!==o&&(a.src=o)))})()}function e(){clearTimeout(t.tId),t.tId=setTimeout(t,500)}t(),document.addEventListener("scroll",e),r.addEventListener("resize",e),r.addEventListener("orientationchange",e)})(this);</script></body></html>
