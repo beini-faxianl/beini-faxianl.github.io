@@ -8,16 +8,10 @@
 
 我相信**写下来**是最好的思考方式：模糊的念头被压成清晰的句子，才算真正属于自己。这个网站的第一位读者，永远是半年后回来翻看的我自己。
 
-## 这座书斋的构造
-
-- 每篇笔记是一个普通的 Markdown 文件，存放在 `notes/`；
-- 代码片段住在 `snippets/`，网站与工具收藏在 `collections/`；
-- 没有数据库、没有框架，一个 `build.py` 负责编目，静态托管即可上线；
-- 夜间是星渊，白天是拿铁——右上角可以切换。
-
 ## 找到我
 
-- GitHub：[github.com/yourname](https://github.com/yourname)
-- 邮箱：`hello@example.com`
+- GitHub：[beini-faxianl](https://github.com/beini-faxianl)
+- 先知社区：[谁把我灯关了](https://xz.aliyun.com/users/176267/news)
+- 博客园：[YouDiscovered1t](https://www.cnblogs.com/youdiscovered1t)
 
 欢迎来信交流，也欢迎拿起右下角那支朱笔，在我的文章上圈圈划划。
