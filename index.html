@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>拾叶集 · 个人书斋</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<!-- 开屏 · 一图一句 -->
+<div id="splash" role="dialog" aria-label="开屏">
+  <div class="sp-bg scene-xinghan"></div>
+  <div class="sp-img"></div>
+  <div class="sp-vignette"></div>
+  <div class="sp-center">
+    <div class="sp-quote" id="spQuote"></div>
+    <div class="sp-by" id="spBy"></div>
+    <div><button class="sp-enter" id="spEnter">步 入 书 斋</button></div>
+  </div>
+  <div class="sp-seal">拾叶集</div>
+  <div class="sp-hint">每 次 到 访 · 皆 有 新 句</div>
+</div>
+
+<!-- 氛围层 -->
+<div class="blobs" aria-hidden="true"></div>
+<div class="nebula" aria-hidden="true"></div>
+<canvas id="stars" aria-hidden="true"></canvas>
+<canvas id="leaves" aria-hidden="true"></canvas>
+
+<!-- ===================== 顶栏 ===================== -->
+<header class="topbar">
+  <div class="brand" id="brandHome" title="回到首页">
+    <h1>拾叶集</h1><span class="seal">书斋</span>
+  </div>
+  <nav class="menu" id="mainNav">
+    <a href="#/home" data-route="home">首页</a>
+    <a href="#/code" data-route="code">代码集</a>
+    <a href="#/prompts" data-route="prompts">提示词</a>
+    <a href="#/term" data-route="term">终端</a>
+    <a href="#/sites" data-route="sites">网站收藏</a>
+    <a href="#/tools" data-route="tools">工具箱</a>
+    <a href="#/about" data-route="about">关于</a>
+  </nav>
+  <div class="spacer"></div>
+  <button class="icon-btn" id="themeBtn" aria-label="切换主题"></button>
+</header>
+
+<!-- ===================== 页面 ===================== -->
+<div id="page">
+  <main class="view" id="app">
+    <div class="empty-result">书页装订中…</div>
+  </main>
+  <canvas id="inkLayer" aria-hidden="true"></canvas>
+</div>
+<footer class="site-foot">拾 叶 集 · 摘星与拾叶</footer>
+
+<!-- ===================== 画笔工具 ===================== -->
+<div class="pen-panel" id="penPanel" role="toolbar" aria-label="批注画笔">
+  <div class="group" style="flex-wrap:wrap; width:148px;">
+    <span class="group-label">笔 色</span>
+    <button class="swatch on" data-color="#e64545" style="background:#e64545" title="朱砂" aria-label="朱砂红"></button>
+    <button class="swatch" data-color="#5d7df5" style="background:#5d7df5" title="星蓝" aria-label="星蓝"></button>
+    <button class="swatch" data-color="#2fae62" style="background:#2fae62" title="竹绿" aria-label="竹绿"></button>
+    <button class="swatch" data-color="#b56cf0" style="background:#b56cf0" title="星云紫" aria-label="星云紫"></button>
+    <button class="swatch" data-color="hl" style="background:linear-gradient(135deg,#f5cf45,#e9b933)" title="荧光" aria-label="荧光黄"></button>
+  </div>
+  <div class="group">
+    <button class="pen-mini on" id="wThin">细笔</button>
+    <button class="pen-mini" id="wBold">粗笔</button>
+    <button class="pen-mini" id="penErase" title="擦除笔迹">橡皮</button>
+  </div>
+  <div class="group">
+    <button class="pen-mini danger" id="clearInk">一键清屏</button>
+    <button class="pen-mini" id="exitPen">收笔</button>
+  </div>
+</div>
+<button class="pen-fab" id="penFab" aria-label="批注画笔" title="拿起朱批之笔">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+</button>
+<div class="pen-hint">批注模式 · 在页面上随意圈划，Esc 收笔</div>
+
+<script src="app.js"></script>
+</body>
+</html>

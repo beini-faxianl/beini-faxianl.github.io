@@ -1,0 +1,18 @@
+[
+  { "name": "ripgrep (rg)", "url": "https://github.com/BurntSushi/ripgrep", "icon": "🔎",
+    "desc": "快到飞起的代码全文搜索，grep 的现代替代品。", "tags": ["CLI", "搜索"] },
+  { "name": "fzf", "url": "https://github.com/junegunn/fzf", "icon": "🪄",
+    "desc": "命令行模糊查找器，配合历史命令是效率倍增器。", "tags": ["CLI", "效率"] },
+  { "name": "jq", "url": "https://jqlang.github.io/jq/", "icon": "🧃",
+    "desc": "命令行里的 JSON 瑞士军刀，管道一接什么都能切。", "tags": ["CLI", "JSON"] },
+  { "name": "Obsidian", "url": "https://obsidian.md", "icon": "💎",
+    "desc": "本地优先的 Markdown 笔记库，双链与插件生态丰富。", "tags": ["笔记"] },
+  { "name": "tldr", "url": "https://tldr.sh", "icon": "📄",
+    "desc": "man 手册太长不看版，每条命令给几个实用例子。", "tags": ["CLI", "文档"] },
+  { "name": "Tampermonkey", "url": "https://www.tampermonkey.net", "icon": "🐒",
+    "desc": "浏览器用户脚本管理器，给任何网页打补丁。", "tags": ["浏览器"] },
+  { "name": "HTTPie", "url": "https://httpie.io", "icon": "🥧",
+    "desc": "人类友好的 HTTP 客户端，调接口比 curl 顺手。", "tags": ["CLI", "调试"] },
+  { "name": "Zeal / Dash", "url": "https://zealdocs.org", "icon": "📚",
+    "desc": "离线 API 文档浏览器，断网也能查文档。", "tags": ["文档", "离线"] }
+]

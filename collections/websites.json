@@ -1,0 +1,18 @@
+[
+  { "name": "MDN Web Docs", "url": "https://developer.mozilla.org", "icon": "📖",
+    "desc": "Web 开发的权威词典，查 API 第一站。", "tags": ["文档", "前端"] },
+  { "name": "Hacker News", "url": "https://news.ycombinator.com", "icon": "🟠",
+    "desc": "技术圈的每日晨报，评论区常常比正文精彩。", "tags": ["资讯"] },
+  { "name": "阮一峰的网络日志", "url": "https://www.ruanyifeng.com/blog/", "icon": "✉️",
+    "desc": "每周五的《科技爱好者周刊》，坚持多年的高质量输出。", "tags": ["博客", "周刊"] },
+  { "name": "Excalidraw", "url": "https://excalidraw.com", "icon": "✏️",
+    "desc": "手绘风白板，画架构图、流程图的快乐源泉。", "tags": ["绘图", "在线"] },
+  { "name": "regex101", "url": "https://regex101.com", "icon": "🧩",
+    "desc": "正则表达式在线调试，逐字符解释匹配过程。", "tags": ["调试", "在线"] },
+  { "name": "Wikipedia", "url": "https://www.wikipedia.org", "icon": "🌍",
+    "desc": "顺着引用读下去，一个下午就没了。", "tags": ["百科"] },
+  { "name": "Internet Archive", "url": "https://archive.org", "icon": "🏛️",
+    "desc": "互联网的时光机，找老网页、老软件、老书。", "tags": ["资料"] },
+  { "name": "Our World in Data", "url": "https://ourworldindata.org", "icon": "📊",
+    "desc": "用数据看世界，图表精美且可下载。", "tags": ["数据", "可视化"] }
+]

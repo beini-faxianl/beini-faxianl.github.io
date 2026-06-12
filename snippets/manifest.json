@@ -1,0 +1,44 @@
+{
+  "snippets": [
+    {
+      "file": "backup.sh",
+      "title": "backup",
+      "lang": "bash",
+      "desc": "用 rsync 做增量备份，按日期留快照，老快照硬链接去重",
+      "tags": [
+        "备份",
+        "rsync"
+      ]
+    },
+    {
+      "file": "debounce.js",
+      "title": "debounce",
+      "lang": "javascript",
+      "desc": "防抖与节流，一对常备的小工具函数",
+      "tags": [
+        "前端",
+        "工具函数"
+      ]
+    },
+    {
+      "file": "json2csv.py",
+      "title": "json2csv",
+      "lang": "python",
+      "desc": "把 JSON 数组拍平成 CSV：python3 json2csv.py data.json > out.csv",
+      "tags": [
+        "数据",
+        "转换"
+      ]
+    },
+    {
+      "file": "rename_photos.py",
+      "title": "rename_photos",
+      "lang": "python",
+      "desc": "按 EXIF 拍摄时间批量重命名照片为 2026-06-10_142305.jpg",
+      "tags": [
+        "照片",
+        "整理"
+      ]
+    }
+  ]
+}
