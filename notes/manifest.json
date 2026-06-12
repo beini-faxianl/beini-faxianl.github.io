@@ -73,6 +73,15 @@
       "file": "2026-06-12-HackTheBox Snapped WP：从 Nginx UI 备份泄露到 snap-confine 本地提权.md"
     },
     {
+      "title": "LDAP",
+      "date": "2026-06-12",
+      "tags": [
+        "AD",
+        "LDAP"
+      ],
+      "file": "2026-06-12-LDAP.md"
+    },
+    {
       "title": "Under Construction",
       "date": "2026-06-12",
       "tags": [
