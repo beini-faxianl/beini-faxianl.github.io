@@ -1,6 +1,87 @@
 {
   "notes": [
     {
+      "title": "HTB Active：从 GPP 明文凭据到 Kerberoasting 拿下域控",
+      "date": "2026-06-12",
+      "tags": [
+        "HTB",
+        "AD"
+      ],
+      "file": "2026-06-12-HTB Active：从 GPP 明文凭据到 Kerberoasting 拿下域控.md"
+    },
+    {
+      "title": "HackTheBox AirTouch：一场从 SNMP 泄露打进 WPA2 无线内网的攻击链",
+      "date": "2026-06-12",
+      "tags": [
+        "HTB",
+        "WiFi"
+      ],
+      "file": "2026-06-12-HackTheBox AirTouch：一场从 SNMP 泄露打进 WPA2 无线内网的攻击链.md"
+    },
+    {
+      "title": "HackTheBox Baby：匿名 LDAP 枚举、密码喷洒与 SeBackupPrivilege 提权",
+      "date": "2026-06-12",
+      "tags": [
+        "HTB",
+        "AD"
+      ],
+      "file": "2026-06-12-HackTheBox Baby：匿名 LDAP 枚举、密码喷洒与 SeBackupPrivilege 提权.md"
+    },
+    {
+      "title": "HackTheBox Cap 靶机：从 IDOR 到 PCAP 凭据提取再到 Capabilities 提权",
+      "date": "2026-06-12",
+      "tags": [
+        "HTB",
+        "Linux"
+      ],
+      "file": "2026-06-12-HackTheBox Cap 靶机：从 IDOR 到 PCAP 凭据提取再到 Capabilities 提权.md"
+    },
+    {
+      "title": "HackTheBox Horizontall 靶机渗透实战：从 Strapi NoSQL 注入到 Laravel Debug RCE 提权全过程",
+      "date": "2026-06-12",
+      "tags": [
+        "HTB",
+        "Linux"
+      ],
+      "file": "2026-06-12-HackTheBox Horizontall 靶机渗透实战：从 Strapi NoSQL 注入到 Laravel Debug RCE 提权全过程.md"
+    },
+    {
+      "title": "HackTheBox OneTwoSeven：从 SFTP 软链接到 APT 软件包注入的完整渗透链",
+      "date": "2026-06-12",
+      "tags": [
+        "HTB",
+        "Linux"
+      ],
+      "file": "2026-06-12-HackTheBox OneTwoSeven：从 SFTP 软链接到 APT 软件包注入的完整渗透链.md"
+    },
+    {
+      "title": "HackTheBox Shibboleth 渗透测试：从 IPMI 信息泄露到 Zabbix RCE 与 MariaDB 提权",
+      "date": "2026-06-12",
+      "tags": [
+        "HTB",
+        "Linux"
+      ],
+      "file": "2026-06-12-HackTheBox Shibboleth 渗透测试：从 IPMI 信息泄露到 Zabbix RCE 与 MariaDB 提权.md"
+    },
+    {
+      "title": "HackTheBox Snapped WP：从 Nginx UI 备份泄露到 snap-confine 本地提权",
+      "date": "2026-06-12",
+      "tags": [
+        "HTB",
+        "Linux"
+      ],
+      "file": "2026-06-12-HackTheBox Snapped WP：从 Nginx UI 备份泄露到 snap-confine 本地提权.md"
+    },
+    {
+      "title": "Under Construction",
+      "date": "2026-06-12",
+      "tags": [
+        "HTB",
+        "Web"
+      ],
+      "file": "2026-06-12-Under Construction.md"
+    },
+    {
       "title": "关于「拾叶集」：这个网站怎么用",
       "date": "2026-06-10",
       "tags": [
