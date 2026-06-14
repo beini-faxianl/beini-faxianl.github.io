@@ -14,7 +14,9 @@
   { "name": "Internet Archive", "url": "https://archive.org", "icon": "🏛️",
     "desc": "互联网的时光机，找老网页、老软件、老书。", "tags": ["资料"] },
   { "name": "Our World in Data", "url": "https://ourworldindata.org", "icon": "📊",
-    "desc": "用数据看世界，图表精美且可下载。", "tags": ["数据", "可视化"] }
+    "desc": "用数据看世界，图表精美且可下载。", "tags": ["数据", "可视化"] },
   { "name": "Z-Library", "url": "https://getzlib.com/zh", "icon": "📚", 
-    "desc": "全球最大数字图书馆，海量免费电子书和学术论文下载。", "tags": ["电子书", "论文", "下载"] }
+    "desc": "全球最大数字图书馆，海量免费电子书和学术论文下载。", "tags": ["电子书", "论文", "下载"] },
+  { "name": "ngrok", "url": "https://ngrok.com", "icon": "🌐",
+    "desc": "本地服务安全公网穿透工具，快速暴露本地端口到互联网。", "tags": ["开发", "隧道", "穿透"] }
 ]
