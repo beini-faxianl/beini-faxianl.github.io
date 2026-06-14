@@ -18,5 +18,13 @@
   { "name": "Z-Library", "url": "https://getzlib.com/zh", "icon": "📚", 
     "desc": "全球最大数字图书馆，海量免费电子书和学术论文下载。", "tags": ["电子书", "论文"] },
   { "name": "ngrok", "url": "https://ngrok.com", "icon": "🌐",
-    "desc": "本地服务安全公网穿透工具，快速暴露本地端口到互联网。", "tags": ["隧道", "穿透"] }
+    "desc": "本地服务安全公网穿透工具，快速暴露本地端口到互联网。", "tags": ["隧道", "穿透"] },
+  { "name": "HackTricks", "url": "https://hacktricks.wiki", "icon": "🔓",
+    "desc": "渗透测试与红队技巧知识库，包含海量实用命令和攻击手法。", "tags": ["渗透测试", "技巧", "红队"] },
+  { "name": "GTFOBins", "url": "https://gtfobins.org", "icon": "🔧", 
+    "desc": "Unix 二进制文件滥用技巧库，渗透测试 Living Off The Land 必备资源。", "tags": ["渗透测试", "二进制", "技巧"] },
+  { "name": "PortSwigger", "url": "https://portswigger.net", "icon": "🕷️", 
+    "desc": "Burp Suite 官网及免费 Web Security Academy，提供专业 Web 安全测试工具和大量实战实验室。", "tags": ["Web安全", "渗透测试", "Burp"] },
+  { "name": "OWASP", "url": "https://owasp.org", "icon": "🛡️", 
+    "desc": "Web 应用安全开源基金会，提供 OWASP Top 10 和大量安全工具与资源。", "tags": ["Web安全", "开源", "OWASP"] }
 ]
