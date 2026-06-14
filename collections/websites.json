@@ -15,4 +15,6 @@
     "desc": "互联网的时光机，找老网页、老软件、老书。", "tags": ["资料"] },
   { "name": "Our World in Data", "url": "https://ourworldindata.org", "icon": "📊",
     "desc": "用数据看世界，图表精美且可下载。", "tags": ["数据", "可视化"] }
+  { "name": "Z-Library", "url": "https://getzlib.com/zh", "icon": "📚", 
+    "desc": "全球最大数字图书馆，海量免费电子书和学术论文下载。", "tags": ["电子书", "论文", "下载"] }
 ]
