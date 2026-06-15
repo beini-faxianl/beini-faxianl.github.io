@@ -1,6 +1,15 @@
 {
   "notes": [
     {
+      "title": "Claude 提示词设计",
+      "date": "2026-06-15",
+      "tags": [
+        "提示词",
+        "Claude"
+      ],
+      "file": "2026-06-15-Claude 提示词设计.md"
+    },
+    {
       "title": "HTB Active：从 GPP 明文凭据到 Kerberoasting 拿下域控",
       "date": "2026-06-12",
       "tags": [
