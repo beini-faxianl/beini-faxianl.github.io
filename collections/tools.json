@@ -14,7 +14,7 @@
   { "name": "HTTPie", "url": "https://httpie.io", "icon": "🥧",
     "desc": "人类友好的 HTTP 客户端，调接口比 curl 顺手。", "tags": ["CLI", "调试"] },
   { "name": "Zeal / Dash", "url": "https://zealdocs.org", "icon": "📚",
-    "desc": "离线 API 文档浏览器，断网也能查文档。", "tags": ["文档", "离线"] }
+    "desc": "离线 API 文档浏览器，断网也能查文档。", "tags": ["文档", "离线"] },
   {
     "name": "VS Code CodeSnap",
     "url": "https://marketplace.visualstudio.com/items?itemName=adpyke.codesnap",
