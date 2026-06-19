@@ -65,5 +65,7 @@
   { "name": "DASCTF", "url": "https://ctf2.dasctf.com/", "icon": "🚩",
     "desc": "DASCTF 竞赛平台，承载 CTF 赛事、在线答题和安全竞赛训练。", "tags": ["CTF", "竞赛", "中文"] },
   { "name": "OffSec", "url": "https://www.offsec.com/", "icon": "🥷",
-    "desc": "Offensive Security 官网，提供 PEN-200、OSCP 等安全认证、课程和训练平台。", "tags": ["认证", "渗透测试", "培训"] }
+    "desc": "Offensive Security 官网，提供 PEN-200、OSCP 等安全认证、课程和训练平台。", "tags": ["认证", "渗透测试", "培训"] },
+  { "name": "Bootlin Elixir Linux Source", "url": "https://elixir.bootlin.com/linux/v7.1/source", "icon": "🐧",
+    "desc": "Linux 内核源码在线交叉引用浏览器，可按版本查看源码、符号定义和调用关系。", "tags": ["Linux", "内核", "源码"] }
 ]

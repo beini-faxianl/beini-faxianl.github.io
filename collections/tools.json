@@ -15,4 +15,81 @@
     "desc": "人类友好的 HTTP 客户端，调接口比 curl 顺手。", "tags": ["CLI", "调试"] },
   { "name": "Zeal / Dash", "url": "https://zealdocs.org", "icon": "📚",
     "desc": "离线 API 文档浏览器，断网也能查文档。", "tags": ["文档", "离线"] }
+  {
+    "name": "VS Code CodeSnap",
+    "url": "https://marketplace.visualstudio.com/items?itemName=adpyke.codesnap",
+    "icon": "📸",
+    "desc": "把代码片段截图成漂亮卡片，适合写文章、发分享或做演示。",
+    "tags": ["VS Code", "截图"]
+  },
+  {
+    "name": "Dawn Launcher",
+    "url": "https://dawnlauncher.com/",
+    "icon": "🚀",
+    "desc": "Windows 快捷启动器，用来整理应用、文件夹和常用操作入口。",
+    "tags": ["Windows", "启动器"]
+  },
+  {
+    "name": "Snipaste",
+    "url": "https://www.snipaste.com/",
+    "icon": "✂️",
+    "desc": "截图与贴图工具，截图后能直接钉在屏幕上做对照参考。",
+    "tags": ["截图", "效率"]
+  },
+  {
+    "name": "ZoomIt",
+    "url": "https://learn.microsoft.com/en-us/sysinternals/downloads/zoomit",
+    "icon": "🔍",
+    "desc": "Sysinternals 出品的屏幕放大、标注和演示辅助工具。",
+    "tags": ["Windows", "演示"]
+  },
+  {
+    "name": "Clash Verge",
+    "url": "https://github.com/clash-verge-rev/clash-verge-rev",
+    "icon": "🌐",
+    "desc": "跨平台代理客户端，基于 Clash Meta / Mihomo，适合管理订阅与规则。",
+    "tags": ["代理", "网络"]
+  },
+  {
+    "name": "Burp Suite",
+    "url": "https://portswigger.net/burp",
+    "icon": "🧪",
+    "desc": "Web 安全测试平台，抓包、改包、扫描和渗透测试常用工具。",
+    "tags": ["安全", "Web"]
+  },
+  {
+    "name": "draw.io",
+    "url": "https://www.drawio.com/",
+    "icon": "🧩",
+    "desc": "免费的流程图与架构图工具，画系统设计、网络拓扑和流程很顺手。",
+    "tags": ["绘图", "架构"]
+  },
+  {
+    "name": "Geek Uninstaller",
+    "url": "https://geekuninstaller.com/",
+    "icon": "🧹",
+    "desc": "轻量 Windows 卸载工具，能清理残留文件和注册表项。",
+    "tags": ["Windows", "卸载"]
+  },
+  {
+    "name": "WinMerge",
+    "url": "https://github.com/winmerge/winmerge",
+    "icon": "🔀",
+    "desc": "文件与文件夹对比合并工具，适合查差异、合并文本和同步目录。",
+    "tags": ["对比", "Windows"]
+  },
+  {
+    "name": "NotebookLM",
+    "url": "https://notebooklm.google.com/",
+    "icon": "📓",
+    "desc": "Google 的资料理解与笔记助手，可基于上传文档生成摘要、问答和播客式音频。",
+    "tags": ["AI", "笔记"]
+  },
+  {
+    "name": "Tailscale",
+    "url": "https://tailscale.com/",
+    "icon": "🛜",
+    "desc": "基于 WireGuard 的零配置组网工具，让多台设备像在同一局域网内互联。",
+    "tags": ["网络", "VPN"]
+  }
 ]
