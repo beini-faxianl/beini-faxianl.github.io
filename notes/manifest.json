@@ -1,6 +1,15 @@
 {
   "notes": [
     {
+      "title": "啃穿 BoneChewerCon：从 jku 伪造到 CRLF 劫持 Bot 的 Flag 外带链",
+      "date": "2026-06-20",
+      "tags": [
+        "HTB",
+        "Web"
+      ],
+      "file": "2026-06-20-BoneChewerCon.md"
+    },
+    {
       "title": "GPT 提示词设计",
       "date": "2026-06-16",
       "tags": [
