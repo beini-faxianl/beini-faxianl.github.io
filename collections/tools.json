@@ -91,5 +91,145 @@
     "icon": "🛜",
     "desc": "基于 WireGuard 的零配置组网工具，让多台设备像在同一局域网内互联。",
     "tags": ["网络", "VPN"]
+  },
+    {
+    "name": "ShareX",
+    "url": "https://getsharex.com/",
+    "icon": "📸",
+    "desc": "开源截图、录屏和文件上传工具，适合做教程截图、GIF、区域录制和自动上传。",
+    "tags": ["截图", "录屏", "Windows"]
+  },
+  {
+    "name": "Umi-OCR",
+    "url": "https://umi-ocr.com/",
+    "icon": "🔤",
+    "desc": "开源离线 OCR 工具，支持本地图片文字识别，适合截图识字、文档摘录和批量识别。",
+    "tags": ["OCR", "离线", "识别"]
+  },
+  {
+    "name": "Everything",
+    "url": "https://www.voidtools.com/",
+    "icon": "⚡",
+    "desc": "Windows 极速文件搜索工具，按文件名秒级检索全盘内容。",
+    "tags": ["Windows", "搜索", "效率"]
+  },
+  {
+    "name": "ScreenToGif",
+    "url": "https://www.screentogif.com/",
+    "icon": "🎞️",
+    "desc": "屏幕录制与 GIF 制作工具，适合录制操作步骤、软件演示和短动画教程。",
+    "tags": ["录屏", "GIF", "Windows"]
+  },
+  {
+    "name": "System Informer",
+    "url": "https://systeminformer.sourceforge.io/",
+    "icon": "🧬",
+    "desc": "高级系统监控与进程分析工具，可查看进程、句柄、网络连接和系统资源状态。",
+    "tags": ["Windows", "进程", "系统分析"]
+  },
+  {
+    "name": "MobaXterm",
+    "url": "https://mobaxterm.mobatek.net/",
+    "icon": "🖥️",
+    "desc": "Windows 远程连接工具箱，集成 SSH、SFTP、X11、RDP 和多标签终端。",
+    "tags": ["SSH", "远程连接", "Windows"]
+  },
+  {
+    "name": "Anki",
+    "url": "https://apps.ankiweb.net/",
+    "icon": "🧠",
+    "desc": "基于间隔重复算法的记忆卡片工具，适合背单词、记知识点和长期复习。",
+    "tags": ["记忆", "学习", "卡片"]
+  },
+  {
+    "name": "Cherry Studio",
+    "url": "https://cherry-ai.com/",
+    "icon": "🍒",
+    "desc": "跨平台 AI 客户端，支持接入多种大模型服务，适合统一管理 AI 对话与工作流。",
+    "tags": ["AI", "客户端", "大模型"]
+  },
+  {
+    "name": "Stellarium",
+    "url": "https://stellarium.org/",
+    "icon": "🌌",
+    "desc": "开源天文馆软件，可模拟星空、星座、行星位置和观测场景。",
+    "tags": ["天文", "模拟", "开源"]
+  },
+  {
+    "name": "Beyond Compare",
+    "url": "https://www.scootersoftware.com/",
+    "icon": "🧾",
+    "desc": "专业文件与文件夹对比工具，适合代码差异查看、目录同步和配置文件比对。",
+    "tags": ["对比", "同步", "效率"]
+  },
+  {
+    "name": "Dark Reader",
+    "url": "https://darkreader.org/",
+    "icon": "🌙",
+    "desc": "浏览器深色模式扩展，可为大多数网站自动生成护眼暗色主题。",
+    "tags": ["浏览器", "暗色模式", "扩展"]
+  },
+  {
+    "name": "沉浸式翻译",
+    "url": "https://immersivetranslate.com/",
+    "icon": "🌐",
+    "desc": "双语网页翻译扩展，支持网页、PDF、视频字幕和多语言阅读场景。",
+    "tags": ["翻译", "浏览器", "PDF"]
+  },
+  {
+    "name": "Obsidian Web Clipper",
+    "url": "https://obsidian.md/clipper",
+    "icon": "💎",
+    "desc": "Obsidian 官方网页剪藏扩展，可将网页内容保存到本地 Markdown 笔记库。",
+    "tags": ["Obsidian", "剪藏", "笔记"]
+  },
+  {
+    "name": "Proxy SwitchyOmega 3 (ZeroOmega)",
+    "url": "https://github.com/zero-peak/ZeroOmega",
+    "icon": "🔀",
+    "desc": "浏览器代理切换扩展，用于按规则管理 HTTP、SOCKS 和代理情景模式。",
+    "tags": ["代理", "浏览器", "网络"]
+  },
+  {
+    "name": "SingleFile",
+    "url": "https://github.com/gildas-lormeau/SingleFile",
+    "icon": "📄",
+    "desc": "网页离线保存扩展，可将完整网页打包保存为单个 HTML 文件。",
+    "tags": ["浏览器", "网页保存", "离线"]
+  },
+  {
+    "name": "sherlock",
+    "url": "https://github.com/sherlock-project/sherlock",
+    "icon": "🕵️",
+    "desc": "用户名 OSINT 检索工具，可在多个社交平台和网站中查找同名账号。",
+    "tags": ["OSINT", "用户名", "CLI"]
+  },
+  {
+    "name": "maigret",
+    "url": "https://github.com/soxoj/maigret",
+    "icon": "🧭",
+    "desc": "OSINT 账号画像工具，可基于用户名在大量站点中收集公开账号痕迹。",
+    "tags": ["OSINT", "用户名", "情报"]
+  },
+  {
+    "name": "phoneinfoga",
+    "url": "https://github.com/sundowndev/phoneinfoga",
+    "icon": "📞",
+    "desc": "电话号码 OSINT 工具，用于收集号码归属、公开信息和相关情报线索。",
+    "tags": ["OSINT", "手机号", "情报"]
+  },
+  {
+    "name": "theHarvester",
+    "url": "https://github.com/laramies/theHarvester",
+    "icon": "🌾",
+    "desc": "信息收集工具，可从公开来源收集邮箱、子域名、主机名和组织暴露面信息。",
+    "tags": ["OSINT", "信息收集", "安全"]
+  },
+  {
+    "name": "GhostTrack",
+    "url": "https://github.com/HunxByts/GhostTrack",
+    "icon": "👻",
+    "desc": "OSINT 信息收集项目，面向公开资料检索、账号线索分析和基础情报收集。",
+    "tags": ["OSINT", "情报", "GitHub"]
   }
 ]

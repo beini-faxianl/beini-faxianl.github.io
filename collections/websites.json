@@ -38,14 +38,14 @@
     "desc": "密码学闯关学习平台，通过题目练习现代密码学、数论和加密协议分析。", "tags": ["密码学", "CTF", "练习"] },
   { "name": "AI Red Teaming Resources", "url": "https://0x4d31.github.io/airt/index.html#home", "icon": "🤖",
     "desc": "AI 红队与大模型安全资源导航，整理了论文、工具、方法论和测试资料。", "tags": ["AI安全", "红队", "资源"] },
-  { "name": "白帽子讲 Web 安全", "url": "https://bdziyi.com/", "icon": "📝",
-    "desc": "Web 安全与渗透测试相关中文博客，适合查阅漏洞分析、学习笔记和实战文章。", "tags": ["Web安全", "博客", "中文"] },
+  { "name": "棉花糖 VIP", "url": "https://bdziyi.com/", "icon": "📝",
+    "desc": "网络安全领域资源大全", "tags": ["网络安全", "资源"] },
   { "name": "roadmap.sh", "url": "https://roadmap.sh/", "icon": "🗺️",
     "desc": "开发者学习路线图集合，覆盖前端、后端、DevOps、网络安全等方向。", "tags": ["路线图", "学习", "开发"] },
   { "name": "OSINT Framework", "url": "https://osintframework.com/", "icon": "🕵️",
     "desc": "开源情报工具导航，把用户名、域名、社交平台、地图等 OSINT 资源按类别组织。", "tags": ["OSINT", "情报", "工具"] },
   { "name": "Seebug Paper", "url": "https://paper.seebug.org/", "icon": "📄",
-    "desc": "知道创宇 Seebug 漏洞与安全技术文章库，包含漏洞分析、攻防研究和安全报告。", "tags": ["漏洞分析", "安全研究", "中文"] },
+    "desc": "知道创宇 Seebug 漏洞与安全技术文章库，包含漏洞分析、攻防研究和安全报告。", "tags": ["漏洞分析", "安全研究"] },
   { "name": "ParrotSec Tools", "url": "https://tools.parrotsec.org/", "icon": "🦜",
     "desc": "Parrot OS 官方工具索引，按分类整理安全测试、取证、逆向和隐私工具。", "tags": ["安全工具", "Parrot", "Linux"] },
   { "name": "Kali Tools", "url": "https://www.kali.org/tools/", "icon": "🐉",
@@ -59,13 +59,160 @@
   { "name": "CyberStrikeLab", "url": "https://www.cyberstrikelab.com/#/login", "icon": "⚔️",
     "desc": "网络安全实训与竞赛平台，提供在线实验、攻防训练和安全学习环境。", "tags": ["靶场", "实训", "竞赛"] },
   { "name": "i春秋云境", "url": "https://yunjing.ichunqiu.com/", "icon": "☁️",
-    "desc": "i春秋在线安全靶场，提供 Web、主机、内网等方向的实战化训练场景。", "tags": ["靶场", "Web安全", "中文"] },
+    "desc": "i春秋在线安全靶场，提供 Web、主机、内网等方向的实战化训练场景。", "tags": ["靶场", "Web安全"] },
   { "name": "CTF Archives", "url": "https://github.com/CTF-Archives", "icon": "🏆",
     "desc": "CTF 题目与资料归档组织，便于查找历史比赛题、Writeup 和训练材料。", "tags": ["CTF", "归档", "GitHub"] },
   { "name": "DASCTF", "url": "https://ctf2.dasctf.com/", "icon": "🚩",
-    "desc": "DASCTF 竞赛平台，承载 CTF 赛事、在线答题和安全竞赛训练。", "tags": ["CTF", "竞赛", "中文"] },
+    "desc": "DASCTF 竞赛平台，承载 CTF 赛事、在线答题和安全竞赛训练。", "tags": ["CTF", "竞赛"] },
   { "name": "OffSec", "url": "https://www.offsec.com/", "icon": "🥷",
     "desc": "Offensive Security 官网，提供 PEN-200、OSCP 等安全认证、课程和训练平台。", "tags": ["认证", "渗透测试", "培训"] },
   { "name": "Bootlin Elixir Linux Source", "url": "https://elixir.bootlin.com/linux/v7.1/source", "icon": "🐧",
-    "desc": "Linux 内核源码在线交叉引用浏览器，可按版本查看源码、符号定义和调用关系。", "tags": ["Linux", "内核", "源码"] }
+    "desc": "Linux 内核源码在线交叉引用浏览器，可按版本查看源码、符号定义和调用关系。", "tags": ["Linux", "内核", "源码"] },
+  {
+    "name": "DMIT",
+    "url": "https://www.dmit.io/",
+    "icon": "☁️",
+    "desc": "高性能云服务器与 VPS 服务商，适合部署海外节点、网站和实验环境。",
+    "tags": ["VPS", "云服务器", "主机"]
+  },
+  {
+    "name": "BandwagonHost",
+    "url": "https://bandwagonhost.com/",
+    "icon": "📦",
+    "desc": "老牌 VPS 主机服务商，常用于海外服务器、代理节点和轻量服务部署。",
+    "tags": ["VPS", "主机", "服务器"]
+  },
+  {
+    "name": "Cloudflare",
+    "url": "https://www.cloudflare.com/",
+    "icon": "☁️",
+    "desc": "全球 CDN、安全防护和边缘网络平台，常用于网站加速、DNS、WAF 和 Zero Trust。",
+    "tags": ["CDN", "DNS", "安全"]
+  },
+  {
+    "name": "LightNode",
+    "url": "https://www.lightnode.com/",
+    "icon": "💡",
+    "desc": "云服务器服务商，提供多地区 VPS，适合轻量部署、测试和海外服务搭建。",
+    "tags": ["VPS", "云服务器", "主机"]
+  },
+  {
+    "name": "Gandalf | Lakera",
+    "url": "https://gandalf.lakera.ai/",
+    "icon": "🧙",
+    "desc": "Lakera 的 AI 安全挑战平台，通过闯关方式练习提示注入和大模型攻防思路。",
+    "tags": ["AI安全", "提示注入", "训练"]
+  },
+  {
+    "name": "Dreadnode",
+    "url": "https://dreadnode.io/",
+    "icon": "🧠",
+    "desc": "AI 安全与红队平台，面向大模型安全测试、评估和攻防训练场景。",
+    "tags": ["AI安全", "红队", "平台"]
+  },
+  {
+    "name": "XYAI（镜像网站）",
+    "url": "https://www.xychatai.com/",
+    "icon": "🤖",
+    "desc": "AI 工具镜像站入口，适合临时访问和聚合使用不同 AI 服务。",
+    "tags": ["AI", "镜像站", "工具"]
+  },
+  {
+    "name": "MaynorAI（永久导航站）",
+    "url": "https://link3.cc/maynorai",
+    "icon": "🧭",
+    "desc": "MaynorAI 的永久导航页，用于访问其相关 AI 服务入口和备用链接。",
+    "tags": ["AI", "导航", "入口"]
+  },
+  {
+    "name": "Mitce SwiftNet",
+    "url": "https://mitce.net/store/swiftnet",
+    "icon": "🌐",
+    "desc": "SwiftNet 服务入口，偏向网络节点或代理服务；该项主站归属存在一定不确定性。",
+    "tags": ["网络服务", "节点", "代理"]
+  },
+  {
+    "name": "MobileSMS.io",
+    "url": "https://mobilesms.io/",
+    "icon": "📱",
+    "desc": "在线接收短信服务，提供临时手机号用于验证码接收等场景。",
+    "tags": ["短信", "验证码", "在线服务"]
+  },
+  {
+    "name": "hero-sms",
+    "url": "https://hero-sms.com/",
+    "icon": "💬",
+    "desc": "虚拟号码与短信验证码接收服务，支持多平台账号验证场景。",
+    "tags": ["短信", "验证码", "虚拟号码"]
+  },
+  {
+    "name": "Google Project Zero",
+    "url": "https://projectzero.google/",
+    "icon": "🐞",
+    "desc": "Google Project Zero 官方站，发布高质量漏洞研究、0day 分析和安全研究文章。",
+    "tags": ["漏洞研究", "安全研究", "Google"]
+  },
+  {
+    "name": "pentesting-notes",
+    "url": "https://kabaneridev.gitbook.io/pentesting-notes",
+    "icon": "📓",
+    "desc": "渗透测试学习笔记，整理常见测试流程、工具用法和攻防知识点。",
+    "tags": ["渗透测试", "笔记", "安全"]
+  },
+  {
+    "name": "Web安全学习笔记",
+    "url": "https://websec.readthedocs.io/zh/latest/",
+    "icon": "🕸️",
+    "desc": "中文 Web 安全学习文档，覆盖 Web 漏洞、攻防基础和安全实践。",
+    "tags": ["Web安全", "中文文档", "学习"]
+  },
+  {
+    "name": "Daniel Miessler",
+    "url": "https://danielmiessler.com/",
+    "icon": "✍️",
+    "desc": "Daniel Miessler 的个人博客，内容涵盖安全、AI、技术趋势和思维方法。",
+    "tags": ["安全", "博客", "AI"]
+  },
+  {
+    "name": "T Wiki",
+    "url": "https://wiki.teamssix.com/",
+    "icon": "☁️",
+    "desc": "TeamsSix 维护的云安全知识库，聚焦云服务攻防、云原生安全和实战笔记。",
+    "tags": ["云安全", "知识库", "安全"]
+  },
+  {
+    "name": "Red Team Notes",
+    "url": "https://www.ired.team/",
+    "icon": "🔴",
+    "desc": "红队技术笔记站，系统整理攻击路径、权限提升、域渗透和对抗技巧。",
+    "tags": ["红队", "渗透测试", "攻防"]
+  },
+  {
+    "name": "The Hacker Recipes",
+    "url": "https://www.thehacker.recipes/",
+    "icon": "🍳",
+    "desc": "攻防技术手册，尤其适合查询 Active Directory、Kerberos 和横向移动相关方法。",
+    "tags": ["红队", "域安全", "渗透测试"]
+  },
+  {
+    "name": "Sec-Interview",
+    "url": "https://github.com/duckpigdog/Sec-Interview",
+    "icon": "💼",
+    "desc": "网络安全面试题和知识点整理项目，适合查漏补缺和准备安全岗位面试。",
+    "tags": ["面试", "网络安全", "GitHub"]
+  },
+  {
+    "name": "無止界 - FEEI",
+    "url": "https://feei.cn/",
+    "icon": "📝",
+    "desc": "安全研究者 FEEI 的个人站点，包含漏洞研究、安全文章和技术记录。",
+    "tags": ["安全研究", "博客", "漏洞"]
+  },
+  {
+    "name": "MITRE ATT&CK",
+    "url": "https://attack.mitre.org/",
+    "icon": "🎯",
+    "desc": "对手战术、技术与过程知识库，蓝队检测、红队模拟和威胁建模的重要参考。",
+    "tags": ["威胁情报", "ATT&CK", "安全框架"]
+  }
 ]
