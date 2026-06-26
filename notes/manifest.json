@@ -1,6 +1,15 @@
 {
   "notes": [
     {
+      "title": "HTB Jarmis：利用 JARM 检测服务的 SSRF 链式攻击打穿 OMI",
+      "date": "2026-06-26",
+      "tags": [
+        "HTB",
+        "Linux"
+      ],
+      "file": "2026-06-26-HTB Jarmis：利用 JARM 检测服务的 SSRF 链式攻击打穿 OMI.md"
+    },
+    {
       "title": "啃穿 BoneChewerCon：从 jku 伪造到 CRLF 劫持 Bot 的 Flag 外带链",
       "date": "2026-06-20",
       "tags": [
