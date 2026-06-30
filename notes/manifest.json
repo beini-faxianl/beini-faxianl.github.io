@@ -1,6 +1,15 @@
 {
   "notes": [
     {
+      "title": "HackTheBox Spooktrol 渗透实战：从任意文件读取到接管 C2",
+      "date": "2026-06-30",
+      "tags": [
+        "HTB",
+        "Linux"
+      ],
+      "file": "2026-06-30-HackTheBox Spooktrol 渗透实战：从任意文件读取到接管 C2.md"
+    },
+    {
       "title": "HTB Jarmis：利用 JARM 检测服务的 SSRF 链式攻击打穿 OMI",
       "date": "2026-06-26",
       "tags": [
