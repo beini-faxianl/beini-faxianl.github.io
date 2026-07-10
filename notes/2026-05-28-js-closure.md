@@ -1,6 +1,7 @@
 ---
 title: JavaScript 闭包：从一道经典面试题说起
 date: 2026-05-28
+category: 编程开发
 tags: 前端,JavaScript
 ---
 

@@ -1,6 +1,7 @@
 ---
 title: HackTheBox Cap 靶机：从 IDOR 到 PCAP 凭据提取再到 Capabilities 提权
 date: 2026-06-12
+category: 网络安全
 tags: HTB, Linux
 ---
 

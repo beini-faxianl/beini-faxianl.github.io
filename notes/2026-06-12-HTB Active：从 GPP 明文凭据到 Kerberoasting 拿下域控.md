@@ -1,6 +1,7 @@
 ---
 title: HTB Active：从 GPP 明文凭据到 Kerberoasting 拿下域控
 date: 2026-06-12
+category: 网络安全
 tags: HTB, AD
 ---
 

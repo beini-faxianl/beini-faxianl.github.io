@@ -1,6 +1,7 @@
 ---
 title:HackTheBox Snapped WP：从 Nginx UI 备份泄露到 snap-confine 本地提权
 date: 2026-06-12
+category: 网络安全
 tags: HTB, Linux
 ---
 
@@ -1446,4 +1447,3 @@ cannot perform operation: mount --rbind /dev /tmp/snap.rootfs_jRogxP//dev: No su
 Poc 运行完毕之后，我们就直接获得了 root shell，接着查看 root flag：
 
 ![[file-20260430164617194.png]]
-

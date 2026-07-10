@@ -1,6 +1,7 @@
 ---
 title: HackTheBox Spooktrol 渗透实战：从任意文件读取到接管 C2
 date: 2026-06-30
+category: 网络安全
 tags: HTB, Linux
 ---
 

@@ -1,6 +1,7 @@
 ---
 title: 啃穿 BoneChewerCon：从 jku 伪造到 CRLF 劫持 Bot 的 Flag 外带链
 date: 2026-06-20
+category: 网络安全
 tags: HTB, Web
 ---
 

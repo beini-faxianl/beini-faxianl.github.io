@@ -1,6 +1,7 @@
 ---
 title: HackTheBox OneTwoSeven：从 SFTP 软链接到 APT 软件包注入的完整渗透链
 date: 2026-06-12
+category: 网络安全
 tags: HTB, Linux
 ---
 

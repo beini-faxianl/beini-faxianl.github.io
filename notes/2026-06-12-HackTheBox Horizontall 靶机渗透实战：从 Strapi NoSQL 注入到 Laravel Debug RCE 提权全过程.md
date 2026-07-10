@@ -1,6 +1,7 @@
 ---
 title: HackTheBox Horizontall 靶机渗透实战：从 Strapi NoSQL 注入到 Laravel Debug RCE 提权全过程
 date: 2026-06-12
+category: 网络安全
 tags: HTB, Linux
 ---
 
@@ -2616,4 +2617,3 @@ c53b002c*******************
 大家感兴趣的话可以尝试一下。
 
 > 因为我这并没有发现直接的线索去打这个漏洞，因此在本 WP 中不继续详写了。
-

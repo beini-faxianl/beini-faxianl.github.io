@@ -1,6 +1,7 @@
 ---
 title: HackTheBox Shibboleth 渗透测试：从 IPMI 信息泄露到 Zabbix RCE 与 MariaDB 提权
 date: 2026-06-12
+category: 网络安全
 tags: HTB, Linux
 ---
 

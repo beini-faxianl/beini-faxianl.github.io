@@ -1,6 +1,7 @@
 ---
 title: HackTheBox Travel：从 RSS 到 Root——SSRF、Memcache 投毒与 LDAP 提权复盘
 date: 2026-07-07
+category: 网络安全
 tags: HTB,Linux
 ---
 

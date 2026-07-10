@@ -1,0 +1,16 @@
+[
+  {
+    "name": "Stack",
+    "url": "https://beini-faxianl.github.io/Stack/",
+    "icon": "🧱",
+    "desc": "我的技术栈与工具导航。",
+    "tags": ["项目", "导航"]
+  },
+  {
+    "name": "星旋 Markdown",
+    "url": "https://beini-faxianl.github.io/xingxuan-markdown/xingxuan-markdown-v3.html",
+    "icon": "✦",
+    "desc": "面向 Markdown 写作与排版的在线工具。",
+    "tags": ["项目", "Markdown"]
+  }
+]

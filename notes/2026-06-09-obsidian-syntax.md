@@ -1,6 +1,7 @@
 ---
 title: Obsidian 语法演示：这座书斋认识双链
 date: 2026-06-09
+category: 站点随笔
 tags: 站务, Obsidian
 ---
 

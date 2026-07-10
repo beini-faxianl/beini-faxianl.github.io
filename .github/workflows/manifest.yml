@@ -4,7 +4,6 @@ on:
   push:
     paths:
       - "notes/**.md"
-      - "snippets/**"
       - "build.py"
   workflow_dispatch:
 
@@ -24,6 +23,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add notes/manifest.json snippets/manifest.json
+          git add notes/manifest.json
           git diff --cached --quiet || git commit -m "chore: 自动更新笔记索引"
           git push

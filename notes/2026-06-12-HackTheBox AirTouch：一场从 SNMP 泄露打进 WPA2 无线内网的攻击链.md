@@ -1,6 +1,7 @@
 ---
 title: HackTheBox AirTouch：一场从 SNMP 泄露打进 WPA2 无线内网的攻击链
 date: 2026-06-12
+category: 网络安全
 tags: HTB, WiFi
 ---
 

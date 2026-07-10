@@ -1,6 +1,7 @@
 ---
 title: HTB Jarmis：利用 JARM 检测服务的 SSRF 链式攻击打穿 OMI
 date: 2026-06-26
+category: 网络安全
 tags: HTB, Linux
 ---
 

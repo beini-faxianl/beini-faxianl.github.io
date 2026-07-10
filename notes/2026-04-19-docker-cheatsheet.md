@@ -1,6 +1,7 @@
 ---
 title: Docker 常用命令速查
 date: 2026-04-19
+category: 编程开发
 tags: 工具,后端
 ---
 

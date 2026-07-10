@@ -1,6 +1,7 @@
 ---
 title: HackTheBox Baby：匿名 LDAP 枚举、密码喷洒与 SeBackupPrivilege 提权
 date: 2026-06-12
+category: 网络安全
 tags: HTB, AD
 ---
 
