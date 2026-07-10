@@ -61,6 +61,16 @@
       "file": "2026-06-15-Claude 提示词设计.md"
     },
     {
+      "title": "HTB Active：从 GPP 明文凭据到 Kerberoasting 拿下域控",
+      "date": "2026-06-12",
+      "category": "网络安全",
+      "tags": [
+        "HTB",
+        "AD"
+      ],
+      "file": "2026-06-12-HTB Active：从 GPP 明文凭据到 Kerberoasting 拿下域控.md"
+    },
+    {
       "title": "HackTheBox AirTouch：一场从 SNMP 泄露打进 WPA2 无线内网的攻击链",
       "date": "2026-06-12",
       "category": "网络安全",
@@ -129,16 +139,6 @@
         "Linux"
       ],
       "file": "2026-06-12-HackTheBox Snapped WP：从 Nginx UI 备份泄露到 snap-confine 本地提权.md"
-    },
-    {
-      "title": "HTB Active：从 GPP 明文凭据到 Kerberoasting 拿下域控",
-      "date": "2026-06-12",
-      "category": "网络安全",
-      "tags": [
-        "HTB",
-        "AD"
-      ],
-      "file": "2026-06-12-HTB Active：从 GPP 明文凭据到 Kerberoasting 拿下域控.md"
     },
     {
       "title": "LDAP",
