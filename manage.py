@@ -95,7 +95,8 @@ class Repository:
         self.rebuild_notes()
 
     def rebuild_notes(self) -> int:
-        notes = [build.parse_note(path) for path in sorted(self.notes_dir.glob("*.md"))]
+        paths = sorted(self.notes_dir.glob("*.md"), key=lambda path: path.name.casefold())
+        notes = [build.parse_note(path) for path in paths]
         notes.sort(key=lambda item: item["date"], reverse=True)
         atomic_write(
             self.notes_dir / "manifest.json",

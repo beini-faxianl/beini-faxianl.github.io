@@ -53,7 +53,8 @@ def parse_note(path: Path) -> dict:
 def build_notes() -> int:
     if not NOTES_DIR.is_dir():
         return 0
-    notes = [parse_note(p) for p in sorted(NOTES_DIR.glob("*.md"))]
+    paths = sorted(NOTES_DIR.glob("*.md"), key=lambda path: path.name.casefold())
+    notes = [parse_note(path) for path in paths]
     notes.sort(key=lambda n: n["date"], reverse=True)
     (NOTES_DIR / "manifest.json").write_text(
         json.dumps({"notes": notes}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
