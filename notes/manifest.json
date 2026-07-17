@@ -1,6 +1,16 @@
 {
   "notes": [
     {
+      "title": "HTB Fireflow：从 Langflow RCE、MCP JWT 伪造到 Kubernetes Root",
+      "date": "2026-07-17",
+      "category": "网络安全",
+      "tags": [
+        "HTB",
+        "Linux"
+      ],
+      "file": "2026-07-17-HTB Fireflow：从 Langflow RCE、MCP JWT 伪造到 Kubernetes Root摘要.md"
+    },
+    {
       "title": "HackTheBox Travel：从 RSS 到 Root——SSRF、Memcache 投毒与 LDAP 提权复盘",
       "date": "2026-07-07",
       "category": "网络安全",
