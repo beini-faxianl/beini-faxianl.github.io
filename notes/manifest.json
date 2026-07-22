@@ -1,6 +1,13 @@
 {
   "notes": [
     {
+      "title": "HTB-Forest：隐匿森林中的域控猎杀",
+      "date": "2026-07-22",
+      "category": "HTB 靶场",
+      "tags": [],
+      "file": "2026-07-22-HTB-Forest：隐匿森林中的域控猎杀.md"
+    },
+    {
       "title": "HTB Fireflow：从 Langflow RCE、MCP JWT 伪造到 Kubernetes Root",
       "date": "2026-07-17",
       "category": "网络安全",
