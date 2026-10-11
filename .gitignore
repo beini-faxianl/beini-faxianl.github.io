@@ -1,0 +1,24 @@
+# build output
+dist/
+.astro/
+
+# dependencies
+node_modules/
+
+# logs
+npm-debug.log*
+
+# environment
+.env
+.env.*
+
+# editors / OS
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Obsidian workspace state (keep vault settings out of the site repo)
+content/.obsidian/workspace*.json
+content/.trash/

@@ -1,0 +1,71 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getVault } from '../../lib/vault';
+
+const vault = getVault();
+const tags = vault.tags();
+const max = Math.max(1, ...tags.map((t) => t.posts.length));
+// 按首字母 / 拼音无关的简单排序：先按热度
+const sorted = [...tags].sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
+---
+
+<BaseLayout title="标签" description="按标签浏览文章">
+  <section class="container page-hero">
+    <h1>标签</h1>
+    <p>{tags.length} 个标签。字号越大，代表相关的文章越多。</p>
+  </section>
+
+  <section class="container">
+    <div class="tag-cloud">
+      {
+        sorted.map((t) => {
+          const w = t.posts.length / max;
+          const nested = t.name.includes('/');
+          return (
+            <a href={t.url} class:list={['cloud-tag', { nested }]} style={`--w:${w.toFixed(2)}`}>
+              <span class="hash">#</span>
+              {t.name}
+              <sup>{t.posts.length}</sup>
+            </a>
+          );
+        })
+      }
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .tag-cloud {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 14px 22px;
+    padding: clamp(28px, 5vw, 56px);
+    border-radius: var(--radius-xl);
+    background: var(--bg-subtle);
+  }
+  .cloud-tag {
+    font-size: calc(15px + var(--w) * 17px);
+    font-weight: calc(450 + var(--w) * 250);
+    letter-spacing: -0.01em;
+    color: color-mix(in oklab, var(--fg) calc(55% + var(--w) * 45%), var(--bg-subtle));
+    transition: color 0.15s var(--ease);
+  }
+  .cloud-tag:hover {
+    color: var(--accent-text);
+  }
+  .cloud-tag.nested {
+    font-style: normal;
+    opacity: 0.85;
+  }
+  .hash {
+    color: var(--accent);
+    margin-right: 1px;
+  }
+  .cloud-tag sup {
+    margin-left: 3px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--fg-faint);
+  }
+</style>

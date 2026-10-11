@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-label="一本打开的书与一盏台灯">
+  <rect width="1200" height="630" fill="#F0EEE6"/>
+  <circle cx="930" cy="170" r="260" fill="#EBDBBC" opacity=".55"/>
+  <circle cx="250" cy="560" r="200" fill="#E3DACC" opacity=".7"/>
+  <!-- lamp -->
+  <path d="M880 120 L960 120 L1010 230 L830 230 Z" fill="#D97757"/>
+  <rect x="912" y="230" width="16" height="200" rx="8" fill="#3D3D3A"/>
+  <rect x="860" y="420" width="120" height="22" rx="11" fill="#3D3D3A"/>
+  <path d="M830 230 L640 470 L1200 470 L1010 230 Z" fill="#FAF9F5" opacity=".55"/>
+  <!-- book -->
+  <g transform="translate(330 300)">
+    <path d="M0 40 C120 0 220 10 280 50 L280 260 C220 220 120 210 0 250 Z" fill="#FAF9F5" stroke="#141413" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M560 40 C440 0 340 10 280 50 L280 260 C340 220 440 210 560 250 Z" fill="#FAF9F5" stroke="#141413" stroke-width="5" stroke-linejoin="round"/>
+    <g stroke="#B0AEA5" stroke-width="5" stroke-linecap="round" fill="none">
+      <path d="M45 80 C110 60 170 62 235 85"/>
+      <path d="M45 115 C110 95 170 97 235 120"/>
+      <path d="M45 150 C110 130 170 132 235 155"/>
+      <path d="M45 185 C110 165 150 167 190 180"/>
+      <path d="M325 85 C390 62 450 60 515 80"/>
+      <path d="M325 120 C390 97 450 95 515 115"/>
+      <path d="M325 155 C390 132 450 130 515 150"/>
+    </g>
+    <path d="M325 190 C380 172 420 170 470 178" stroke="#D97757" stroke-width="7" stroke-linecap="round" fill="none"/>
+  </g>
+  <!-- leaf -->
+  <path d="M150 210 C210 120 320 130 330 140 C320 230 220 270 150 210 Z" fill="#788C5D"/>
+  <path d="M150 210 C220 180 270 160 330 140" stroke="#FAF9F5" stroke-width="4" fill="none" stroke-linecap="round"/>
+</svg>

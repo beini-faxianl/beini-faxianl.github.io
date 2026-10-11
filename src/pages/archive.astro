@@ -1,0 +1,134 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getVault, type Note } from '../lib/vault';
+import { formatCount, formatDate } from '../lib/utils';
+
+const vault = getVault();
+const posts = vault.chronological;
+const years = new Map<number, Note[]>();
+for (const p of posts) {
+  const y = p.date.getUTCFullYear();
+  if (!years.has(y)) years.set(y, []);
+  years.get(y)!.push(p);
+}
+const totalWords = posts.reduce((s, p) => s + p.words, 0);
+---
+
+<BaseLayout title="归档" description="按时间浏览全部文章">
+  <section class="container page-hero">
+    <h1>归档</h1>
+    <p>{posts.length} 篇文章，{formatCount(totalWords)} 字。慢慢写，慢慢积累。</p>
+  </section>
+
+  <section class="container archive">
+    {
+      [...years.entries()].map(([year, list]) => (
+        <div class="year-block">
+          <h2 class="year">
+            {year}
+            <span>{list.length} 篇</span>
+          </h2>
+          <ol class="year-list">
+            {list.map((p) => (
+              <li>
+                <a href={p.url} class="archive-item">
+                  <time datetime={p.date.toISOString()}>{formatDate(p.date, 'month-day')}</time>
+                  <span class="archive-title">
+                    <span class="vt-title" data-vt-title>
+                      {p.title}
+                    </span>
+                  </span>
+                  <span class="archive-cat">{p.categoryLabel}</span>
+                </a>
+              </li>
+            ))}
+          </ol>
+        </div>
+      ))
+    }
+  </section>
+</BaseLayout>
+
+<style>
+  .archive {
+    max-width: calc(860px + var(--gutter) * 2);
+  }
+  .year-block {
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    gap: 24px;
+    padding-block: 32px;
+    border-top: 1px solid var(--border);
+  }
+  .year {
+    position: sticky;
+    top: calc(var(--header-h) + 24px);
+    align-self: start;
+    font-size: 40px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .year span {
+    display: block;
+    margin-top: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0;
+    color: var(--fg-faint);
+  }
+  .year-list {
+    list-style: none;
+    padding: 0;
+  }
+  .archive-item {
+    display: grid;
+    grid-template-columns: 56px 1fr auto;
+    align-items: baseline;
+    gap: 16px;
+    padding: 12px 14px;
+    margin-inline: -14px;
+    border-radius: 12px;
+    transition: background 0.15s var(--ease);
+  }
+  .archive-item:hover {
+    background: var(--bg-subtle);
+  }
+  .archive-item time {
+    font-size: 14px;
+    color: var(--fg-faint);
+    font-variant-numeric: tabular-nums;
+  }
+  .archive-title {
+    font-size: 16.5px;
+    font-weight: 550;
+  }
+  .archive-item:hover .archive-title {
+    color: var(--accent-text);
+  }
+  .archive-cat {
+    font-size: 13px;
+    color: var(--fg-faint);
+  }
+  @media (max-width: 640px) {
+    .year-block {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    .year {
+      position: static;
+      font-size: 30px;
+    }
+    .year span {
+      display: inline;
+      margin-left: 8px;
+    }
+    .archive-cat {
+      display: none;
+    }
+    .archive-item {
+      grid-template-columns: 52px 1fr;
+    }
+  }
+</style>

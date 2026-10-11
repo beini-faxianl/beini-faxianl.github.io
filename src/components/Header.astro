@@ -1,0 +1,260 @@
+---
+import { siteConfig } from '../../site.config';
+import { withBase } from '../lib/utils';
+import { icon } from '../lib/icons';
+
+const path = decodeURIComponent(Astro.url.pathname);
+const home = withBase('/');
+const isActive = (href: string) => {
+  const full = withBase(href);
+  if (href === '/') return path === home || path === home.replace(/\/$/, '') || path.startsWith(withBase('/posts/'));
+  return path.startsWith(full);
+};
+const initial = Array.from(siteConfig.title)[0] ?? 'B';
+---
+
+<header class="site-header" data-header>
+  <div class="container header-inner">
+    <a href={home} class="brand" title="返回首页">
+      <span class="brand-mark" aria-hidden="true">{initial}</span>
+      <span class="brand-name">{siteConfig.title}</span>
+    </a>
+
+    <nav class="site-nav" aria-label="主导航" data-nav>
+      {
+        siteConfig.nav.map((item) => (
+          <a href={withBase(item.href)} class:list={['nav-link', { 'is-active': isActive(item.href) }]} aria-current={isActive(item.href) ? 'page' : undefined}>
+            {item.label}
+          </a>
+        ))
+      }
+    </nav>
+
+    <div class="header-actions">
+      <button class="search-trigger" type="button" data-search-open aria-label="搜索（Ctrl+K）">
+        <Fragment set:html={icon('search', 16)} />
+        <span class="search-trigger-text">搜索</span>
+        <span class="search-trigger-kbd"><kbd data-mod-key>Ctrl</kbd><kbd>K</kbd></span>
+      </button>
+      <button class="icon-btn theme-toggle" type="button" data-theme-toggle aria-label="切换深色 / 浅色模式" title="切换主题">
+        <span class="theme-icon theme-icon-sun"><Fragment set:html={icon('sun', 19)} /></span>
+        <span class="theme-icon theme-icon-moon"><Fragment set:html={icon('moon', 18)} /></span>
+      </button>
+      <button class="icon-btn menu-toggle" type="button" data-menu-toggle aria-label="菜单" aria-expanded="false">
+        <Fragment set:html={icon('menu', 20)} />
+      </button>
+    </div>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    height: var(--header-h);
+    background: var(--bg-header);
+    -webkit-backdrop-filter: saturate(1.4) blur(14px);
+    backdrop-filter: saturate(1.4) blur(14px);
+    border-bottom: 1px solid transparent;
+    transition:
+      border-color 0.25s var(--ease),
+      transform 0.35s var(--ease-out);
+  }
+  .site-header.is-scrolled {
+    border-bottom-color: var(--border);
+  }
+  .site-header.is-hidden {
+    transform: translateY(-100%);
+  }
+  :global(:root[data-focus-mode]) .site-header {
+    transform: translateY(-100%);
+  }
+  .header-inner {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    height: 100%;
+  }
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 17px;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+  }
+  .brand-mark {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    background: var(--accent);
+    color: var(--ivory-light);
+    font-family: var(--font-serif);
+    font-size: 16px;
+    font-weight: 600;
+    transition: transform 0.4s var(--ease-out);
+  }
+  .brand:hover .brand-mark {
+    transform: rotate(-8deg) scale(1.05);
+  }
+  .site-nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .nav-link {
+    position: relative;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 15px;
+    color: var(--fg-muted);
+    transition:
+      color 0.15s var(--ease),
+      background 0.15s var(--ease);
+  }
+  .nav-link:hover {
+    color: var(--fg);
+    background: var(--bg-muted);
+  }
+  .nav-link.is-active {
+    color: var(--fg);
+    font-weight: 600;
+  }
+  .nav-link.is-active::after {
+    content: '';
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    bottom: 1px;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--accent);
+  }
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+  }
+  .search-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 38px;
+    padding: 0 8px 0 12px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--bg-elevated);
+    color: var(--fg-faint);
+    font-size: 14px;
+    transition:
+      border-color 0.15s var(--ease),
+      color 0.15s var(--ease);
+  }
+  .search-trigger:hover {
+    border-color: var(--border-strong);
+    color: var(--fg-muted);
+  }
+  .search-trigger-text {
+    min-width: 72px;
+    text-align: left;
+  }
+  .search-trigger-kbd {
+    display: inline-flex;
+    gap: 3px;
+  }
+  .search-trigger-kbd kbd {
+    height: 20px;
+    min-width: 20px;
+    font-size: 11px;
+  }
+  .theme-icon {
+    display: grid;
+    grid-area: 1 / 1;
+    transition:
+      transform 0.5s var(--ease-out),
+      opacity 0.3s var(--ease);
+  }
+  .theme-toggle {
+    display: inline-grid;
+  }
+  .theme-toggle > span {
+    grid-area: 1 / 1;
+  }
+  .theme-icon-moon {
+    opacity: 0;
+    transform: rotate(-90deg) scale(0.6);
+  }
+  :global(:root[data-theme='dark']) .theme-icon-sun {
+    opacity: 0;
+    transform: rotate(90deg) scale(0.6);
+  }
+  :global(:root[data-theme='dark']) .theme-icon-moon {
+    opacity: 1;
+    transform: none;
+  }
+  .menu-toggle {
+    display: none;
+  }
+
+  @media (max-width: 900px) {
+    .search-trigger-text,
+    .search-trigger-kbd {
+      display: none;
+    }
+    .search-trigger {
+      width: 38px;
+      padding: 0;
+      justify-content: center;
+      border-color: transparent;
+      background: none;
+      color: var(--fg-2);
+    }
+  }
+  @media (max-width: 760px) {
+    .menu-toggle {
+      display: inline-grid;
+    }
+    .site-nav {
+      position: fixed;
+      top: var(--header-h);
+      left: 0;
+      right: 0;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 2px;
+      padding: 12px var(--gutter) 20px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      box-shadow: var(--shadow-md);
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-8px);
+      transition:
+        opacity 0.2s var(--ease),
+        transform 0.25s var(--ease-out),
+        visibility 0.2s;
+    }
+    .site-nav.is-open {
+      opacity: 1;
+      visibility: visible;
+      transform: none;
+    }
+    .nav-link {
+      padding: 12px;
+      font-size: 16px;
+    }
+    .nav-link.is-active::after {
+      left: 0;
+      right: auto;
+      top: 14px;
+      bottom: 14px;
+      width: 3px;
+      height: auto;
+    }
+  }
+</style>

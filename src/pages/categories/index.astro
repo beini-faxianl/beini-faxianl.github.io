@@ -1,0 +1,176 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getVault } from '../../lib/vault';
+import { formatDate } from '../../lib/utils';
+import { icon } from '../../lib/icons';
+import { categoryColorVar } from '../../scripts/graph-colors';
+
+const vault = getVault();
+const categories = vault.categories();
+const total = vault.allCategories().length;
+---
+
+<BaseLayout title="分类" description="按分类浏览全部文章">
+  <section class="container page-hero">
+    <h1>分类</h1>
+    <p>
+      {categories.length} 个分类{total > categories.length && `（含子分类共 ${total} 个）`}，共 {vault.posts.length} 篇文章。
+    </p>
+  </section>
+
+  <section class="container cat-grid">
+    {
+      categories.map((c, i) => (
+        <div class="cat-card" style={`--cat: var(${categoryColorVar(i)})`}>
+          <a href={c.url} class="cat-cover-link" aria-label={`查看分类「${c.name}」`} />
+          <div class="cat-head">
+            <span class="cat-dot" />
+            <h2 class="cat-name">{c.name}</h2>
+            <span class="cat-count">{c.posts.length} 篇</span>
+          </div>
+          {c.children.length > 0 && (
+            <div class="cat-subs">
+              {c.children.map((s) => (
+                <a href={s.url} class="cat-sub">
+                  {s.name}
+                  <span>{s.posts.length}</span>
+                </a>
+              ))}
+            </div>
+          )}
+          <ul class="cat-posts">
+            {c.posts.slice(0, 4).map((p) => (
+              <li>
+                <span class="cat-post-title">{p.title}</span>
+                <time>{formatDate(p.date, 'month-day')}</time>
+              </li>
+            ))}
+          </ul>
+          <span class="cat-more">
+            查看全部 <Fragment set:html={icon('arrowRight', 15)} />
+          </span>
+        </div>
+      ))
+    }
+  </section>
+</BaseLayout>
+
+<style>
+  .cat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+    gap: 20px;
+  }
+  .cat-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding: 28px;
+    border-radius: var(--radius-xl);
+    background: var(--bg-subtle);
+    transition:
+      background 0.25s var(--ease),
+      transform 0.35s var(--ease-out);
+  }
+  .cat-card:hover {
+    background: var(--bg-muted);
+    transform: translateY(-3px);
+  }
+  /* 整张卡片可点击，子分类链接浮在其上方 */
+  .cat-cover-link {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+  }
+  .cat-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .cat-subs {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: -4px;
+  }
+  .cat-sub {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 28px;
+    padding: 0 11px;
+    border-radius: 999px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--fg-2);
+    transition:
+      border-color 0.15s var(--ease),
+      color 0.15s var(--ease);
+  }
+  .cat-sub span {
+    font-size: 11.5px;
+    color: var(--fg-faint);
+  }
+  .cat-sub:hover {
+    border-color: var(--cat);
+    color: var(--fg);
+  }
+  .cat-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--cat);
+  }
+  .cat-name {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .cat-count {
+    margin-left: auto;
+    font-size: 13px;
+    color: var(--fg-faint);
+  }
+  .cat-posts {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: 10px;
+    font-size: 14.5px;
+  }
+  .cat-posts li {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    color: var(--fg-2);
+  }
+  .cat-post-title {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .cat-posts time {
+    flex: none;
+    font-size: 13px;
+    color: var(--fg-faint);
+    font-variant-numeric: tabular-nums;
+  }
+  .cat-more {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: auto;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .cat-more :global(svg) {
+    transition: transform 0.3s var(--ease-out);
+  }
+  .cat-card:hover .cat-more :global(svg) {
+    transform: translateX(4px);
+  }
+</style>

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 420" role="img" aria-label="键值存储结构：客户端、内存索引、追加日志与压缩">
+  <rect width="960" height="420" rx="24" fill="#F0EEE6"/>
+  <g font-family="system-ui, -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif" fill="#141413">
+    <rect x="40" y="160" width="170" height="100" rx="16" fill="#FAF9F5" stroke="#141413" stroke-width="2.5"/>
+    <text x="125" y="205" text-anchor="middle" font-size="22" font-weight="700">客户端</text>
+    <text x="125" y="235" text-anchor="middle" font-size="16" fill="#5E5D59">get / set / rm</text>
+
+    <rect x="300" y="60" width="250" height="120" rx="16" fill="#FAF9F5" stroke="#141413" stroke-width="2.5"/>
+    <text x="425" y="105" text-anchor="middle" font-size="22" font-weight="700">内存索引</text>
+    <text x="425" y="138" text-anchor="middle" font-size="16" fill="#5E5D59">HashMap&lt;key, offset&gt;</text>
+
+    <rect x="300" y="240" width="250" height="120" rx="16" fill="#D97757"/>
+    <text x="425" y="287" text-anchor="middle" font-size="22" font-weight="700" fill="#FAF9F5">追加日志</text>
+    <text x="425" y="320" text-anchor="middle" font-size="16" fill="#FAF9F5">append-only log</text>
+
+    <rect x="650" y="240" width="250" height="120" rx="16" fill="#FAF9F5" stroke="#788C5D" stroke-width="2.5" stroke-dasharray="8 6"/>
+    <text x="775" y="287" text-anchor="middle" font-size="22" font-weight="700" fill="#788C5D">压缩</text>
+    <text x="775" y="320" text-anchor="middle" font-size="16" fill="#5E5D59">只保留最新值</text>
+  </g>
+  <g stroke="#141413" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M210 190 C250 170 260 130 300 120"/><path d="M288 112 L300 120 L290 132"/>
+    <path d="M210 230 C250 250 260 290 300 300"/><path d="M290 289 L300 300 L288 309"/>
+    <path d="M425 240 L425 180"/><path d="M415 192 L425 180 L435 192"/>
+    <path d="M550 300 L650 300"/><path d="M638 290 L650 300 L638 310"/>
+    <path d="M775 240 C775 160 640 140 550 130" stroke="#788C5D" stroke-dasharray="6 6"/>
+  </g>
+</svg>

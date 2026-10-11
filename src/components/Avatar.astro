@@ -1,0 +1,43 @@
+---
+import { siteConfig } from '../../site.config';
+import { withBase } from '../lib/utils';
+
+interface Props {
+  size?: number;
+  class?: string;
+}
+const { size = 44, class: className } = Astro.props;
+const src = siteConfig.avatar ? withBase(siteConfig.avatar) : '';
+const initial = Array.from(siteConfig.author)[0] ?? '·';
+---
+
+{
+  src ? (
+    <img class:list={['avatar', className]} src={src} alt={siteConfig.author} width={size} height={size} style={`--size:${size}px`} loading="lazy" decoding="async" />
+  ) : (
+    <span class:list={['avatar', 'avatar-initial', className]} style={`--size:${size}px`} aria-hidden="true">
+      {initial}
+    </span>
+  )
+}
+
+<style>
+  .avatar {
+    flex: none;
+    width: var(--size);
+    height: var(--size);
+    border-radius: calc(var(--size) * 0.3);
+    object-fit: cover;
+    background: var(--bg-muted);
+  }
+  .avatar-initial {
+    display: grid;
+    place-items: center;
+    background: var(--accent);
+    color: var(--ivory-light);
+    font-family: var(--font-serif);
+    font-size: calc(var(--size) * 0.45);
+    font-weight: 600;
+    line-height: 1;
+  }
+</style>

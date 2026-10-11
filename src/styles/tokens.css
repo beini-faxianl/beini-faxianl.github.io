@@ -1,0 +1,159 @@
+/*
+ * 设计令牌 —— 色板取自 anthropic.com 的 swatch 变量，
+ * 浅色 / 深色主题的语义映射也与其 u-theme-dark 一致。
+ */
+:root {
+  /* Anthropic swatches */
+  --ivory-light: #faf9f5;
+  --ivory-medium: #f0eee6;
+  --ivory-dark: #e8e6dc;
+  --slate-dark: #141413;
+  --slate-medium: #3d3d3a;
+  --slate-light: #5e5d59;
+  --cloud-dark: #87867f;
+  --cloud-medium: #b0aea5;
+  --cloud-light: #d1cfc5;
+  --clay: #d97757;
+  --clay-deep: #c6613f;
+  --kraft: #d4a27f;
+  --manilla: #ebdbbc;
+  --oat: #e3dacc;
+  --olive: #788c5d;
+  --sky: #6a9bcc;
+  --fig: #c46686;
+  --plum: #827dbd;
+  --mineral: #629987;
+  --poppy: #de6262;
+  --pencil: #f0ac54;
+  --cactus: #bcd1ca;
+  --heather: #cbcadb;
+  --coral: #ebcece;
+  --peach: #ebc9b7;
+  --matcha: #ced6bf;
+
+  /* 字体 */
+  --font-sans: 'DM Sans Variable', 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+  --font-serif: 'Source Serif 4 Variable', 'Source Serif 4', 'Noto Serif SC Variable', 'Noto Serif SC', 'Songti SC',
+    'STSong', 'SimSun', Georgia, serif;
+  --font-kai: 'LXGW WenKai Screen', 'Source Serif 4 Variable', 'Kaiti SC', 'STKaiti', 'KaiTi', serif;
+  --font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas,
+    'PingFang SC', 'Microsoft YaHei', monospace;
+
+  /* 尺寸 */
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --header-h: 64px;
+  --container: 1120px;
+  --gutter: clamp(16px, 4vw, 32px);
+
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* 阅读设置（由 reader 脚本覆盖） */
+  --reader-font-size: 18px;
+  --reader-line-height: 1.85;
+  --reader-letter-spacing: 0.01em;
+  --reader-para-spacing: 1.15em;
+  --reader-width: 720px;
+  --reader-contrast: 90%;
+  --reader-font: var(--font-serif);
+}
+
+/* ---------- 浅色（默认） ---------- */
+:root,
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: var(--ivory-light);
+  --bg-elevated: #ffffff;
+  --bg-subtle: var(--ivory-medium);
+  --bg-muted: var(--ivory-dark);
+  --bg-header: rgb(250 249 245 / 0.82);
+
+  --fg: var(--slate-dark);
+  --fg-2: var(--slate-medium);
+  --fg-muted: var(--slate-light);
+  --fg-faint: var(--cloud-dark);
+
+  --border: rgb(20 20 19 / 0.1);
+  --border-strong: rgb(20 20 19 / 0.2);
+
+  --accent: var(--clay);
+  --accent-text: var(--clay-deep);
+  --accent-soft: rgb(217 119 87 / 0.12);
+  --accent-softer: rgb(217 119 87 / 0.07);
+
+  --mark-bg: rgb(240 172 84 / 0.34);
+  --code-bg: var(--ivory-medium);
+  --inline-code-bg: rgb(20 20 19 / 0.055);
+  --selection: rgb(217 119 87 / 0.24);
+
+  --btn-primary-bg: var(--slate-dark);
+  --btn-primary-fg: var(--ivory-light);
+  --btn-primary-hover: var(--slate-medium);
+
+  --shadow-sm: 0 1px 2px rgb(20 20 19 / 0.06);
+  --shadow-md: 0 6px 20px -6px rgb(20 20 19 / 0.14), 0 2px 6px rgb(20 20 19 / 0.05);
+  --shadow-lg: 0 28px 56px -16px rgb(20 20 19 / 0.22), 0 6px 16px rgb(20 20 19 / 0.06);
+  --overlay: rgb(20 20 19 / 0.28);
+
+  --graph-node: var(--slate-light);
+  --graph-link: rgb(20 20 19 / 0.14);
+}
+
+/* ---------- 深色 ---------- */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: var(--slate-dark);
+  --bg-elevated: #232321;
+  --bg-subtle: #1e1e1c;
+  --bg-muted: #2b2b29;
+  --bg-header: rgb(20 20 19 / 0.8);
+
+  --fg: var(--ivory-light);
+  --fg-2: var(--ivory-dark);
+  --fg-muted: var(--cloud-medium);
+  --fg-faint: var(--cloud-dark);
+
+  --border: rgb(250 249 245 / 0.1);
+  --border-strong: rgb(250 249 245 / 0.2);
+
+  --accent: var(--clay);
+  --accent-text: #e58e6f;
+  --accent-soft: rgb(217 119 87 / 0.18);
+  --accent-softer: rgb(217 119 87 / 0.1);
+
+  --mark-bg: rgb(240 172 84 / 0.3);
+  --code-bg: #1e1e1c;
+  --inline-code-bg: rgb(250 249 245 / 0.08);
+  --selection: rgb(217 119 87 / 0.36);
+
+  --btn-primary-bg: var(--ivory-light);
+  --btn-primary-fg: var(--slate-dark);
+  --btn-primary-hover: var(--ivory-medium);
+
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.3);
+  --shadow-md: 0 8px 24px -8px rgb(0 0 0 / 0.5), 0 2px 6px rgb(0 0 0 / 0.25);
+  --shadow-lg: 0 28px 56px -16px rgb(0 0 0 / 0.65), 0 6px 16px rgb(0 0 0 / 0.3);
+  --overlay: rgb(0 0 0 / 0.5);
+
+  --graph-node: var(--cloud-medium);
+  --graph-link: rgb(250 249 245 / 0.14);
+}
+
+/* 手机上默认字号略小一点，每行能容纳约 20 个汉字 */
+@media (max-width: 640px) {
+  :root {
+    --reader-font-size: 17px;
+  }
+}
+
+/* 阅读字体切换 */
+:root[data-reader-font='sans'] {
+  --reader-font: var(--font-sans);
+}
+:root[data-reader-font='kai'] {
+  --reader-font: var(--font-kai);
+}

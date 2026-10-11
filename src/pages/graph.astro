@@ -1,0 +1,143 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getVault } from '../lib/vault';
+import { withBase } from '../lib/utils';
+import { icon } from '../lib/icons';
+import { categoryColorVar } from '../scripts/graph-colors';
+
+const vault = getVault();
+const categories = vault.categories();
+const linkCount = vault.posts.reduce((s, p) => s + p.links.length, 0);
+---
+
+<BaseLayout title="关系图谱" description="文章之间的双向链接关系">
+  <section class="container page-hero graph-hero">
+    <h1>关系图谱</h1>
+    <p>每个圆点是一篇文章，连线来自文章之间的 [[双向链接]]。拖动、缩放来探索，点击圆点打开文章。</p>
+  </section>
+
+  <section class="container">
+    <div class="graph-frame">
+      <canvas data-graph data-url={withBase('/graph.json')} aria-label="全站文章关系图"></canvas>
+      <div class="graph-legend">
+        {
+          categories.map((c, i) => (
+            <span class="legend-item">
+              <span class="legend-dot" style={`background: var(${categoryColorVar(i)})`} />
+              {c.name}
+            </span>
+          ))
+        }
+      </div>
+      <div class="graph-controls">
+        <button type="button" class="icon-btn" data-zoom="in" aria-label="放大">+</button>
+        <button type="button" class="icon-btn" data-zoom="out" aria-label="缩小">−</button>
+        <button type="button" class="icon-btn" data-zoom="reset" aria-label="重置视图" title="重置视图"><Fragment set:html={icon('reset', 16)} /></button>
+      </div>
+      <div class="graph-stats">{vault.posts.length} 篇文章 · {linkCount} 条链接</div>
+      <p class="graph-empty">还没有文章。写下第一篇，并用 [[双链]] 把它们连起来吧。</p>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  import { mountGraph } from '../scripts/graph';
+  const canvas = document.querySelector<HTMLCanvasElement>('[data-graph]');
+  if (canvas) {
+    mountGraph(canvas, { url: canvas.dataset.url!, onEmpty: () => canvas.parentElement?.classList.add('is-empty') }).then((g) => {
+      document.querySelectorAll<HTMLButtonElement>('[data-zoom]').forEach((b) =>
+        b.addEventListener('click', () => {
+          if (b.dataset.zoom === 'in') g?.zoom(1.25);
+          else if (b.dataset.zoom === 'out') g?.zoom(0.8);
+          else g?.reset();
+        }),
+      );
+    });
+  }
+</script>
+
+<style>
+  .graph-hero {
+    padding-bottom: 32px;
+  }
+  .graph-frame {
+    position: relative;
+    height: min(72vh, 760px);
+    min-height: 420px;
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--border);
+    background: var(--bg-subtle);
+    overflow: hidden;
+  }
+  .graph-frame canvas {
+    width: 100%;
+    height: 100%;
+    cursor: grab;
+    touch-action: none;
+  }
+  .graph-legend {
+    position: absolute;
+    left: 20px;
+    top: 18px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    max-width: calc(100% - 140px);
+    font-size: 13px;
+    color: var(--fg-muted);
+    pointer-events: none;
+  }
+  .legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .legend-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+  }
+  .graph-controls {
+    position: absolute;
+    right: 14px;
+    top: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 4px;
+    border-radius: 12px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+  }
+  .graph-controls .icon-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 18px;
+  }
+  .graph-empty {
+    position: absolute;
+    inset: 0;
+    display: none;
+    place-items: center;
+    padding: 24px;
+    font-family: var(--font-serif);
+    font-size: 17px;
+    text-align: center;
+    color: var(--fg-muted);
+  }
+  .graph-frame.is-empty .graph-empty {
+    display: grid;
+  }
+  .graph-frame.is-empty :is(.graph-controls, .graph-legend) {
+    display: none;
+  }
+  .graph-stats {
+    position: absolute;
+    left: 20px;
+    bottom: 16px;
+    font-size: 12.5px;
+    color: var(--fg-faint);
+    pointer-events: none;
+  }
+</style>

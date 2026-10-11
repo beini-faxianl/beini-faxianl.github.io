@@ -1,0 +1,68 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PostList from '../../components/PostList.astro';
+import { getVault } from '../../lib/vault';
+import { withBase } from '../../lib/utils';
+import { icon } from '../../lib/icons';
+
+export function getStaticPaths() {
+  return getVault()
+    .tags()
+    .map((t) => ({ params: { tag: t.slug }, props: { name: t.name } }));
+}
+
+const vault = getVault();
+const all = vault.tags();
+const tag = all.find((t) => t.name === Astro.props.name)!;
+const children = all.filter((t) => t.name.toLowerCase().startsWith(tag.name.toLowerCase() + '/'));
+const parent = tag.name.includes('/') ? all.find((t) => t.name.toLowerCase() === tag.name.split('/').slice(0, -1).join('/').toLowerCase()) : undefined;
+---
+
+<BaseLayout title={`#${tag.name}`} description={`标签 #${tag.name} 下的 ${tag.posts.length} 篇文章`}>
+  <section class="container page-hero">
+    <a href={parent ? parent.url : withBase('/tags/')} class="back-link">
+      <Fragment set:html={icon('arrowLeft', 15)} />
+      {parent ? `#${parent.name}` : '全部标签'}
+    </a>
+    <h1><span class="hash">#</span>{tag.name}</h1>
+    <p>{tag.posts.length} 篇文章</p>
+    {
+      children.length > 0 && (
+        <div class="sub-tags">
+          {children.map((c) => (
+            <a href={c.url} class="chip">
+              #{c.name} <span class="count">{c.posts.length}</span>
+            </a>
+          ))}
+        </div>
+      )
+    }
+  </section>
+  <section class="container">
+    <PostList posts={tag.posts} />
+  </section>
+</BaseLayout>
+
+<style>
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    color: var(--fg-muted);
+  }
+  .back-link:hover {
+    color: var(--accent-text);
+  }
+  .hash {
+    color: var(--accent);
+    margin-right: 2px;
+  }
+  .sub-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 20px;
+  }
+</style>

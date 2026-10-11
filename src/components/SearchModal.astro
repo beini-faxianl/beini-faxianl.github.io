@@ -1,0 +1,227 @@
+---
+import { icon } from '../lib/icons';
+import { withBase } from '../lib/utils';
+---
+
+<div class="search-modal" data-search-modal data-index-url={withBase('/search-index.json')} hidden>
+  <div class="search-backdrop" data-search-close></div>
+  <div class="search-dialog" role="dialog" aria-modal="true" aria-label="全文搜索">
+    <div class="search-input-row">
+      <span class="search-icon"><Fragment set:html={icon('search', 20)} /></span>
+      <input
+        type="search"
+        class="search-input"
+        placeholder="搜索标题、正文、标签…  试试 #标签"
+        autocomplete="off"
+        spellcheck="false"
+        enterkeyhint="search"
+        aria-label="搜索"
+        aria-controls="search-results"
+        data-search-input
+      />
+      <button class="search-esc" type="button" data-search-close aria-label="关闭"><kbd>Esc</kbd></button>
+    </div>
+    <div class="search-body" id="search-results" role="listbox" data-search-results></div>
+    <div class="search-footer">
+      <span><kbd>↑</kbd><kbd>↓</kbd> 选择</span>
+      <span><kbd>↵</kbd> 打开</span>
+      <span class="search-footer-stat" data-search-stat></span>
+    </div>
+  </div>
+</div>
+
+<style is:global>
+  .search-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 150;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: min(12vh, 120px) 16px 16px;
+  }
+  .search-modal[hidden] {
+    display: none;
+  }
+  .search-backdrop {
+    position: absolute;
+    inset: 0;
+    background: var(--overlay);
+    -webkit-backdrop-filter: blur(3px);
+    backdrop-filter: blur(3px);
+    animation: fade-in 0.2s var(--ease);
+  }
+  .search-dialog {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: min(680px, 100%);
+    max-height: min(640px, calc(100dvh - 2 * min(12vh, 120px)));
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    animation: dialog-in 0.28s var(--ease-out);
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes dialog-in {
+    from {
+      opacity: 0;
+      transform: translateY(-8px) scale(0.985);
+    }
+  }
+  .search-input-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 14px 0 18px;
+    border-bottom: 1px solid var(--border);
+  }
+  .search-icon {
+    color: var(--fg-faint);
+  }
+  .search-input {
+    flex: 1;
+    min-width: 0;
+    height: 60px;
+    border: 0;
+    outline: 0;
+    background: none;
+    font-size: 17px;
+    color: var(--fg);
+  }
+  .search-input::placeholder {
+    color: var(--fg-faint);
+  }
+  .search-input::-webkit-search-cancel-button {
+    display: none;
+  }
+  .search-body {
+    flex: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 8px;
+  }
+  .search-group-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--fg-faint);
+  }
+  .search-clear {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--fg-faint);
+  }
+  .search-clear:hover {
+    color: var(--accent-text);
+  }
+  .search-tags .chip svg {
+    color: var(--fg-faint);
+  }
+  .search-result {
+    display: block;
+    padding: 12px 14px;
+    border-radius: 12px;
+    scroll-margin: 8px;
+    transition: background 0.1s;
+  }
+  .search-result[aria-selected='true'] {
+    background: var(--bg-subtle);
+  }
+  .search-result-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15.5px;
+    font-weight: 600;
+    color: var(--fg);
+  }
+  .search-result-title .arrow {
+    margin-left: auto;
+    color: var(--fg-faint);
+    opacity: 0;
+    transition: opacity 0.1s;
+  }
+  .search-result[aria-selected='true'] .arrow {
+    opacity: 1;
+  }
+  .search-result-meta {
+    margin-top: 2px;
+    font-size: 12.5px;
+    color: var(--fg-faint);
+  }
+  .search-result-snippet {
+    margin-top: 6px;
+    font-family: var(--font-serif);
+    font-size: 14px;
+    line-height: 1.65;
+    color: var(--fg-muted);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .search-result mark {
+    background: var(--mark-bg);
+    color: var(--fg);
+    border-radius: 3px;
+    padding: 0 1px;
+  }
+  .search-empty {
+    padding: 40px 16px;
+    text-align: center;
+    color: var(--fg-faint);
+    font-size: 14px;
+  }
+  .search-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 4px 12px 12px;
+  }
+  .search-footer {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 18px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--fg-faint);
+  }
+  .search-footer span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .search-footer kbd {
+    height: 20px;
+    min-width: 20px;
+    font-size: 11px;
+  }
+  .search-footer-stat {
+    margin-left: auto;
+  }
+  .search-esc kbd {
+    cursor: pointer;
+  }
+  @media (max-width: 640px) {
+    .search-modal {
+      padding: 8px;
+    }
+    .search-dialog {
+      max-height: calc(100dvh - 16px);
+    }
+    .search-footer > span:not(.search-footer-stat) {
+      display: none;
+    }
+  }
+</style>

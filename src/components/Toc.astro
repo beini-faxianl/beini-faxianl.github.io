@@ -1,0 +1,122 @@
+---
+import type { TocItem } from '../lib/markdown';
+import { icon } from '../lib/icons';
+
+interface Props {
+  toc: TocItem[];
+}
+const { toc } = Astro.props;
+const minDepth = Math.min(...toc.map((t) => t.depth));
+---
+
+<nav class="toc" aria-label="文章目录" data-toc>
+  <div class="toc-head">
+    <span class="toc-title">目录</span>
+    <span class="toc-percent" data-progress-text>0%</span>
+    <button type="button" class="icon-btn toc-close" data-toc-close aria-label="关闭目录"><Fragment set:html={icon('x', 18)} /></button>
+  </div>
+  {
+    toc.length ? (
+      <ol class="toc-list">
+        {toc.map((item) => (
+          <li class="toc-item" style={`--level:${item.depth - minDepth}`}>
+            <a href={`#${item.id}`} data-toc-link={item.id}>
+              {item.text}
+            </a>
+          </li>
+        ))}
+      </ol>
+    ) : (
+      <p class="toc-empty">这篇文章没有小标题</p>
+    )
+  }
+  <a href="#top" class="toc-top" data-scroll-top>
+    <Fragment set:html={icon('arrowUp', 14)} /> 回到顶部
+  </a>
+</nav>
+
+<style>
+  .toc {
+    font-size: 13.5px;
+    line-height: 1.5;
+  }
+  .toc-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .toc-title {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--fg-faint);
+  }
+  .toc-percent {
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    color: var(--fg-faint);
+  }
+  .toc-close {
+    display: none;
+  }
+  .toc-list {
+    position: relative;
+    list-style: none;
+    padding: 0;
+    border-left: 1px solid var(--border);
+    max-height: calc(100dvh - var(--header-h) - 200px);
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+  .toc-item a {
+    position: relative;
+    display: block;
+    padding: 5px 0 5px calc(14px + var(--level) * 14px);
+    color: var(--fg-muted);
+    transition: color 0.15s var(--ease);
+  }
+  .toc-item a::before {
+    content: '';
+    position: absolute;
+    left: -1px;
+    top: 6px;
+    bottom: 6px;
+    width: 2px;
+    border-radius: 2px;
+    background: var(--accent);
+    opacity: 0;
+    transform: scaleY(0.4);
+    transition:
+      opacity 0.2s var(--ease),
+      transform 0.25s var(--ease-out);
+  }
+  .toc-item a:hover {
+    color: var(--fg);
+  }
+  .toc-item a.is-active {
+    color: var(--fg);
+    font-weight: 600;
+  }
+  .toc-item a.is-active::before {
+    opacity: 1;
+    transform: none;
+  }
+  .toc-item a.is-read:not(.is-active) {
+    color: var(--fg-faint);
+  }
+  .toc-empty {
+    color: var(--fg-faint);
+  }
+  .toc-top {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 18px;
+    font-size: 12.5px;
+    color: var(--fg-faint);
+  }
+  .toc-top:hover {
+    color: var(--accent-text);
+  }
+</style>

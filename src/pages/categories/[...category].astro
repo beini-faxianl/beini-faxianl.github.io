@@ -1,0 +1,143 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PostList from '../../components/PostList.astro';
+import { getVault, type CategoryInfo } from '../../lib/vault';
+import { withBase } from '../../lib/utils';
+import { icon } from '../../lib/icons';
+
+export function getStaticPaths() {
+  return getVault()
+    .allCategories()
+    .map((c) => ({ params: { category: c.slug }, props: { slug: c.slug } }));
+}
+
+const vault = getVault();
+const cat = vault.category(Astro.props.slug as string)!;
+const ancestors: CategoryInfo[] = [];
+for (let p = cat.parent; p; p = p.parent) ancestors.unshift(p);
+const siblings = (cat.parent ? cat.parent.children : vault.categories()).filter((c) => c !== cat);
+---
+
+<BaseLayout title={`${cat.label} · 分类`} description={`分类「${cat.label}」下的 ${cat.posts.length} 篇文章`}>
+  <section class="container page-hero">
+    <nav class="crumbs" aria-label="分类路径">
+      <a href={withBase('/categories/')}><Fragment set:html={icon('folder', 15)} /> 全部分类</a>
+      {
+        ancestors.map((a) => (
+          <>
+            <span class="sep">›</span>
+            <a href={a.url}>{a.name}</a>
+          </>
+        ))
+      }
+    </nav>
+    <h1>{cat.name}</h1>
+    <p>
+      {cat.posts.length} 篇文章{cat.children.length > 0 && `，含 ${cat.children.length} 个子分类`}
+    </p>
+
+    {
+      cat.children.length > 0 && (
+        <div class="sub-cats">
+          {cat.children.map((c) => (
+            <a href={c.url} class="sub-cat">
+              <Fragment set:html={icon('folder', 16)} />
+              <span class="sub-cat-name">{c.name}</span>
+              <span class="sub-cat-count">{c.posts.length} 篇</span>
+              {c.children.length > 0 && <span class="sub-cat-more">+{c.children.length} 个子分类</span>}
+            </a>
+          ))}
+        </div>
+      )
+    }
+  </section>
+
+  <section class="container">
+    <PostList posts={cat.posts} />
+    {
+      siblings.length > 0 && (
+        <div class="other-cats">
+          <span>{cat.parent ? `「${cat.parent.name}」下的其它分类` : '其它分类'}</span>
+          {siblings.map((c) => (
+            <a href={c.url} class="chip">
+              {c.name} <span class="count">{c.posts.length}</span>
+            </a>
+          ))}
+        </div>
+      )
+    }
+  </section>
+</BaseLayout>
+
+<style>
+  .crumbs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    color: var(--fg-muted);
+  }
+  .crumbs a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: color 0.15s var(--ease);
+  }
+  .crumbs a:hover {
+    color: var(--accent-text);
+  }
+  .sep {
+    color: var(--fg-faint);
+  }
+  .sub-cats {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+    gap: 10px;
+    margin-top: 28px;
+    max-width: 900px;
+  }
+  .sub-cat {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 4px 10px;
+    padding: 14px 16px;
+    border-radius: 14px;
+    background: var(--bg-subtle);
+    color: var(--fg-muted);
+    transition:
+      background 0.2s var(--ease),
+      transform 0.25s var(--ease-out);
+  }
+  .sub-cat:hover {
+    background: var(--bg-muted);
+    transform: translateY(-2px);
+  }
+  .sub-cat-name {
+    font-weight: 650;
+    color: var(--fg);
+  }
+  .sub-cat-count {
+    font-size: 13px;
+    color: var(--fg-faint);
+  }
+  .sub-cat-more {
+    grid-column: 2 / -1;
+    font-size: 12px;
+    color: var(--fg-faint);
+  }
+  .other-cats {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 48px;
+    font-size: 14px;
+    color: var(--fg-faint);
+  }
+  .other-cats > span {
+    margin-right: 8px;
+  }
+</style>

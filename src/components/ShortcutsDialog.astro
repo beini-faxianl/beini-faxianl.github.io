@@ -1,0 +1,134 @@
+---
+import { icon } from '../lib/icons';
+
+const MOD = '<kbd data-mod-key>Ctrl</kbd>';
+const k = (...keys: string[]) => keys.map((key) => (key === 'MOD' ? MOD : `<kbd>${key}</kbd>`)).join('');
+const groups = [
+  {
+    title: '全站',
+    rows: [
+      [k('MOD', 'K'), '搜索'],
+      [k('/'), '搜索'],
+      [k('?'), '显示快捷键'],
+      [k('Esc'), '关闭弹窗、退出模式'],
+    ],
+  },
+  {
+    title: '阅读文章',
+    rows: [
+      [k('T'), '目录'],
+      [k('F'), '专注模式'],
+      [k('A'), '批注模式'],
+    ],
+  },
+  {
+    title: '批注模式',
+    rows: [
+      [k('P'), '笔'],
+      [k('H'), '荧光笔'],
+      [k('L'), '激光笔'],
+      [k('E'), '橡皮擦'],
+      [k('1') + '–' + k('6'), '切换颜色'],
+      [k('Shift'), '按住拖动画直线'],
+      [k('MOD', 'Z'), '撤销'],
+      [k('MOD', 'Shift', 'Z'), '重做'],
+    ],
+  },
+];
+---
+
+<dialog class="shortcuts" data-shortcuts aria-labelledby="shortcuts-title" tabindex="-1">
+  <div class="sc-head">
+    <h2 id="shortcuts-title">键盘快捷键</h2>
+    <button type="button" class="icon-btn" data-shortcuts-close aria-label="关闭"><Fragment set:html={icon('x', 18)} /></button>
+  </div>
+  <div class="sc-grid">
+    {
+      groups.map((g) => (
+        <section>
+          <h3>{g.title}</h3>
+          <dl>
+            {g.rows.map(([keys, desc]) => (
+              <div class="sc-row">
+                <dt set:html={keys} />
+                <dd>{desc}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      ))
+    }
+  </div>
+</dialog>
+
+<style is:global>
+  .shortcuts {
+    width: min(720px, calc(100vw - 32px));
+    max-height: calc(100dvh - 48px);
+    margin: auto;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    background: var(--bg-elevated);
+    color: var(--fg);
+    box-shadow: var(--shadow-lg);
+  }
+  .shortcuts[open] {
+    animation: dialog-in 0.28s var(--ease-out);
+  }
+  .shortcuts:focus {
+    outline: none;
+  }
+  .shortcuts::backdrop {
+    background: var(--overlay);
+    -webkit-backdrop-filter: blur(3px);
+    backdrop-filter: blur(3px);
+  }
+  .sc-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 16px 12px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sc-head h2 {
+    font-size: 16px;
+    font-weight: 650;
+  }
+  .sc-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 8px 28px;
+    padding: 18px 24px 24px;
+  }
+  .sc-grid h3 {
+    margin: 6px 0 10px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: var(--fg-faint);
+  }
+  .sc-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 0;
+    font-size: 13.5px;
+  }
+  .sc-row + .sc-row {
+    border-top: 1px dashed var(--border);
+  }
+  .sc-row dt {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    flex: none;
+    color: var(--fg-faint);
+    font-size: 12px;
+  }
+  .sc-row dd {
+    color: var(--fg-2);
+    text-align: right;
+  }
+</style>

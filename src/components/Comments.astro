@@ -1,0 +1,78 @@
+---
+import { siteConfig } from '../../site.config';
+const g = siteConfig.giscus;
+const enabled = Boolean(g.repo && g.repoId && g.categoryId);
+---
+
+{
+  enabled && (
+    <section class="comments" aria-label="评论">
+      <h2 class="comments-title">评论</h2>
+      <div
+        class="giscus-host"
+        data-giscus
+        data-repo={g.repo}
+        data-repo-id={g.repoId}
+        data-category={g.category}
+        data-category-id={g.categoryId}
+        data-mapping={g.mapping}
+        data-lang={g.lang}
+      />
+    </section>
+  )
+}
+
+<script>
+  const host = document.querySelector<HTMLElement>('[data-giscus]');
+  if (host) {
+    const theme = () => (document.documentElement.dataset.theme === 'dark' ? 'dark_dimmed' : 'light');
+    const load = () => {
+      const s = document.createElement('script');
+      s.src = 'https://giscus.app/client.js';
+      s.async = true;
+      s.crossOrigin = 'anonymous';
+      const d = host.dataset;
+      const attrs: Record<string, string> = {
+        'data-repo': d.repo!,
+        'data-repo-id': d.repoId!,
+        'data-category': d.category!,
+        'data-category-id': d.categoryId!,
+        'data-mapping': d.mapping!,
+        'data-strict': '0',
+        'data-reactions-enabled': '1',
+        'data-emit-metadata': '0',
+        'data-input-position': 'top',
+        'data-theme': theme(),
+        'data-lang': d.lang!,
+        'data-loading': 'lazy',
+      };
+      for (const [k, v] of Object.entries(attrs)) s.setAttribute(k, v);
+      host.append(s);
+    };
+    // 滚动到附近时再加载
+    const io = new IntersectionObserver((es) => {
+      if (es.some((e) => e.isIntersecting)) {
+        io.disconnect();
+        load();
+      }
+    }, { rootMargin: '400px' });
+    io.observe(host);
+    window.addEventListener('themechange', () => {
+      const frame = document.querySelector<HTMLIFrameElement>('iframe.giscus-frame');
+      frame?.contentWindow?.postMessage({ giscus: { setConfig: { theme: theme() } } }, 'https://giscus.app');
+    });
+  }
+</script>
+
+<style>
+  .comments {
+    margin-top: 56px;
+    padding-top: 32px;
+    border-top: 1px solid var(--border);
+  }
+  .comments-title {
+    margin-bottom: 20px;
+    font-size: 18px;
+    font-weight: 650;
+  }
+</style>

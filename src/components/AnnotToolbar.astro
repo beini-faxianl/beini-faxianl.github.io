@@ -1,0 +1,296 @@
+---
+import { icon } from '../lib/icons';
+
+const tools = [
+  { key: 'pen', label: '笔', hint: 'P', icon: 'pen' },
+  { key: 'highlighter', label: '荧光笔', hint: 'H', icon: 'highlighter' },
+  { key: 'laser', label: '激光笔', hint: 'L', icon: 'laser' },
+  { key: 'eraser', label: '橡皮擦', hint: 'E', icon: 'eraser' },
+] as const;
+const colors = [
+  { key: 'clay', label: '陶土橙' },
+  { key: 'ink', label: '墨色' },
+  { key: 'sky', label: '天蓝' },
+  { key: 'olive', label: '橄榄绿' },
+  { key: 'pencil', label: '琥珀黄' },
+  { key: 'fig', label: '无花果紫' },
+];
+---
+
+<div class="annot-toolbar" data-annot-toolbar role="toolbar" aria-label="批注工具" hidden>
+  <div class="annot-group">
+    {
+      tools.map((t) => (
+        <button type="button" class="annot-btn" data-tool={t.key} aria-label={t.label} title={`${t.label}（${t.hint}）`} aria-pressed="false">
+          <Fragment set:html={icon(t.icon, 19)} />
+        </button>
+      ))
+    }
+  </div>
+  <span class="annot-sep" aria-hidden="true"></span>
+  <div class="annot-group annot-colors">
+    {
+      colors.map((c, i) => (
+        <button type="button" class="annot-swatch" data-color={c.key} aria-label={c.label} title={`${c.label}（${i + 1}）`} aria-pressed="false" style={`--swatch: var(--${c.key === 'ink' ? 'fg' : c.key})`} />
+      ))
+    }
+  </div>
+  <span class="annot-sep" aria-hidden="true"></span>
+  <div class="annot-group annot-sizes">
+    {
+      [0, 1, 2].map((s) => (
+        <button type="button" class="annot-size" data-size={s} aria-label={['细', '中', '粗'][s]} title={['细', '中', '粗'][s]} aria-pressed="false">
+          <span style={`--d:${[4, 7, 11][s]}px`} />
+        </button>
+      ))
+    }
+  </div>
+  <span class="annot-sep" aria-hidden="true"></span>
+  <div class="annot-group">
+    <button type="button" class="annot-btn" data-annot="undo" aria-label="撤销" title="撤销（Ctrl+Z）"><Fragment set:html={icon('undo', 18)} /></button>
+    <button type="button" class="annot-btn" data-annot="redo" aria-label="重做" title="重做（Ctrl+Shift+Z）"><Fragment set:html={icon('redo', 18)} /></button>
+    <button type="button" class="annot-btn annot-clear" data-annot="clear" aria-label="清除全部批注" title="一键清除全部痕迹"><Fragment set:html={icon('trash', 18)} /></button>
+  </div>
+  <button type="button" class="annot-done" data-annot="close" title="退出批注（Esc）">完成</button>
+</div>
+
+<style is:global>
+  /* —— 画布层 —— */
+  .article-content {
+    position: relative;
+  }
+  .annot-layer {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+    z-index: 2;
+  }
+  .annot-hi {
+    mix-blend-mode: multiply;
+  }
+  .annot-hi path {
+    opacity: 0.42;
+  }
+  :root[data-theme='dark'] .annot-hi {
+    mix-blend-mode: screen;
+  }
+  :root[data-theme='dark'] .annot-hi path {
+    opacity: 0.36;
+  }
+  .annot-laser-trail {
+    fill: var(--poppy);
+    filter: drop-shadow(0 0 4px rgb(222 98 98 / 0.9)) drop-shadow(0 0 10px rgb(222 98 98 / 0.55));
+  }
+  .annot-cursor {
+    display: none;
+    fill: none;
+    stroke: var(--fg-muted);
+    stroke-width: 1.5;
+    pointer-events: none;
+  }
+  :root.is-annotating .annot-cursor.is-visible[data-tool='eraser'] {
+    display: block;
+    fill: rgb(127 127 127 / 0.08);
+    stroke-dasharray: 3 3;
+  }
+  :root.is-annotating .annot-cursor.is-visible[data-tool='laser'] {
+    display: block;
+    fill: var(--poppy);
+    stroke: none;
+    filter: drop-shadow(0 0 6px rgb(222 98 98 / 0.9));
+  }
+  .annot-capture {
+    position: absolute;
+    top: -24px;
+    bottom: -24px;
+    left: calc(-1 * clamp(0px, (100vw - 100%) / 2 - 24px, 96px));
+    right: calc(-1 * clamp(0px, (100vw - 100%) / 2 - 24px, 96px));
+    z-index: 3;
+    display: none;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  :root.is-annotating .annot-capture {
+    display: block;
+    cursor: crosshair;
+  }
+  :root.is-annotating .annot-capture[data-tool='eraser'],
+  :root.is-annotating .annot-capture[data-tool='laser'] {
+    cursor: none;
+  }
+  :root.is-annotating .prose {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* —— 工具栏 —— */
+  .annot-toolbar {
+    position: fixed;
+    left: 50%;
+    bottom: max(20px, env(safe-area-inset-bottom));
+    z-index: 90;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    max-width: calc(100vw - 24px);
+    padding: 6px;
+    border-radius: 18px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-lg);
+    transform: translateX(-50%);
+    overflow-x: auto;
+    scrollbar-width: none;
+    animation: toolbar-in 0.35s var(--ease-out);
+  }
+  .annot-toolbar[hidden] {
+    display: none;
+  }
+  @keyframes toolbar-in {
+    from {
+      opacity: 0;
+      transform: translate(-50%, 16px);
+    }
+  }
+  .annot-group {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+  .annot-sep {
+    flex: none;
+    width: 1px;
+    height: 24px;
+    background: var(--border);
+  }
+  .annot-btn {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    color: var(--fg-2);
+    transition:
+      background 0.15s var(--ease),
+      color 0.15s var(--ease),
+      transform 0.15s var(--ease);
+  }
+  .annot-btn:hover:not(:disabled) {
+    background: var(--bg-muted);
+    color: var(--fg);
+  }
+  .annot-btn[aria-pressed='true'] {
+    background: var(--accent-soft);
+    color: var(--accent-text);
+  }
+  .annot-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+  .annot-clear:hover:not(:disabled) {
+    color: var(--poppy);
+  }
+  .annot-swatch {
+    flex: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    transition: transform 0.15s var(--ease);
+  }
+  .annot-swatch::before {
+    content: '';
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--swatch);
+    box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.1);
+    transition: transform 0.2s var(--ease-out);
+  }
+  .annot-swatch:hover:not(:disabled)::before {
+    transform: scale(1.12);
+  }
+  .annot-swatch[aria-pressed='true'] {
+    box-shadow: 0 0 0 2px var(--bg-elevated), 0 0 0 3.5px var(--swatch);
+  }
+  .annot-swatch:disabled,
+  .annot-size:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+  .annot-size {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 32px;
+    height: 36px;
+    border-radius: 10px;
+  }
+  .annot-size span {
+    width: var(--d);
+    height: var(--d);
+    border-radius: 50%;
+    background: var(--fg-muted);
+  }
+  .annot-size:hover:not(:disabled) {
+    background: var(--bg-muted);
+  }
+  .annot-size[aria-pressed='true'] span {
+    background: var(--accent);
+  }
+  .annot-done {
+    flex: none;
+    height: 40px;
+    margin-left: 4px;
+    padding: 0 16px;
+    border-radius: 12px;
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-fg);
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .annot-done:hover {
+    background: var(--btn-primary-hover);
+  }
+  /* 批注时把提示信息挪到工具栏上方 */
+  :root.is-annotating .toast-host {
+    bottom: calc(max(20px, env(safe-area-inset-bottom)) + 72px);
+  }
+  @media (max-width: 640px) {
+    .annot-toolbar {
+      left: 8px;
+      right: 8px;
+      transform: none;
+      max-width: none;
+      flex-wrap: wrap;
+      justify-content: center;
+      row-gap: 2px;
+      overflow: visible;
+    }
+    .annot-sep {
+      display: none;
+    }
+    .annot-done {
+      margin-left: 6px;
+    }
+    :root.is-annotating .toast-host {
+      bottom: calc(max(20px, env(safe-area-inset-bottom)) + 112px);
+    }
+    @keyframes toolbar-in {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+    }
+    .annot-btn {
+      width: 36px;
+      height: 36px;
+    }
+  }
+</style>

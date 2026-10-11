@@ -1,0 +1,51 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { withBase } from '../lib/utils';
+import { icon } from '../lib/icons';
+---
+
+<BaseLayout title="页面不存在" noindex>
+  <section class="container nf">
+    <p class="nf-code">404</p>
+    <h1>这一页还没有被写下</h1>
+    <p class="nf-desc">也许它还在草稿箱里，也许链接拼错了。试试搜索，或者回到首页看看。</p>
+    <div class="nf-actions">
+      <a href={withBase('/')} class="btn btn-primary"><Fragment set:html={icon('arrowLeft', 16)} /> 回到首页</a>
+      <button type="button" class="btn" data-search-open><Fragment set:html={icon('search', 16)} /> 搜索文章</button>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .nf {
+    padding-block: clamp(80px, 14vw, 160px);
+    text-align: center;
+  }
+  .nf-code {
+    font-family: var(--font-serif);
+    font-size: clamp(5rem, 3rem + 10vw, 10rem);
+    line-height: 1;
+    color: var(--accent);
+    letter-spacing: -0.04em;
+  }
+  .nf h1 {
+    margin-top: 16px;
+    font-size: clamp(1.5rem, 1.2rem + 1.2vw, 2.2rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .nf-desc {
+    max-width: 460px;
+    margin: 14px auto 0;
+    font-family: var(--font-serif);
+    font-size: 17px;
+    color: var(--fg-muted);
+  }
+  .nf-actions {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 32px;
+  }
+</style>

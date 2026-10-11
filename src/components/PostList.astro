@@ -1,0 +1,189 @@
+---
+import type { Note } from '../lib/vault';
+import { formatDate } from '../lib/utils';
+import { icon } from '../lib/icons';
+import { getVault } from '../lib/vault';
+
+interface Props {
+  posts: Note[];
+  /** 首屏显示数量；超出部分先隐藏，由“加载更多”展开 */
+  pageSize?: number;
+  showCategory?: boolean;
+}
+const { posts, pageSize = Infinity, showCategory = true } = Astro.props;
+const vault = getVault();
+const coverUrl = (p: Note) => vault.cover(p)?.url;
+---
+
+<ol class="post-list" data-post-list data-page-size={Number.isFinite(pageSize) ? pageSize : undefined}>
+  {
+    posts.map((p, i) => {
+      const cover = coverUrl(p);
+      return (
+        <li class="post-item" data-categories={p.categorySlugs.join(' ')} hidden={i >= pageSize ? true : undefined}>
+          <a href={p.url} class="post-link">
+            <time class="post-date" datetime={p.date.toISOString()}>
+              {formatDate(p.date, 'short')}
+            </time>
+            <div class="post-main">
+              <div class="post-eyebrow">
+                {showCategory && <span>{p.categoryLabel}</span>}
+                {p.pinned && (
+                  <span class="badge badge-pin">
+                    <Fragment set:html={icon('pin', 12)} />
+                    置顶
+                  </span>
+                )}
+                {p.draft && <span class="badge badge-draft">草稿</span>}
+              </div>
+              <h3 class="post-title">
+                <span class="vt-title" data-vt-title>
+                  <span class="title-text">{p.title}</span>
+                </span>
+              </h3>
+              {p.description && <p class="post-excerpt">{p.description}</p>}
+              <div class="post-meta">
+                <span>{p.minutes} 分钟阅读</span>
+                {p.tags.slice(0, 3).map((t) => (
+                  <span class="post-tag">#{t}</span>
+                ))}
+              </div>
+            </div>
+            {cover && <img class="post-thumb" src={cover} alt="" loading="lazy" decoding="async" />}
+          </a>
+        </li>
+      );
+    })
+  }
+</ol>
+
+<style>
+  .post-list {
+    list-style: none;
+    padding: 0;
+    border-top: 1px solid var(--border);
+  }
+  .post-item {
+    border-bottom: 1px solid var(--border);
+  }
+  .post-item[hidden] {
+    display: none;
+  }
+  .post-link {
+    display: grid;
+    grid-template-columns: 120px minmax(0, 1fr) auto;
+    gap: 8px 32px;
+    padding: 28px 0;
+    align-items: start;
+  }
+  .post-date {
+    padding-top: 3px;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+    color: var(--fg-faint);
+  }
+  .post-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--fg-muted);
+  }
+  .post-eyebrow:empty {
+    display: none;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    height: 20px;
+    padding: 0 7px;
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+  .badge-pin {
+    background: var(--accent-soft);
+    color: var(--accent-text);
+  }
+  .badge-draft {
+    background: var(--bg-muted);
+    color: var(--fg-muted);
+  }
+  .post-title {
+    margin-top: 6px;
+    font-size: clamp(1.15rem, 1.05rem + 0.4vw, 1.35rem);
+    font-weight: 650;
+    line-height: 1.35;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+  .title-text {
+    background-image: linear-gradient(var(--accent), var(--accent));
+    background-size: 0 1.5px;
+    background-position: 0 100%;
+    background-repeat: no-repeat;
+    transition: background-size 0.4s var(--ease-out);
+  }
+  .post-link:hover .title-text {
+    background-size: 100% 1.5px;
+  }
+  .post-excerpt {
+    margin-top: 10px;
+    font-family: var(--font-serif);
+    font-size: 16px;
+    line-height: 1.75;
+    color: var(--fg-muted);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .post-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--fg-faint);
+  }
+  .post-tag {
+    color: var(--accent-text);
+    opacity: 0.85;
+  }
+  .post-thumb {
+    width: 168px;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+    border-radius: 12px;
+    background: var(--bg-subtle);
+    transition: transform 0.5s var(--ease-out);
+  }
+  .post-link:hover .post-thumb {
+    transform: scale(1.03);
+  }
+
+  @media (max-width: 720px) {
+    .post-link {
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 6px 16px;
+      padding: 22px 0;
+    }
+    .post-date {
+      grid-row: 1;
+      grid-column: 1;
+      padding: 0;
+      font-size: 13px;
+    }
+    .post-main {
+      grid-column: 1;
+    }
+    .post-thumb {
+      grid-row: 1 / span 2;
+      grid-column: 2;
+      width: 96px;
+      align-self: center;
+    }
+  }
+</style>

@@ -1,0 +1,440 @@
+---
+import { icon } from '../lib/icons';
+
+interface Props {
+  /** 文章没有小标题时不显示目录按钮 */
+  hasToc?: boolean;
+}
+const { hasToc = true } = Astro.props;
+
+/** 阅读设置项：键名需与 reader.ts、BaseLayout 中的启动脚本保持一致 */
+const sliders = [
+  { key: 'fontSize', label: '字号', min: 14, max: 26, step: 1 },
+  { key: 'lineHeight', label: '行距', min: 1.3, max: 2.6, step: 0.05 },
+  { key: 'letterSpacing', label: '字间距', min: -0.03, max: 0.2, step: 0.01 },
+  { key: 'paraSpacing', label: '段间距', min: 0.4, max: 2.4, step: 0.05 },
+  { key: 'width', label: '页面宽度', min: 480, max: 1200, step: 10 },
+  { key: 'contrast', label: '文字亮度', min: 40, max: 100, step: 1 },
+];
+---
+
+<!-- 右下角阅读工具栏 -->
+<div class="reader-dock" data-reader-dock role="toolbar" aria-label="阅读工具">
+  {
+    hasToc && (
+      <button type="button" class="dock-btn" data-dock="toc" aria-label="目录" data-tip="目录 · T">
+        <Fragment set:html={icon('toc', 19)} />
+      </button>
+    )
+  }
+  <button type="button" class="dock-btn" data-dock="settings" aria-label="阅读设置" aria-expanded="false" data-tip="阅读设置">
+    <Fragment set:html={icon('type', 19)} />
+  </button>
+  <button type="button" class="dock-btn" data-dock="annotate" aria-label="批注" aria-pressed="false" data-tip="批注 · A">
+    <Fragment set:html={icon('annotate', 19)} />
+    <span class="dock-badge" data-annot-count hidden></span>
+  </button>
+  <button type="button" class="dock-btn" data-dock="focus" aria-label="专注阅读" aria-pressed="false" data-tip="专注阅读 · F">
+    <Fragment set:html={icon('focus', 19)} />
+  </button>
+  <button type="button" class="dock-btn dock-top" data-dock="top" aria-label="回到顶部" data-tip="回到顶部">
+    <svg class="dock-ring" viewBox="0 0 40 40" aria-hidden="true">
+      <circle cx="20" cy="20" r="18" pathLength="100"></circle>
+      <circle cx="20" cy="20" r="18" pathLength="100" data-progress-ring></circle>
+    </svg>
+    <Fragment set:html={icon('arrowUp', 17)} />
+  </button>
+</div>
+
+<!-- 阅读设置面板 -->
+<div class="reader-panel" data-reader-panel hidden role="dialog" aria-label="阅读设置">
+  <div class="rp-head">
+    <span class="rp-title">阅读设置</span>
+    <button type="button" class="rp-reset" data-reader-reset>
+      <Fragment set:html={icon('reset', 14)} /> 恢复默认
+    </button>
+  </div>
+
+  <div class="rp-row">
+    <span class="rp-label">主题</span>
+    <div class="segmented" data-theme-segment>
+      <button type="button" data-mode="light"><Fragment set:html={icon('sun', 15)} />浅色</button>
+      <button type="button" data-mode="dark"><Fragment set:html={icon('moon', 14)} />深色</button>
+      <button type="button" data-mode="system"><Fragment set:html={icon('monitor', 15)} />自动</button>
+    </div>
+  </div>
+
+  <div class="rp-row">
+    <span class="rp-label">字体</span>
+    <div class="segmented" data-font-segment>
+      <button type="button" data-font="serif" style="font-family: var(--font-serif)">宋体</button>
+      <button type="button" data-font="sans" style="font-family: var(--font-sans)">黑体</button>
+      <button type="button" data-font="kai" style="font-family: var(--font-kai)">楷体</button>
+    </div>
+  </div>
+
+  <div class="rp-sliders">
+    {
+      sliders.map((s) => (
+        <label class="rp-slider">
+          <span class="rp-label">{s.label}</span>
+          <input type="range" min={s.min} max={s.max} step={s.step} data-setting={s.key} />
+          <output data-output={s.key} />
+        </label>
+      ))
+    }
+  </div>
+
+  <div class="rp-toggles">
+    <label class="rp-switch">
+      <input type="checkbox" data-toggle="justify" />
+      <span class="rp-switch-ui" aria-hidden="true"></span>
+      两端对齐
+    </label>
+    <label class="rp-switch">
+      <input type="checkbox" data-toggle="indent" />
+      <span class="rp-switch-ui" aria-hidden="true"></span>
+      首行缩进
+    </label>
+  </div>
+</div>
+
+<style is:global>
+  .reader-dock {
+    position: fixed;
+    right: max(16px, env(safe-area-inset-right));
+    bottom: max(20px, env(safe-area-inset-bottom));
+    z-index: 60;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 5px;
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--bg-elevated) 88%, transparent);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-md);
+    transition:
+      opacity 0.3s var(--ease),
+      transform 0.35s var(--ease-out);
+  }
+  :root.is-annotating .reader-dock {
+    opacity: 0;
+    transform: translateX(16px);
+    pointer-events: none;
+  }
+  .dock-btn {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 11px;
+    color: var(--fg-2);
+    transition:
+      background 0.15s var(--ease),
+      color 0.15s var(--ease);
+  }
+  .dock-btn:hover {
+    background: var(--bg-muted);
+    color: var(--fg);
+  }
+  .dock-btn[aria-pressed='true'],
+  .dock-btn[aria-expanded='true'] {
+    background: var(--fg);
+    color: var(--bg);
+  }
+  .dock-btn::after {
+    content: attr(data-tip);
+    position: absolute;
+    right: calc(100% + 10px);
+    top: 50%;
+    padding: 5px 9px;
+    border-radius: 7px;
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-fg);
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translate(4px, -50%);
+    transition:
+      opacity 0.15s var(--ease),
+      transform 0.2s var(--ease-out);
+    pointer-events: none;
+  }
+  @media (hover: hover) {
+    .dock-btn:hover::after {
+      opacity: 1;
+      transform: translate(0, -50%);
+    }
+  }
+  .dock-badge {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    min-width: 15px;
+    height: 15px;
+    padding: 0 4px;
+    border-radius: 8px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 15px;
+    text-align: center;
+  }
+  .dock-btn > svg:not(.dock-ring) {
+    grid-area: 1 / 1;
+  }
+  .dock-ring {
+    grid-area: 1 / 1;
+    width: 34px;
+    height: 34px;
+    transform: rotate(-90deg);
+    fill: none;
+    stroke-width: 2;
+  }
+  .dock-ring circle:first-child {
+    stroke: var(--border);
+  }
+  .dock-ring circle:last-child {
+    stroke: var(--accent);
+    stroke-linecap: round;
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    transition: stroke-dashoffset 0.15s linear;
+  }
+
+  /* —— 设置面板 —— */
+  .reader-panel {
+    position: fixed;
+    right: calc(max(16px, env(safe-area-inset-right)) + 64px);
+    bottom: max(20px, env(safe-area-inset-bottom));
+    z-index: 70;
+    width: 340px;
+    max-height: calc(100dvh - 40px);
+    overflow-y: auto;
+    padding: 18px 18px 16px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    box-shadow: var(--shadow-lg);
+    font-size: 14px;
+    animation: panel-in 0.28s var(--ease-out);
+  }
+  .reader-panel[hidden] {
+    display: none;
+  }
+  @keyframes panel-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.98);
+    }
+  }
+  .rp-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .rp-title {
+    font-weight: 650;
+    font-size: 15px;
+  }
+  .rp-reset {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    color: var(--fg-muted);
+  }
+  .rp-reset:hover {
+    background: var(--bg-muted);
+    color: var(--fg);
+  }
+  .rp-row {
+    display: grid;
+    grid-template-columns: 64px 1fr;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .rp-label {
+    font-size: 13px;
+    color: var(--fg-muted);
+  }
+  .segmented {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    gap: 2px;
+    padding: 3px;
+    border-radius: 11px;
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+  }
+  .segmented button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    height: 30px;
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--fg-muted);
+    transition:
+      background 0.15s var(--ease),
+      color 0.15s var(--ease);
+  }
+  .segmented button:hover {
+    color: var(--fg);
+  }
+  .segmented button[aria-pressed='true'] {
+    background: var(--bg-elevated);
+    color: var(--fg);
+    font-weight: 600;
+    box-shadow: var(--shadow-sm);
+  }
+  .rp-sliders {
+    display: grid;
+    gap: 6px;
+    margin: 6px 0 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+  .rp-slider {
+    display: grid;
+    grid-template-columns: 64px 1fr 52px;
+    align-items: center;
+    gap: 12px;
+    min-height: 32px;
+  }
+  .rp-slider output {
+    font-size: 12.5px;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    color: var(--fg-2);
+  }
+  .rp-slider input[type='range'] {
+    --pct: 50%;
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 22px;
+    background: transparent;
+    cursor: pointer;
+  }
+  .rp-slider input[type='range']::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 4px;
+    background: linear-gradient(to right, var(--accent) var(--pct), var(--bg-muted) var(--pct));
+  }
+  .rp-slider input[type='range']::-moz-range-track {
+    height: 4px;
+    border-radius: 4px;
+    background: linear-gradient(to right, var(--accent) var(--pct), var(--bg-muted) var(--pct));
+  }
+  .rp-slider input[type='range']::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    margin-top: -7px;
+    border-radius: 50%;
+    background: var(--bg-elevated);
+    border: 1.5px solid var(--border-strong);
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.15s var(--ease);
+  }
+  .rp-slider input[type='range']::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--bg-elevated);
+    border: 1.5px solid var(--border-strong);
+    box-shadow: var(--shadow-sm);
+  }
+  .rp-slider input[type='range']:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+  .rp-slider input[type='range']:active::-webkit-slider-thumb {
+    transform: scale(1.15);
+    border-color: var(--accent);
+  }
+  .rp-toggles {
+    display: flex;
+    gap: 20px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+  .rp-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--fg-2);
+    cursor: pointer;
+  }
+  .rp-switch input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .rp-switch-ui {
+    position: relative;
+    width: 32px;
+    height: 18px;
+    border-radius: 9px;
+    background: var(--bg-muted);
+    border: 1px solid var(--border);
+    transition: background 0.2s var(--ease);
+  }
+  .rp-switch-ui::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--bg-elevated);
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.25s var(--ease-out);
+  }
+  .rp-switch input:checked + .rp-switch-ui {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .rp-switch input:checked + .rp-switch-ui::after {
+    transform: translateX(14px);
+  }
+  .rp-switch input:focus-visible + .rp-switch-ui {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  @media (max-width: 640px) {
+    .reader-dock {
+      flex-direction: row;
+      right: 50%;
+      transform: translateX(50%);
+      bottom: max(12px, env(safe-area-inset-bottom));
+    }
+    :root.is-annotating .reader-dock {
+      transform: translate(50%, 16px);
+    }
+    .dock-btn::after {
+      display: none;
+    }
+    .reader-panel {
+      left: 8px;
+      right: 8px;
+      bottom: calc(max(12px, env(safe-area-inset-bottom)) + 62px);
+      width: auto;
+      max-height: 70dvh;
+    }
+  }
+</style>

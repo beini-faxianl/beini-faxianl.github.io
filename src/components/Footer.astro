@@ -1,0 +1,107 @@
+---
+import { siteConfig } from '../../site.config';
+import { getVault } from '../lib/vault';
+import { formatCount, withBase } from '../lib/utils';
+import { icon } from '../lib/icons';
+
+const vault = getVault();
+const totalWords = vault.posts.reduce((s, p) => s + p.words, 0);
+const year = new Date().getFullYear();
+const firstYear = vault.chronological.at(-1)?.date.getUTCFullYear() ?? year;
+const { github, email, twitter } = siteConfig.social;
+---
+
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <div class="footer-main">
+      <p class="footer-brand">{siteConfig.title}</p>
+      <p class="footer-stats">
+        {vault.posts.length} 篇文章 · {formatCount(totalWords)} 字 · {vault.tags().length} 个标签
+      </p>
+    </div>
+    <div class="footer-links">
+      <a href={withBase('/rss.xml')} class="icon-btn" aria-label="RSS 订阅" title="RSS 订阅"><Fragment set:html={icon('rss', 18)} /></a>
+      {github && <a href={github} class="icon-btn" aria-label="GitHub" title="GitHub" target="_blank" rel="noopener"><Fragment set:html={icon('github', 18)} /></a>}
+      {twitter && <a href={twitter} class="icon-btn" aria-label="X / Twitter" title="X / Twitter" target="_blank" rel="noopener"><Fragment set:html={icon('twitter', 18)} /></a>}
+      {email && <a href={`mailto:${email}`} class="icon-btn" aria-label="邮件" title="邮件"><Fragment set:html={icon('mail', 18)} /></a>}
+    </div>
+  </div>
+  <div class="container footer-bottom">
+    <span>© {firstYear === year ? year : `${firstYear}–${year}`} {siteConfig.author}</span>
+    <span>
+      <button type="button" class="footer-kbd" data-shortcuts-open>键盘快捷键 <kbd>?</kbd></button>
+      用 Obsidian 写作 · 由 <a href="https://astro.build" target="_blank" rel="noopener">Astro</a> 构建
+    </span>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    margin-top: clamp(64px, 10vw, 120px);
+    padding-block: 40px 32px;
+    border-top: 1px solid var(--border);
+    font-size: 14px;
+    color: var(--fg-muted);
+  }
+  :global(:root[data-focus-mode]) .site-footer {
+    opacity: 0.35;
+  }
+  .footer-inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .footer-brand {
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--fg);
+  }
+  .footer-stats {
+    margin-top: 4px;
+    font-variant-numeric: tabular-nums;
+  }
+  .footer-links {
+    display: flex;
+    gap: 4px;
+  }
+  .footer-bottom {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 28px;
+    font-size: 13px;
+    color: var(--fg-faint);
+  }
+  .footer-bottom a {
+    text-decoration: underline;
+    text-decoration-color: var(--border-strong);
+    text-underline-offset: 3px;
+  }
+  .footer-bottom a:hover {
+    color: var(--fg);
+  }
+  .footer-kbd {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-right: 14px;
+    font-size: 13px;
+    color: var(--fg-faint);
+  }
+  .footer-kbd:hover {
+    color: var(--fg);
+  }
+  .footer-kbd kbd {
+    height: 18px;
+    min-width: 18px;
+    font-size: 11px;
+  }
+  @media (hover: none) {
+    .footer-kbd {
+      display: none;
+    }
+  }
+</style>

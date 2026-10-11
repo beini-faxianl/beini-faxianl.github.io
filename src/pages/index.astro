@@ -1,0 +1,418 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PostList from '../components/PostList.astro';
+import { siteConfig } from '../../site.config';
+import { getVault, type Note } from '../lib/vault';
+import { escapeHtml, formatCount, formatDate, withBase } from '../lib/utils';
+import { icon } from '../lib/icons';
+
+const vault = getVault();
+const posts = vault.chronological;
+const categories = vault.categories();
+const featured = vault.posts.filter((p) => p.pinned).slice(0, 2);
+const totalWords = posts.reduce((s, p) => s + p.words, 0);
+
+const headline = escapeHtml(siteConfig.hero.headline).replace(/\[\[(.+?)\]\]/g, '<span class="u">$1</span>');
+
+const coverUrl = (p: Note) => vault.cover(p)?.url;
+
+const websiteLd = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: siteConfig.title,
+  description: siteConfig.description,
+  url: new URL(withBase('/'), Astro.site ?? siteConfig.url).href,
+  inLanguage: siteConfig.lang,
+  author: { '@type': 'Person', name: siteConfig.author },
+}).replace(/</g, '\\u003c');
+---
+
+<BaseLayout>
+  <script is:inline type="application/ld+json" slot="head" set:html={websiteLd} />
+  <section class="hero container">
+    <h1 class="hero-title" set:html={headline} />
+    <div class="hero-side">
+      <p class="hero-intro">{siteConfig.hero.intro}</p>
+      <div class="hero-actions">
+        <a href="#posts" class="btn btn-primary">开始阅读 <Fragment set:html={icon('arrowRight', 16)} /></a>
+        <button type="button" class="btn" data-search-open><Fragment set:html={icon('search', 16)} /> 搜索文章</button>
+      </div>
+      <dl class="hero-stats">
+        <div><dt>文章</dt><dd>{posts.length}</dd></div>
+        <div><dt>分类</dt><dd>{categories.length}</dd></div>
+        <div><dt>字数</dt><dd>{formatCount(totalWords)}</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  {
+    featured.length > 0 && (
+      <section class="container featured" aria-label="精选文章">
+        {featured.map((p) => {
+          const cover = coverUrl(p);
+          return (
+            <a href={p.url} class:list={['feature-card', { 'has-cover': cover }]}>
+              <div class="feature-body">
+                <span class="eyebrow">精选 · {p.categoryLabel}</span>
+                <h2 class="feature-title">
+                  <span class="vt-title" data-vt-title>
+                    {p.title}
+                  </span>
+                </h2>
+                <p class="feature-desc">{p.description}</p>
+                <span class="feature-more">
+                  阅读全文 <Fragment set:html={icon('arrowRight', 16)} />
+                </span>
+              </div>
+              {cover && <img class="feature-cover" src={cover} alt="" loading="lazy" />}
+              <time class="feature-date" datetime={p.date.toISOString()}>
+                {formatDate(p.date)}
+              </time>
+            </a>
+          );
+        })}
+      </section>
+    )
+  }
+
+  <section class="container posts-section" id="posts">
+    <div class="posts-head">
+      <h2 class="posts-heading">全部文章</h2>
+      <div class="category-filter" role="toolbar" aria-label="按分类筛选" data-category-filter>
+        <button type="button" class="chip" aria-pressed="true" data-filter="">全部 <span class="count">{posts.length}</span></button>
+        {
+          categories.map((c) => (
+            <button type="button" class="chip" aria-pressed="false" data-filter={c.slug} data-root>
+              {c.name} <span class="count">{c.posts.length}</span>
+            </button>
+          ))
+        }
+      </div>
+    </div>
+
+    {
+      categories
+        .filter((c) => c.children.length > 0)
+        .map((c) => (
+          <div class="sub-filter" data-sub-of={c.slug} hidden>
+            <span class="sub-filter-label">{c.name} ›</span>
+            {c.children.map((s) => (
+              <button type="button" class="chip chip-sm" aria-pressed="false" data-filter={s.slug}>
+                {s.name} <span class="count">{s.posts.length}</span>
+              </button>
+            ))}
+            <a href={c.url} class="sub-filter-more">
+              查看「{c.name}」分类页 <Fragment set:html={icon('arrowRight', 13)} />
+            </a>
+          </div>
+        ))
+    }
+
+    {posts.length ? <PostList posts={posts} pageSize={siteConfig.pageSize} /> : <p class="empty-state">还没有文章。在 content/ 目录里写下第一篇吧。</p>}
+
+    <div class="load-more-wrap">
+      <button type="button" class="btn load-more" data-load-more hidden>加载更多</button>
+      <a href={withBase('/archive/')} class="archive-link">浏览全部归档 <Fragment set:html={icon('arrowRight', 15)} /></a>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  const list = document.querySelector<HTMLElement>('[data-post-list]');
+  const filter = document.querySelector<HTMLElement>('[data-category-filter]');
+  const more = document.querySelector<HTMLButtonElement>('[data-load-more]');
+  if (list && filter && more) {
+    const pageSize = Number(list.dataset.pageSize) || Infinity;
+    const items = [...list.querySelectorAll<HTMLElement>('.post-item')];
+    let category = new URLSearchParams(location.search).get('category') ?? '';
+    let shown = pageSize;
+
+    const subRows = [...document.querySelectorAll<HTMLElement>('[data-sub-of]')];
+    // 选中分类本身或它的任意下级
+    const within = (slug: string) => !!slug && (category === slug || category.startsWith(slug + '/'));
+
+    const render = () => {
+      const matching = items.filter((li) => !category || (li.dataset.categories ?? '').split(' ').includes(category));
+      items.forEach((li) => (li.hidden = true));
+      matching.slice(0, shown).forEach((li) => (li.hidden = false));
+      more.hidden = matching.length <= shown;
+      more.textContent = `加载更多（还有 ${matching.length - shown} 篇）`;
+      document.querySelectorAll<HTMLButtonElement>('[data-filter]').forEach((b) => {
+        const slug = b.dataset.filter ?? '';
+        b.setAttribute('aria-pressed', String(slug ? within(slug) : !category));
+      });
+      subRows.forEach((row) => (row.hidden = !within(row.dataset.subOf!)));
+    };
+
+    const onPick = (e: Event) => {
+      const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-filter]');
+      if (!btn) return;
+      category = btn.dataset.filter ?? '';
+      shown = pageSize;
+      const url = new URL(location.href);
+      if (category) url.searchParams.set('category', category);
+      else url.searchParams.delete('category');
+      history.replaceState(null, '', url);
+      list.animate([{ opacity: 0.2, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: 280, easing: 'cubic-bezier(.2,.7,.2,1)' });
+      render();
+    };
+    filter.addEventListener('click', onPick);
+    subRows.forEach((row) => row.addEventListener('click', onPick));
+    more.addEventListener('click', () => {
+      shown += pageSize;
+      render();
+    });
+    render();
+  }
+</script>
+
+<style>
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    gap: 48px 72px;
+    align-items: end;
+    padding-block: clamp(56px, 10vw, 128px) clamp(48px, 7vw, 88px);
+  }
+  .hero-title {
+    font-size: clamp(2.3rem, 1.4rem + 3.4vw, 4rem);
+    font-weight: 700;
+    line-height: 1.12;
+    letter-spacing: -0.03em;
+    text-wrap: balance;
+  }
+  .hero-title :global(.u) {
+    text-decoration-line: underline;
+    text-decoration-color: var(--accent);
+    text-decoration-thickness: 0.075em;
+    text-underline-offset: 0.12em;
+    text-decoration-skip-ink: none;
+  }
+  .hero-intro {
+    font-family: var(--font-serif);
+    font-size: clamp(1.08rem, 1rem + 0.35vw, 1.3rem);
+    line-height: 1.7;
+    color: var(--fg-2);
+  }
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 28px;
+  }
+  .hero-stats {
+    display: flex;
+    gap: 36px;
+    margin-top: 36px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+  .hero-stats dt {
+    font-size: 13px;
+    color: var(--fg-faint);
+  }
+  .hero-stats dd {
+    margin-top: 2px;
+    font-size: 24px;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .featured {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr));
+    gap: 20px;
+    margin-bottom: clamp(56px, 8vw, 96px);
+  }
+  .feature-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    min-height: 320px;
+    padding: clamp(28px, 4vw, 44px);
+    border-radius: var(--radius-xl);
+    background: var(--bg-subtle);
+    overflow: hidden;
+    transition:
+      background 0.3s var(--ease),
+      transform 0.4s var(--ease-out);
+  }
+  .feature-card:hover {
+    background: var(--bg-muted);
+  }
+  .feature-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    gap: 14px;
+  }
+  .feature-title {
+    font-family: var(--font-serif);
+    font-size: clamp(1.75rem, 1.4rem + 1.2vw, 2.4rem);
+    font-weight: 450;
+    line-height: 1.2;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+  .feature-desc {
+    max-width: 52ch;
+    font-family: var(--font-serif);
+    font-size: 16.5px;
+    line-height: 1.7;
+    color: var(--fg-muted);
+  }
+  .feature-more {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: auto;
+    padding-top: 12px;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .feature-more :global(svg) {
+    transition: transform 0.3s var(--ease-out);
+  }
+  .feature-card:hover .feature-more :global(svg) {
+    transform: translateX(4px);
+  }
+  .feature-cover {
+    position: absolute;
+    right: -6%;
+    bottom: -12%;
+    width: 46%;
+    border-radius: 16px;
+    opacity: 0.9;
+    transform: rotate(-4deg);
+    transition: transform 0.6s var(--ease-out);
+    pointer-events: none;
+  }
+  .feature-card:hover .feature-cover {
+    transform: rotate(-2deg) translateY(-6px);
+  }
+  .has-cover .feature-body {
+    max-width: 62%;
+  }
+  .feature-date {
+    position: absolute;
+    top: clamp(28px, 4vw, 44px);
+    right: clamp(28px, 4vw, 44px);
+    font-size: 13px;
+    color: var(--fg-faint);
+  }
+
+  .posts-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px 24px;
+    margin-bottom: 8px;
+    padding-bottom: 20px;
+  }
+  .posts-heading {
+    font-size: clamp(1.6rem, 1.3rem + 1vw, 2.1rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .category-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .sub-filter {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: -4px 0 20px;
+    padding: 10px 14px;
+    border-radius: 14px;
+    background: var(--bg-subtle);
+    animation: sub-in 0.3s var(--ease-out);
+  }
+  .sub-filter[hidden] {
+    display: none;
+  }
+  @keyframes sub-in {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+  }
+  .sub-filter-label {
+    margin-right: 2px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--fg-muted);
+  }
+  .sub-filter-more {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+    font-size: 13px;
+    color: var(--fg-muted);
+  }
+  .sub-filter-more:hover {
+    color: var(--accent-text);
+  }
+  .load-more-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    margin-top: 40px;
+  }
+  .load-more[hidden] {
+    display: none;
+  }
+  .archive-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    color: var(--fg-muted);
+  }
+  .archive-link:hover {
+    color: var(--accent-text);
+  }
+
+  @media (max-width: 860px) {
+    .hero {
+      grid-template-columns: 1fr;
+      gap: 28px;
+    }
+    .has-cover .feature-body {
+      max-width: none;
+    }
+    .feature-cover {
+      position: static;
+      width: 100%;
+      transform: none;
+    }
+    .feature-card:hover .feature-cover {
+      transform: none;
+    }
+    .feature-date {
+      position: static;
+      order: -1;
+    }
+  }
+  @media (max-width: 560px) {
+    .posts-head {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .category-filter {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      width: calc(100% + var(--gutter) * 2);
+      margin-inline: calc(var(--gutter) * -1);
+      padding-inline: var(--gutter);
+      scrollbar-width: none;
+    }
+  }
+</style>

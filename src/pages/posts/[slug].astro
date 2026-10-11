@@ -1,0 +1,781 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Prose from '../../components/Prose.astro';
+import Toc from '../../components/Toc.astro';
+import ReaderControls from '../../components/ReaderControls.astro';
+import AnnotToolbar from '../../components/AnnotToolbar.astro';
+import Comments from '../../components/Comments.astro';
+import Avatar from '../../components/Avatar.astro';
+import { siteConfig } from '../../../site.config';
+import { getVault, tagUrl } from '../../lib/vault';
+import { renderNote } from '../../lib/markdown';
+import { formatCount, formatDate, withBase } from '../../lib/utils';
+import { icon } from '../../lib/icons';
+
+export function getStaticPaths() {
+  return getVault().posts.map((p) => ({ params: { slug: p.slug }, props: { id: p.id } }));
+}
+
+const vault = getVault();
+const note = vault.byId.get(Astro.props.id as string);
+if (!note) return Astro.redirect(withBase('/404'));
+const { html, toc } = await renderNote(note);
+const backlinks = vault.backlinks(note);
+const related = vault.related(note, 3).filter((p) => !backlinks.includes(p));
+const { prev, next } = vault.neighbors(note);
+const hasGraph = note.links.length > 0 || backlinks.length > 0;
+const hasToc = toc.length > 0;
+
+const cover = vault.cover(note);
+const lastUpdated = note.updated ?? note.date;
+const site = Astro.site ?? new URL(siteConfig.url);
+const permalink = new URL(note.url, site).href;
+const license = siteConfig.license;
+
+// 结构化数据：让搜索引擎理解这是一篇博客文章及其分类层级
+const trail = vault.categoryTrail(note);
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'BlogPosting',
+      headline: note.title,
+      description: note.description,
+      url: permalink,
+      mainEntityOfPage: permalink,
+      datePublished: note.date.toISOString(),
+      dateModified: lastUpdated.toISOString(),
+      author: { '@type': 'Person', name: siteConfig.author },
+      inLanguage: siteConfig.lang,
+      articleSection: note.categoryLabel,
+      keywords: note.tags.join(', '),
+      wordCount: note.words,
+      ...(cover?.raster ? { image: new URL(cover.url, site).href } : {}),
+    },
+    {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { name: siteConfig.title, url: withBase('/') },
+        ...trail.map((c) => ({ name: c.name, url: c.url })),
+        { name: note.title, url: note.url },
+      ].map((item, i) => ({ '@type': 'ListItem', position: i + 1, name: item.name, item: new URL(item.url, site).href })),
+    },
+  ],
+};
+---
+
+<BaseLayout
+  title={note.title}
+  description={note.description}
+  type="article"
+  image={cover?.raster ? cover.url : undefined}
+  publishedTime={note.date}
+  modifiedTime={note.updated}
+  tags={note.tags}
+  noindex={note.draft}
+>
+  <script is:inline type="application/ld+json" slot="head" set:html={JSON.stringify(jsonLd).replace(/</g, '\\u003c')} />
+  <!-- 跨页过渡：等标题解析完成再首次绘制，并让它成为“标题变形”的终点 -->
+  <link rel="expect" href="#article-title" blocking="render" slot="head" />
+  <script is:inline slot="head">
+    addEventListener('pagereveal', function (e) {
+      if (!e.viewTransition) return;
+      var t = document.getElementById('article-title');
+      if (!t) return;
+      t.style.viewTransitionName = 'post-title';
+      e.viewTransition.finished.finally(function () {
+        t.style.viewTransitionName = '';
+      });
+    });
+  </script>
+  <div class="reading-progress" data-reading-progress aria-hidden="true"></div>
+
+  <div class="article-layout" data-article data-slug={note.slug} id="top" style={note.cssclasses.includes('wide') ? '--reader-width: 960px' : undefined}>
+    <article class:list={['article', ...note.cssclasses]}>
+      <header class="article-header">
+        <nav class="article-category" aria-label="所属分类">
+          {
+            vault.categoryTrail(note).map((c, i) => (
+              <>
+                {i > 0 && <span class="crumb-sep">›</span>}
+                <a href={c.url}>{c.name}</a>
+              </>
+            ))
+          }
+        </nav>
+        <h1 class="article-title">
+          <span class="vt-title" id="article-title">
+            {note.title}
+          </span>
+        </h1>
+        {note.lede && <p class="article-lede">{note.lede}</p>}
+        <div class="article-meta">
+          <time datetime={note.date.toISOString()}>{formatDate(note.date)}</time>
+          {note.updated && <span title={`更新于 ${formatDate(note.updated)}`}>更新于 {formatDate(note.updated, 'short')}</span>}
+          <span>{formatCount(note.words)} 字</span>
+          <span>约 {note.minutes} 分钟</span>
+          {note.draft && <span class="draft-flag">草稿 · 仅本地可见</span>}
+        </div>
+      </header>
+
+      {
+        siteConfig.outdatedDays > 0 && (
+          <p class="outdated-note" data-outdated={lastUpdated.toISOString()} data-days={siteConfig.outdatedDays} hidden>
+            <Fragment set:html={icon('clock', 16)} />
+            <span data-outdated-text />
+          </p>
+        )
+      }
+
+      {cover && <img class="article-cover" src={cover.url} alt="" width={cover.width} height={cover.height} decoding="async" fetchpriority="high" />}
+
+      <div class="article-content" data-article-content>
+        <Prose html={html} />
+      </div>
+
+      <footer class="article-footer">
+        {
+          note.tags.length > 0 && (
+            <div class="article-tags">
+              {note.tags.map((t) => (
+                <a href={tagUrl(t)} class="tag-pill">
+                  #{t}
+                </a>
+              ))}
+            </div>
+          )
+        }
+
+        <section class="post-card" aria-label="文章信息">
+          <div class="post-card-author">
+            <Avatar size={46} />
+            <div>
+              <a href={withBase('/about/')} class="post-card-name">{siteConfig.author}</a>
+              {siteConfig.bio && <p class="post-card-bio">{siteConfig.bio}</p>}
+            </div>
+          </div>
+          <dl class="post-card-meta">
+            <div>
+              <dt>本文链接</dt>
+              <dd class="post-card-permalink">
+                <a href={note.url} data-permalink>{decodeURI(permalink)}</a>
+                <button type="button" class="share-btn" data-copy-link aria-label="复制文章链接">
+                  <Fragment set:html={icon('copy', 14)} /> 复制
+                </button>
+              </dd>
+            </div>
+            {
+              license && (
+                <div>
+                  <dt>版权声明</dt>
+                  <dd>
+                    本文采用
+                    <a href={license.url} target="_blank" rel="noopener license">
+                      {license.name}
+                    </a>
+                    许可协议，转载请注明出处。
+                  </dd>
+                </div>
+              )
+            }
+            <div>
+              <dt>最后更新</dt>
+              <dd>
+                <time datetime={lastUpdated.toISOString()}>{formatDate(lastUpdated)}</time>
+              </dd>
+            </div>
+          </dl>
+        </section>
+
+        {
+          backlinks.length > 0 && (
+            <section class="end-section">
+              <h2 class="end-title">
+                <Fragment set:html={icon('backlink', 16)} /> 反向链接 <span class="end-count">{backlinks.length}</span>
+              </h2>
+              <ul class="link-cards">
+                {backlinks.map((b) => (
+                  <li>
+                    <a href={b.url} class="link-card internal-link">
+                      <span class="link-card-title">{b.title}</span>
+                      <span class="link-card-desc">{b.description}</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )
+        }
+
+        {
+          hasGraph && (
+            <section class="end-section">
+              <h2 class="end-title">
+                <Fragment set:html={icon('graph', 16)} /> 关系图谱
+                <a href={withBase('/graph/')} class="end-more">
+                  查看全部 <Fragment set:html={icon('arrowRight', 14)} />
+                </a>
+              </h2>
+              <div class="local-graph">
+                <canvas data-local-graph data-focus={note.slug} data-url={withBase('/graph.json')} aria-label="与本文相关的笔记关系图" />
+              </div>
+            </section>
+          )
+        }
+
+        {
+          related.length > 0 && (
+            <section class="end-section">
+              <h2 class="end-title">
+                <Fragment set:html={icon('sparkle', 16)} /> 相关文章
+              </h2>
+              <ul class="link-cards">
+                {related.map((r) => (
+                  <li>
+                    <a href={r.url} class="link-card">
+                      <span class="link-card-title">{r.title}</span>
+                      <span class="link-card-desc">{r.description}</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )
+        }
+
+        <nav class="article-footer-nav" aria-label="上一篇 / 下一篇">
+          {
+            prev ? (
+              <a href={prev.url} class="pn-link pn-prev">
+                <span class="pn-label">
+                  <Fragment set:html={icon('arrowLeft', 14)} /> 上一篇
+                </span>
+                <span class="pn-title">{prev.title}</span>
+              </a>
+            ) : (
+              <span />
+            )
+          }
+          {
+            next && (
+              <a href={next.url} class="pn-link pn-next">
+                <span class="pn-label">
+                  下一篇 <Fragment set:html={icon('arrowRight', 14)} />
+                </span>
+                <span class="pn-title">{next.title}</span>
+              </a>
+            )
+          }
+        </nav>
+
+        <Comments />
+      </footer>
+    </article>
+
+    {
+      hasToc && (
+        <aside class="article-aside" data-article-aside>
+          <div class="aside-inner">
+            <Toc toc={toc} />
+          </div>
+        </aside>
+      )
+    }
+  </div>
+
+  <ReaderControls hasToc={hasToc} />
+  <AnnotToolbar />
+</BaseLayout>
+
+<script>
+  import '../../scripts/reader';
+  import { toast } from '../../scripts/toast';
+
+  // 关系图谱：滚动到附近时才加载（d3-force 也随之按需加载）
+  const canvas = document.querySelector<HTMLCanvasElement>('[data-local-graph]');
+  if (canvas) {
+    const io = new IntersectionObserver(
+      async (es) => {
+        if (!es.some((e) => e.isIntersecting)) return;
+        io.disconnect();
+        const { mountGraph } = await import('../../scripts/graph');
+        mountGraph(canvas, {
+          url: canvas.dataset.url!,
+          focus: canvas.dataset.focus,
+          depth: 2,
+          onEmpty: () => canvas.closest('.end-section')?.remove(),
+        });
+      },
+      { rootMargin: '400px' },
+    );
+    io.observe(canvas);
+  }
+
+  // 本文链接：以浏览器中的实际地址为准（本地预览、子路径部署时也正确）
+  const here = location.origin + location.pathname;
+  document.querySelectorAll<HTMLElement>('[data-permalink]').forEach((a) => (a.textContent = decodeURI(here)));
+  document.querySelector('[data-copy-link]')?.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(here);
+      toast('文章链接已复制');
+    } catch {
+      toast('复制失败');
+    }
+  });
+
+  // 内容可能已过时的提示（按访问时的日期计算，静态站点无需重新构建）
+  const note = document.querySelector<HTMLElement>('[data-outdated]');
+  if (note) {
+    const days = (Date.now() - Date.parse(note.dataset.outdated!)) / 86400000;
+    if (days > Number(note.dataset.days)) {
+      const years = Math.floor(days / 365);
+      const age = years >= 1 ? `${years} 年` : `${Math.max(1, Math.floor(days / 30))} 个月`;
+      note.querySelector('[data-outdated-text]')!.textContent = `这篇文章最后更新于 ${age}前，其中的信息可能已经过时。`;
+      note.hidden = false;
+    }
+  }
+</script>
+
+<style>
+  .reading-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 55;
+    height: 2px;
+    background: var(--accent);
+    transform-origin: 0 50%;
+    transform: scaleX(var(--progress, 0));
+    pointer-events: none;
+  }
+
+  .article-layout {
+    --aside-w: 232px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, min(var(--reader-width), 100%)) minmax(0, 1fr);
+    column-gap: clamp(24px, 4vw, 56px);
+    padding-inline: var(--gutter);
+  }
+  .article {
+    grid-column: 2;
+    min-width: 0;
+  }
+
+  .article-header {
+    padding-block: clamp(40px, 7vw, 88px) clamp(28px, 4vw, 44px);
+    text-align: center;
+  }
+  .article-category {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 18px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--fg-muted);
+  }
+  .article-category a {
+    transition: color 0.15s var(--ease);
+  }
+  .article-category a:hover {
+    color: var(--accent-text);
+  }
+  .crumb-sep {
+    color: var(--fg-faint);
+    font-weight: 400;
+  }
+  .article-title {
+    font-size: clamp(2rem, 1.5rem + 2vw, 2.9rem);
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+  }
+  .article-meta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px 18px;
+    margin-top: 20px;
+    font-size: 14px;
+    color: var(--fg-faint);
+    font-variant-numeric: tabular-nums;
+  }
+  .draft-flag {
+    color: var(--accent-text);
+    font-weight: 600;
+  }
+  .article-cover {
+    width: 100%;
+    margin-bottom: clamp(32px, 5vw, 56px);
+    border-radius: var(--radius-lg);
+    background: var(--bg-subtle);
+  }
+
+  .article-footer {
+    margin-top: 56px;
+  }
+  .article-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  /* —— 文章信息卡片 —— */
+  .post-card {
+    margin-top: 28px;
+    padding: 22px 24px;
+    border-radius: var(--radius-lg);
+    background: var(--bg-subtle);
+    font-size: 14px;
+  }
+  .post-card-author {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding-bottom: 16px;
+    margin-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .post-card-name {
+    font-size: 15.5px;
+    font-weight: 650;
+    color: var(--fg);
+  }
+  .post-card-name:hover {
+    color: var(--accent-text);
+  }
+  .post-card-bio {
+    margin-top: 2px;
+    font-family: var(--font-serif);
+    font-size: 14px;
+    color: var(--fg-muted);
+  }
+  .post-card-meta {
+    display: grid;
+    gap: 8px;
+  }
+  .post-card-meta > div {
+    display: grid;
+    grid-template-columns: 5.5em minmax(0, 1fr);
+    gap: 12px;
+    align-items: baseline;
+  }
+  .post-card-meta dt {
+    color: var(--fg-faint);
+  }
+  .post-card-meta dd {
+    min-width: 0;
+    color: var(--fg-2);
+  }
+  .post-card-meta dd a {
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, var(--accent) 50%, transparent);
+    text-underline-offset: 3px;
+  }
+  .post-card-meta dd a:hover {
+    color: var(--accent-text);
+  }
+  .post-card-permalink {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .post-card-permalink a {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .share-btn {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 7px;
+    border: 1px solid var(--border-strong);
+    background: var(--bg);
+    color: var(--fg-muted);
+    font-size: 12.5px;
+    transition:
+      border-color 0.15s var(--ease),
+      color 0.15s var(--ease);
+  }
+  .share-btn:hover {
+    border-color: var(--fg-muted);
+    color: var(--fg);
+  }
+  @media (max-width: 640px) {
+    .post-card {
+      padding: 18px;
+    }
+    .post-card-meta > div {
+      grid-template-columns: 1fr;
+      gap: 2px;
+    }
+  }
+
+  /* —— 副标题、过时提示 —— */
+  .article-lede {
+    max-width: 36em;
+    margin: 16px auto 0;
+    font-family: var(--font-serif);
+    font-size: clamp(1.05rem, 1rem + 0.3vw, 1.2rem);
+    line-height: 1.7;
+    color: var(--fg-muted);
+    text-wrap: balance;
+  }
+  .outdated-note {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 32px;
+    padding: 12px 16px;
+    border-radius: var(--radius);
+    background: color-mix(in srgb, var(--pencil) 14%, var(--bg));
+    border: 1px solid color-mix(in srgb, var(--pencil) 35%, transparent);
+    color: var(--fg-2);
+    font-size: 14px;
+  }
+  .outdated-note[hidden] {
+    display: none;
+  }
+  .outdated-note :global(svg) {
+    flex: none;
+    color: color-mix(in oklab, var(--pencil) 70%, var(--fg));
+  }
+
+  .end-section {
+    margin-top: 44px;
+  }
+  .end-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+    font-size: 15px;
+    font-weight: 650;
+  }
+  .end-title :global(svg) {
+    color: var(--accent);
+  }
+  .end-count {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--fg-faint);
+  }
+  .end-more {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--fg-muted);
+  }
+  .end-more:hover {
+    color: var(--accent-text);
+  }
+  .end-more :global(svg) {
+    color: inherit;
+  }
+  .link-cards {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+    gap: 10px;
+  }
+  .link-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    height: 100%;
+    padding: 14px 16px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    transition:
+      border-color 0.2s var(--ease),
+      background 0.2s var(--ease),
+      transform 0.25s var(--ease-out);
+  }
+  .link-card:hover {
+    border-color: var(--border-strong);
+    background: var(--bg-subtle);
+    transform: translateY(-2px);
+  }
+  .link-card-title {
+    font-weight: 600;
+    font-size: 15px;
+  }
+  .link-card-desc {
+    font-family: var(--font-serif);
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: var(--fg-muted);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .local-graph {
+    height: 280px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    background: var(--bg-subtle);
+    overflow: hidden;
+  }
+  .local-graph canvas {
+    width: 100%;
+    height: 100%;
+    cursor: grab;
+    touch-action: none;
+  }
+
+  .article-footer-nav {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 48px;
+  }
+  .pn-link {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 18px 20px;
+    border-radius: 16px;
+    background: var(--bg-subtle);
+    transition: background 0.2s var(--ease);
+  }
+  .pn-link:hover {
+    background: var(--bg-muted);
+  }
+  .pn-next {
+    grid-column: 2;
+    text-align: right;
+    align-items: flex-end;
+  }
+  .pn-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    color: var(--fg-faint);
+  }
+  .pn-title {
+    font-weight: 600;
+    line-height: 1.45;
+  }
+
+  /* —— 侧栏目录 —— */
+  .article-aside {
+    grid-column: 3;
+    grid-row: 1;
+    position: relative;
+    z-index: 4;
+    container-type: inline-size;
+  }
+  .aside-inner {
+    position: sticky;
+    top: calc(var(--header-h) + 32px);
+    width: min(var(--aside-w), 100%);
+    margin-top: clamp(40px, 7vw, 88px);
+    padding-bottom: 32px;
+    transition: opacity 0.3s var(--ease);
+  }
+  @container (max-width: 160px) {
+    .aside-inner {
+      display: none;
+    }
+  }
+  .article-aside.is-collapsed .aside-inner,
+  :global(:root[data-focus-mode]) .aside-inner {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  @media (max-width: 1279px) {
+    .article-layout {
+      grid-template-columns: minmax(0, 1fr) minmax(0, min(var(--reader-width), 100%)) minmax(0, 1fr);
+    }
+    .article-aside {
+      position: fixed;
+      inset: 0;
+      z-index: 95;
+      display: block;
+      visibility: hidden;
+      background: var(--overlay);
+      opacity: 0;
+      transition:
+        opacity 0.25s var(--ease),
+        visibility 0.25s;
+      container-type: normal;
+    }
+    .article-aside.is-open {
+      visibility: visible;
+      opacity: 1;
+    }
+    .aside-inner {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: min(340px, 86vw);
+      margin: 0;
+      padding: 24px 24px 32px;
+      background: var(--bg-elevated);
+      box-shadow: var(--shadow-lg);
+      overflow-y: auto;
+      transform: translateX(100%);
+      transition: transform 0.35s var(--ease-out);
+    }
+    .article-aside.is-open .aside-inner {
+      transform: none;
+    }
+    .aside-inner :global(.toc-close) {
+      display: inline-grid;
+    }
+    .aside-inner :global(.toc-list) {
+      max-height: none;
+    }
+    .aside-inner :global(.toc) {
+      font-size: 15px;
+    }
+  }
+  @media (max-width: 640px) {
+    .aside-inner {
+      top: auto;
+      left: 0;
+      width: 100%;
+      max-height: 72dvh;
+      border-radius: 20px 20px 0 0;
+      transform: translateY(100%);
+    }
+    .article-header {
+      text-align: left;
+    }
+    .article-meta,
+    .article-category {
+      justify-content: flex-start;
+    }
+    .article-footer-nav {
+      grid-template-columns: 1fr;
+    }
+    .pn-next {
+      grid-column: 1;
+    }
+  }
+
+  /* 专注模式 */
+  :global(:root[data-focus-mode]) .article-footer,
+  :global(:root[data-focus-mode]) .reading-progress {
+    opacity: 0.35;
+    transition: opacity 0.3s var(--ease);
+  }
+  :global(:root[data-focus-mode]) .article-footer:hover {
+    opacity: 1;
+  }
+</style>

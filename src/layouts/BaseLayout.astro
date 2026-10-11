@@ -1,0 +1,120 @@
+---
+import '@fontsource-variable/dm-sans';
+import '@fontsource-variable/source-serif-4/opsz.css';
+import '@fontsource-variable/jetbrains-mono';
+import '@fontsource-variable/noto-serif-sc';
+import '../styles/global.css';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import SearchModal from '../components/SearchModal.astro';
+import ShortcutsDialog from '../components/ShortcutsDialog.astro';
+import { siteConfig } from '../../site.config';
+import { withBase } from '../lib/utils';
+
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  type?: 'website' | 'article';
+  publishedTime?: Date;
+  modifiedTime?: Date;
+  tags?: string[];
+  noindex?: boolean;
+}
+
+const { title, description = siteConfig.description, image, type = 'website', publishedTime, modifiedTime, tags = [], noindex } = Astro.props;
+const isArticle = type === 'article';
+const fullTitle = title ? `${title} · ${siteConfig.title}` : `${siteConfig.title} — ${siteConfig.description}`;
+const canonical = new URL(Astro.url.pathname, Astro.site ?? siteConfig.url).href;
+// 社交分享卡片：文章的位图封面，否则使用站点默认图
+const ogImage = new URL(image ?? withBase('/og-default.png'), Astro.site ?? siteConfig.url).href;
+---
+
+<!doctype html>
+<html lang={siteConfig.lang} data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <meta name="author" content={siteConfig.author} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href={withBase('/favicon.svg')} type="image/svg+xml" />
+    <link rel="apple-touch-icon" href={withBase('/apple-touch-icon.png')} />
+    <link rel="manifest" href={withBase('/manifest.webmanifest')} />
+    <link rel="alternate" type="application/rss+xml" title={siteConfig.title} href={withBase('/rss.xml')} />
+    <link rel="sitemap" href={withBase('/sitemap-index.xml')} />
+    <meta name="theme-color" content="#faf9f5" />
+    {noindex && <meta name="robots" content="noindex" />}
+
+    <meta property="og:type" content={type} />
+    <meta property="og:title" content={title ?? siteConfig.title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:site_name" content={siteConfig.title} />
+    <meta property="og:locale" content={siteConfig.lang.replace('-', '_')} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:alt" content={title ?? siteConfig.title} />
+    <meta name="twitter:card" content="summary_large_image" />
+    {publishedTime && <meta property="article:published_time" content={publishedTime.toISOString()} />}
+    {modifiedTime && <meta property="article:modified_time" content={modifiedTime.toISOString()} />}
+    {tags.map((t) => <meta property="article:tag" content={t} />)}
+    <meta name="generator" content={Astro.generator} />
+
+    <!-- 在首次绘制前应用主题与阅读设置，避免闪烁 -->
+    <script is:inline>
+      (function () {
+        var d = document.documentElement;
+        try {
+          var t = localStorage.getItem('theme') || 'system';
+          var dark = t === 'dark' || (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          d.dataset.theme = dark ? 'dark' : 'light';
+          var tc = document.querySelector('meta[name="theme-color"]');
+          if (tc) tc.setAttribute('content', dark ? '#141413' : '#faf9f5');
+          var r = JSON.parse(localStorage.getItem('reader-settings') || '{}');
+          var map = { fontSize: ['--reader-font-size', 'px'], lineHeight: ['--reader-line-height', ''], letterSpacing: ['--reader-letter-spacing', 'em'], paraSpacing: ['--reader-para-spacing', 'em'], width: ['--reader-width', 'px'], contrast: ['--reader-contrast', '%'] };
+          for (var k in map) if (typeof r[k] === 'number') d.style.setProperty(map[k][0], r[k] + map[k][1]);
+          if (r.font && r.font !== 'serif') d.dataset.readerFont = r.font;
+          if (r.justify) d.dataset.readerJustify = '';
+          if (r.indent) d.dataset.readerIndent = '';
+        } catch (e) {
+          d.dataset.theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+      })();
+    </script>
+    <slot name="head" />
+    {siteConfig.head && <Fragment set:html={siteConfig.head} />}
+  </head>
+  <body data-autohide-header={isArticle ? '' : undefined}>
+    <a class="skip-link" href="#main">跳到正文</a>
+    <Header />
+    <main id="main">
+      <slot />
+    </main>
+    <Footer />
+    <SearchModal />
+    <ShortcutsDialog />
+    <div class="toast-host" data-toast-host aria-live="polite"></div>
+    <script>
+      import '../scripts/site';
+    </script>
+  </body>
+</html>
+
+<style>
+  .skip-link {
+    position: fixed;
+    top: 8px;
+    left: 8px;
+    z-index: 300;
+    padding: 8px 14px;
+    border-radius: var(--radius);
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-fg);
+    transform: translateY(-200%);
+    transition: transform 0.2s var(--ease);
+  }
+  .skip-link:focus {
+    transform: none;
+  }
+</style>

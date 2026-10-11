@@ -1,0 +1,17 @@
+---
+import 'katex/dist/katex.min.css';
+import '../styles/prose.css';
+import '../styles/content.css';
+
+interface Props {
+  html: string;
+  class?: string;
+}
+const { html, class: className } = Astro.props;
+---
+
+<div class:list={['prose', className]} data-prose set:html={html} />
+
+<script>
+  import '../scripts/content';
+</script>
