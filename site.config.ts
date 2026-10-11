@@ -14,7 +14,7 @@ export const siteConfig = {
    * 头像：放在 public/ 目录下的图片路径（如 '/avatar.jpg'）或图片网址。
    * 留空则使用名字的第一个字作为头像。
    */
-  avatar: '',
+  avatar: '/me.png',
   /** 语言 */
   lang: 'zh-CN',
   /**
