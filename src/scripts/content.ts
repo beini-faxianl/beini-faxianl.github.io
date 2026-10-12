@@ -13,14 +13,8 @@ document.addEventListener('click', async (e) => {
   const copyBtn = target.closest<HTMLButtonElement>('.code-copy');
   if (copyBtn) {
     const code = block.querySelector('pre code');
-    // 复制时去掉 diff 中被删除的行
     const lines = [...(code?.querySelectorAll<HTMLElement>('.line') ?? [])];
-    const text = lines.length
-      ? lines
-          .filter((l) => !l.classList.contains('remove'))
-          .map((l) => l.textContent ?? '')
-          .join('\n')
-      : (code?.textContent ?? '');
+    const text = lines.length ? lines.map((l) => l.textContent ?? '').join('\n') : (code?.textContent ?? '');
     try {
       await navigator.clipboard.writeText(text);
       copyBtn.innerHTML = icon('check', 15);
@@ -40,6 +34,14 @@ document.addEventListener('click', async (e) => {
   }
   if (target.closest('.code-expand')) {
     block.classList.remove('is-collapsed');
+    return;
+  }
+  // fold 参数：点击标题栏（或折叠按钮）展开 / 收起
+  if (block.classList.contains('is-foldable') && target.closest('.code-header')) {
+    const folded = block.classList.toggle('is-folded');
+    const btn = block.querySelector<HTMLButtonElement>('.code-fold');
+    btn?.setAttribute('aria-expanded', String(!folded));
+    btn?.setAttribute('aria-label', folded ? '展开代码' : '折叠代码');
   }
 });
 

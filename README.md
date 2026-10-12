@@ -32,7 +32,19 @@
 | 块 ID | 段落 / 列表项末尾的 `^id` |
 | 其它 | 表格、删除线、原生 HTML、`<details>`、软换行、指向 `.md` 的普通链接、中文标点旁的 `**加粗**` |
 
-**代码高亮**：Shiki，亮 / 暗双主题；支持 `title="文件名"`、`showLineNumbers`、`{1,3-5}` 行高亮、`// [!code ++]` / `[!code --]` / `[!code highlight]` / `[!code focus]` 等标记；一键复制、自动换行切换、长代码折叠。
+**代码高亮**：Shiki，亮 / 暗双主题；一键复制、自动换行切换、长代码折叠。代码块首行参数与 Obsidian 插件 [Codeblock Customizer](https://github.com/mugiwara85/CodeblockCustomizer) 一致，在 Obsidian 里看到的效果和博客上相同：
+
+| 参数 | 作用 |
+| --- | --- |
+| `hl:1,3-5` | 高亮行；`hl:test` 含某词的行；`hl:5\|test`、`hl:5-7\|test` 指定行中含某词时才高亮 |
+| `info:2` `warn:4-6` `error:8` | 用自定义颜色高亮行（颜色名在 `site.config.ts` 的 `code.highlightColors` 中定义） |
+| `hlt:test` | 高亮文字：`hlt:5` 整行文字、`hlt:5\|print`、`hlt::xyz`（行首到 xyz）、`hlt:abc:`（abc 到行尾）、`hlt:abc:xyz`、`hlt:5[2,-1]\|test`（第几处）；`errort:` 等为自定义颜色的文字高亮 |
+| `file:app.js` / `title:` | 标题栏显示文件名，含空格时加引号：`file:"long name.cpp"` |
+| `ln:true` / `ln:false` / `ln:5` | 显示 / 隐藏行号，或从 5 开始编号（默认值见 `code.lineNumbers`） |
+| `fold` | 默认折叠，点击标题栏展开 |
+| `exclude` | 这个代码块不应用任何参数 |
+
+参数名和值之间用 `:` 或 `=` 均可，例如：` ```js file:app.js ln:true hl:2,4-6 error:8 `。代码内容本身原样显示，不会解析任何注释标记。
 
 **阅读体验**
 - 浅色 / 深色 / 跟随系统：深色从按钮处柔和扩散、浅色收拢退回；首屏无闪烁；夜间自动调暗图片

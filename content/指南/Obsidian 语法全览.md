@@ -140,7 +140,9 @@ pinned: true
 
 ## 代码
 
-```ts title="highlight.ts" showLineNumbers {3}
+代码块首行的参数与 Obsidian 插件 [Codeblock Customizer](https://github.com/mugiwara85/CodeblockCustomizer) 一致：`file:` 标题、`ln:` 行号、`hl:` 行高亮、`hlt:` 文本高亮、`info:` / `warn:` / `error:` 等自定义颜色、`fold` 默认折叠。
+
+```ts file:highlight.ts ln:true hl:3
 export function greet(name: string): string {
   const time = new Date().getHours();
   const word = time < 12 ? '早上好' : '你好';
@@ -148,12 +150,25 @@ export function greet(name: string): string {
 }
 ```
 
-```python
+```python hl:4 hlt:3|range
 def fib(n: int) -> int:
     a, b = 0, 1
     for _ in range(n):
-        a, b = b, a + b  # [!code highlight]
+        a, b = b, a + b
     return a
+```
+
+```js file:retry.js info:2 warn:6 error:9 fold
+async function fetchWithRetry(url, times = 3) {
+  for (let i = 0; i < times; i++) {
+    try {
+      return await fetch(url);
+    } catch (err) {
+      console.warn(`第 ${i + 1} 次请求失败`, err);
+    }
+  }
+  throw new Error('重试次数已用完');
+}
 ```
 
 ```diff

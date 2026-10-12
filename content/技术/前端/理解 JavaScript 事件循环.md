@@ -11,7 +11,7 @@ JavaScript 是单线程的，但我们每天都在写异步代码。让这一切
 
 下面这段代码会按什么顺序输出？
 
-```js title="order.js"
+```js file:order.js
 console.log('1: script start');
 
 setTimeout(() => console.log('2: setTimeout'), 0);
@@ -59,18 +59,18 @@ flowchart TD
 
 因为微任务会被“清空”，一个不断产生新微任务的循环会让页面彻底卡死：
 
-```js
+```js error:2
 function loop() {
-  Promise.resolve().then(loop); // [!code error]
+  Promise.resolve().then(loop);
 }
 loop(); // 页面再也不会渲染
 ```
 
 而用宏任务就不会：
 
-```js
+```js hl:2
 function loop() {
-  setTimeout(loop, 0); // [!code ++]
+  setTimeout(loop, 0);
 }
 ```
 
@@ -81,12 +81,12 @@ function loop() {
 
 超过 50ms 的任务会被视为“长任务”，影响交互响应（INP）。可以用 `scheduler.yield()` 主动让出主线程：
 
-```ts showLineNumbers
+```ts ln:true hl:5
 async function processAll(items: Item[]) {
   for (const [i, item] of items.entries()) {
     process(item);
     if (i % 50 === 0) {
-      await scheduler.yield(); // [!code highlight]
+      await scheduler.yield();
     }
   }
 }

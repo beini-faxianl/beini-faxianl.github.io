@@ -81,6 +81,18 @@ export const siteConfig = {
     darkTheme: 'vitesse-dark',
     /** 超过多少行的代码块默认折叠 */
     collapseLines: 28,
+    /** 是否默认显示行号（单个代码块可用 ln:true / ln:false 覆盖） */
+    lineNumbers: false,
+    /**
+     * 代码块的自定义高亮颜色（对应 Codeblock Customizer 插件的 Alternative highlight colors）。
+     * 用法：```js info:2 warn:4-6 error:8```；名称后加 t 表示文本高亮，如 errort:5|foo。
+     * 默认的 hl: / hlt: 使用主题色。可增删颜色名，值为任意 CSS 颜色。
+     */
+    highlightColors: {
+      info: '#6a9bcc',
+      warn: '#f0ac54',
+      error: '#de6262',
+    } as Record<string, string>,
   },
 
   /** 每页显示的文章数（首页“加载更多”） */

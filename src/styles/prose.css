@@ -712,61 +712,52 @@
   opacity: 0.6;
   user-select: none;
 }
+/* 行高亮（hl: / info: / warn: / error: …），颜色来自 --hl */
 .prose pre .line.highlighted {
-  background: var(--accent-softer);
-  box-shadow: inset 3px 0 0 var(--accent);
+  background: color-mix(in srgb, var(--hl, var(--accent)) 13%, transparent);
+  box-shadow: inset 3px 0 0 var(--hl, var(--accent));
 }
-.prose pre .line.diff.add {
-  background: rgb(120 140 93 / 0.16);
-  box-shadow: inset 3px 0 0 var(--olive);
+:root[data-theme='dark'] .prose pre .line.highlighted {
+  background: color-mix(in srgb, var(--hl, var(--accent)) 18%, transparent);
 }
-.prose pre .line.diff.remove {
-  background: rgb(222 98 98 / 0.12);
-  box-shadow: inset 3px 0 0 var(--poppy);
-  opacity: 0.75;
-}
-.prose pre .line.diff.add::after,
-.prose pre .line.diff.remove::after {
-  position: absolute;
-  left: 7px;
-  font-weight: 700;
-}
-.prose pre .line.diff {
-  position: relative;
-}
-.prose pre .line.diff.add::after {
-  content: '+';
-  color: var(--olive);
-}
-.prose pre .line.diff.remove::after {
-  content: '−';
-  color: var(--poppy);
-}
-.prose pre .line.highlighted.error {
-  background: rgb(222 98 98 / 0.14);
-  box-shadow: inset 3px 0 0 var(--poppy);
-}
-.prose pre .line.highlighted.warning {
-  background: rgb(240 172 84 / 0.16);
-  box-shadow: inset 3px 0 0 var(--pencil);
-}
-.prose pre .highlighted-word {
-  padding: 1px 3px;
-  margin: -1px -3px;
+/* 文本高亮（hlt: / errort: …） */
+.prose pre .hl-text {
+  padding: 1px 2px;
+  margin: -1px -2px;
   border-radius: 4px;
-  background: var(--accent-soft);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent);
+  background: color-mix(in srgb, var(--hl, var(--accent)) 24%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--hl, var(--accent)) 45%, transparent);
 }
-.prose pre.has-focused .line:not(.focused) {
-  filter: blur(1.5px);
-  opacity: 0.55;
-  transition:
-    filter 0.3s var(--ease),
-    opacity 0.3s var(--ease);
+
+/* fold：默认只显示标题栏，点击展开 */
+.prose .code-block.is-foldable .code-header {
+  cursor: pointer;
+  user-select: none;
 }
-.prose pre.has-focused:hover .line:not(.focused) {
-  filter: none;
-  opacity: 1;
+.prose .code-block.is-folded .code-header {
+  border-bottom-color: transparent;
+}
+.prose .code-block.is-folded pre,
+.prose .code-block.is-folded .code-expand {
+  display: none;
+}
+.prose .code-fold-hint {
+  display: none;
+  font-size: 12px;
+  color: var(--fg-faint);
+  white-space: nowrap;
+}
+.prose .code-block.is-folded .code-fold-hint {
+  display: inline;
+}
+.prose .code-block.is-folded .code-title:empty + .code-fold-hint {
+  margin-right: auto;
+}
+.prose .code-fold svg {
+  transition: transform 0.25s var(--ease-out);
+}
+.prose .code-block:not(.is-folded) .code-fold svg {
+  transform: rotate(180deg);
 }
 
 /* Shiki 双主题 */

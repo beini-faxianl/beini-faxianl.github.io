@@ -21,7 +21,7 @@ description: 从一个 HashMap 出发，加上追加日志与压缩，两百行 
 
 每条记录序列化为一行 JSON：
 
-```rust title="src/command.rs"
+```rust file:src/command.rs
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -33,7 +33,7 @@ pub enum Command {
 
 ## 核心结构
 
-```rust title="src/store.rs" showLineNumbers
+```rust file:src/store.rs ln:true
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 use std::io::{BufRead, BufReader, Seek, SeekFrom, Write};
@@ -93,7 +93,7 @@ $$
 
 压缩就是把索引中仍然有效的记录写入新文件，再原子地替换旧文件：
 
-```rust
+```rust hl:14
 fn compact(&mut self) -> anyhow::Result<()> {
     let tmp = self.path.with_extension("compacting");
     let mut out = File::create(&tmp)?;
@@ -107,7 +107,7 @@ fn compact(&mut self) -> anyhow::Result<()> {
         }
     }
     out.sync_all()?;
-    std::fs::rename(&tmp, &self.path)?; // [!code highlight]
+    std::fs::rename(&tmp, &self.path)?;
     self.index = new_index;
     self.stale_bytes = 0;
     Ok(())
