@@ -6,7 +6,7 @@ tags:
   - JWT
   - JWS
   - 签名验证突破
-description: 一句话摘要
+description: 当 JWT 的签名验证存在缺陷，会发生什么？
 ---
 >[!tip]
 > 推荐先阅读文章：[[什么是 JWT？]]
