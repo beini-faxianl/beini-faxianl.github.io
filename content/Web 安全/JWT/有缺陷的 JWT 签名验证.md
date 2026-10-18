@@ -112,7 +112,7 @@ Burp Suite Scanner 同样也会尝试本地破解密钥（通过其内置的字�
 
 ![[Pasted image 20261017041551.png|500]]
 
-点击“Generate”之后就生成了对应的密钥，并且会给出 Header 中所需要构造的内容（不一定用得到）：
+点击“Generate”之后就生成了对应的密钥，并且会在 Key 中给出 JWK 格式的密钥：
 
 ![[Pasted image 20261017042129.png]]
 

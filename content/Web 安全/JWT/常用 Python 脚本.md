@@ -130,9 +130,8 @@ print(token)
 
 ## x5c 证书链
 
-x5c（X.509 Certificate Chain）用于向验证方提供一条 X.509 证书**链**。第一张证书（leaf）包含验证 JWS 签名所需的公钥，后续每张证书提供验证前一张证书签名所需的公钥，最后一级由验证方本地信任的根 CA 证书来验证。验证方沿链逐级校验签名、有效期、CA 权限和用途等，直到本地预置的信任锚，并确认 leaf 证书的身份是预期的签发者，以此借助 PKI 体系保证该公钥可信。
-
-下述代码假设了攻击者已知 Root CA 的用于签名的私钥：
+>[!tip]
+> 对于该参数的详细介绍，请看 [[Header 参数注入]]。
 
 ```python
 import base64, hashlib, datetime as dt
@@ -159,7 +158,7 @@ def key_usage(sign_certs: bool):
         encipher_only=False, decipher_only=False,
     )
 
-# --- Root CA（实际生产中通常由已有 CA 签发） ---
+# --- Root CA（实际生产中通常由验证方信任 CA 签发） ---
 ca_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 ca_cert = (
     x509.CertificateBuilder()

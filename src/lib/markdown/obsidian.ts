@@ -248,6 +248,9 @@ function tryWrap(kids: Node[], i: number, start: number, open: string, close: st
 /* ------------------------------------------------------------------ */
 
 const WIKI_RE = /(!?)\[\[([^\[\]\n]+?)\]\]/g;
+/** 可能出现在双链文字中、会把双链拆散的行内节点 */
+const SPLIT_TYPES = new Set(['inlineCode', 'emphasis', 'strong', 'delete', 'mark']);
+const plainOf = (n: Node): string => (n.type === 'text' || n.type === 'inlineCode' ? n.value : toString(n));
 const TAG_RE = /(^|[\s(（,，;；])#([\p{L}\p{N}_\-/]*[\p{L}_\-][\p{L}\p{N}_\-/]*)/gu;
 const BLOCK_ID_RE = /(?:^|\s)\^([A-Za-z0-9-]+)\s*$/;
 
@@ -344,9 +347,55 @@ async function transform(tree: Node, ctx: ObsidianContext) {
     return node;
   };
 
+  /**
+   * 跨节点的双链：链接文字里有 `行内代码`、*强调* 等时（如 [[#`jwk` 参数注入]]），
+   * Markdown 会先把它们解析成独立节点，双链被拆散在多个节点里，这里把它们重新拼起来。
+   */
+  const joinSplitWikilinks = (kids: Node[]) => {
+    for (let i = 0; i < kids.length; i++) {
+      const c = kids[i];
+      if (c.type !== 'text') continue;
+      const open = c.value.lastIndexOf('[[');
+      if (open === -1 || c.value.indexOf(']]', open + 2) !== -1) continue;
+      let j = i + 1;
+      let close = -1;
+      for (; j < kids.length; j++) {
+        const n = kids[j];
+        if (n.type === 'text') {
+          close = n.value.indexOf(']]');
+          if (close !== -1 || n.value.includes('[[')) break;
+        } else if (!SPLIT_TYPES.has(n.type)) break;
+      }
+      if (close === -1 || j >= kids.length) continue;
+
+      const head = c.value.slice(open + 2);
+      const middle = kids.slice(i + 1, j);
+      const tail = kids[j].value.slice(0, close);
+      const plain = head + middle.map(plainOf).join('') + tail;
+      if (!plain.trim() || plain.includes('\n')) continue;
+
+      const isEmbed = open > 0 && c.value[open - 1] === '!';
+      const before = c.value.slice(0, isEmbed ? open - 1 : open);
+      const after = kids[j].value.slice(close + 2);
+      const node = isEmbed ? makeEmbed(plain) : makeLink(plain);
+      // 没有别名时，保留链接文字里的行内代码等格式
+      const hash = head.indexOf('#');
+      if (!isEmbed && !parseTarget(plain).alias && hash !== -1 && Array.isArray(node.children)) {
+        const file = head.slice(0, hash).trim();
+        const lead = (file ? `${file.split('/').pop()!.replace(/\.md$/i, '')} › ` : '') + head.slice(hash + 1);
+        node.children = [...(lead ? [text(lead)] : []), ...structuredClone(middle), ...(tail ? [text(tail)] : [])];
+      }
+      const repl: Node[] = [...(before ? [text(before)] : []), node, ...(after ? [text(after)] : [])];
+      kids.splice(i, j - i + 1, ...repl);
+      // 继续检查剩下的文字（里面可能还有双链）
+      i += repl.length - 1 - (after ? 1 : 0);
+    }
+  };
+
   const processChildren = (parent: Node, insideLink: boolean) => {
     const kids: Node[] = parent.children;
     if (!insideLink) {
+      joinSplitWikilinks(kids);
       // [[wikilink]] 与 ![[embed]]
       for (let i = 0; i < kids.length; i++) {
         const c = kids[i];
