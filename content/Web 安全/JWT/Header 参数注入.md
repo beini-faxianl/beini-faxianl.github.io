@@ -7,7 +7,7 @@ tags:
   - JWS
   - Header
   - 参数注入
-description: 一句话摘要
+description: Header 似乎被注入了奇怪的东东…
 ---
 >[!tip]
 > 推荐先阅读文章：[[什么是 JWT？]]

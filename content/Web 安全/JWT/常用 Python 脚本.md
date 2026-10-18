@@ -6,7 +6,7 @@ tags:
   - JWT
   - Python
   - Cheatsheet
-description: 一句话摘要
+description: 与 JWT 相关的 Python 脚本。
 ---
 >[!tip]
 > 假设，验签算法都采用 RS256。
