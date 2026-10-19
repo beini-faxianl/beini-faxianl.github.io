@@ -34,6 +34,8 @@ body {
   font-feature-settings: 'kern';
   /* 中文与英文 / 数字之间自动留出四分之一字宽的间隙（支持的浏览器） */
   text-autospace: normal;
+  /* 超长的英文单词、链接、文件名在放不下时断行，而不是撑破布局 */
+  overflow-wrap: break-word;
 }
 img,
 svg,
@@ -150,9 +152,12 @@ a {
   transition-delay: 0s !important;
 }
 
-/* 跨页标题变形的目标：紧贴文字的单个盒子 */
+/* 跨页标题变形的目标：紧贴文字的单个盒子
+   （anywhere 让 inline-block 的最小宽度不被超长单词撑大，宽度始终不超出所在栏） */
 .vt-title {
   display: inline-block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
   text-wrap: balance;
 }
 
@@ -227,6 +232,7 @@ main {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  max-width: 100%;
   height: 34px;
   padding: 0 14px;
   border-radius: 999px;
@@ -244,9 +250,19 @@ main {
   color: var(--fg);
 }
 .chip .count {
+  flex: none;
   font-size: 12px;
   color: var(--fg-faint);
   font-variant-numeric: tabular-nums;
+}
+.chip > svg {
+  flex: none;
+}
+/* 名称过长时省略（完整名称见 title 提示），数量始终可见 */
+.chip-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .chip-sm {
   height: 30px;
@@ -267,9 +283,13 @@ main {
 }
 
 .tag-pill {
-  display: inline-flex;
-  align-items: center;
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   height: 26px;
+  line-height: 26px;
   padding: 0 10px;
   border-radius: 999px;
   background: var(--accent-softer);

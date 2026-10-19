@@ -22,7 +22,7 @@ const total = vault.allCategories().length;
     {
       categories.map((c, i) => (
         <div class="cat-card" style={`--cat: var(${categoryColorVar(i)})`}>
-          <a href={c.url} class="cat-cover-link" aria-label={`查看分类「${c.name}」`} />
+          <a href={c.url} class="cat-cover-link" aria-label={`查看分类「${c.name}」`} title={c.name} />
           <div class="cat-head">
             <span class="cat-dot" />
             <h2 class="cat-name">{c.name}</h2>
@@ -31,8 +31,8 @@ const total = vault.allCategories().length;
           {c.children.length > 0 && (
             <div class="cat-subs">
               {c.children.map((s) => (
-                <a href={s.url} class="cat-sub">
-                  {s.name}
+                <a href={s.url} class="cat-sub" title={s.name}>
+                  <span class="cat-sub-name">{s.name}</span>
                   <span>{s.posts.length}</span>
                 </a>
               ))}
@@ -41,8 +41,13 @@ const total = vault.allCategories().length;
           <ul class="cat-posts">
             {c.posts.slice(0, 4).map((p) => (
               <li>
-                <span class="cat-post-title">{p.title}</span>
-                <time>{formatDate(p.date, 'month-day')}</time>
+                <a href={p.url} class="cat-post" title={p.title}>
+                  <span class="cat-post-title">
+                    {c.pinned.includes(p) && <span class="cat-pin" aria-label="置顶" set:html={icon('pin', 13)} />}
+                    {p.title}
+                  </span>
+                  <time datetime={p.date.toISOString()}>{formatDate(p.date, 'month-day')}</time>
+                </a>
               </li>
             ))}
           </ul>
@@ -63,6 +68,7 @@ const total = vault.allCategories().length;
   }
   .cat-card {
     position: relative;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 18px;
@@ -83,9 +89,10 @@ const total = vault.allCategories().length;
     inset: 0;
     border-radius: inherit;
   }
+  /* 按首行基线对齐：分类名换行时，圆点和篇数仍与第一行齐平 */
   .cat-head {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     gap: 10px;
   }
   .cat-subs {
@@ -111,26 +118,49 @@ const total = vault.allCategories().length;
       border-color 0.15s var(--ease),
       color 0.15s var(--ease);
   }
+  .cat-sub {
+    max-width: 100%;
+  }
   .cat-sub span {
     font-size: 11.5px;
     color: var(--fg-faint);
+  }
+  .cat-sub .cat-sub-name {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: inherit;
+    color: inherit;
   }
   .cat-sub:hover {
     border-color: var(--cat);
     color: var(--fg);
   }
   .cat-dot {
+    flex: none;
+    position: relative;
+    top: -3px;
     width: 10px;
     height: 10px;
     border-radius: 50%;
     background: var(--cat);
   }
+  /* 名称过长时最多显示两行，完整名称见悬停提示 */
   .cat-name {
+    min-width: 0;
     font-size: 22px;
     font-weight: 700;
+    line-height: 1.3;
     letter-spacing: -0.01em;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
   }
   .cat-count {
+    flex: none;
     margin-left: auto;
     font-size: 13px;
     color: var(--fg-faint);
@@ -139,19 +169,40 @@ const total = vault.allCategories().length;
     list-style: none;
     padding: 0;
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: 10px;
     font-size: 14.5px;
   }
   .cat-posts li {
+    min-width: 0;
+  }
+  /* 文章标题直接链接到文章，浮在整卡链接之上 */
+  .cat-post {
+    position: relative;
+    z-index: 1;
     display: flex;
     justify-content: space-between;
     gap: 16px;
+    min-width: 0;
     color: var(--fg-2);
+    transition: color 0.15s var(--ease);
   }
+  .cat-post:hover {
+    color: var(--accent-text);
+  }
+  /* 标题过长时省略，日期始终保留在右侧（min-width: 0 让弹性项可以收缩） */
   .cat-post-title {
+    flex: 1;
+    min-width: 0;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+  }
+  .cat-pin {
+    display: inline-flex;
+    margin-right: 5px;
+    vertical-align: -1px;
+    color: var(--accent);
   }
   .cat-posts time {
     flex: none;

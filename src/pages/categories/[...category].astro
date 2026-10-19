@@ -53,14 +53,14 @@ const siblings = (cat.parent ? cat.parent.children : vault.categories()).filter(
   </section>
 
   <section class="container">
-    <PostList posts={cat.posts} />
+    <PostList posts={cat.posts} pinScope={cat.slug} />
     {
       siblings.length > 0 && (
         <div class="other-cats">
           <span>{cat.parent ? `「${cat.parent.name}」下的其它分类` : '其它分类'}</span>
           {siblings.map((c) => (
-            <a href={c.url} class="chip">
-              {c.name} <span class="count">{c.posts.length}</span>
+            <a href={c.url} class="chip" title={c.name}>
+              <span class="chip-label">{c.name}</span> <span class="count">{c.posts.length}</span>
             </a>
           ))}
         </div>
@@ -71,24 +71,25 @@ const siblings = (cat.parent ? cat.parent.children : vault.categories()).filter(
 
 <style>
   .crumbs {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
     margin-bottom: 20px;
+    overflow-wrap: anywhere;
     font-size: 14px;
     color: var(--fg-muted);
   }
   .crumbs a {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
     transition: color 0.15s var(--ease);
   }
   .crumbs a:hover {
     color: var(--accent-text);
   }
+  .crumbs a:first-child {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    vertical-align: top;
+  }
   .sep {
+    margin-inline: 0.55em;
     color: var(--fg-faint);
   }
   .sub-cats {
@@ -100,7 +101,7 @@ const siblings = (cat.parent ? cat.parent.children : vault.categories()).filter(
   }
   .sub-cat {
     display: grid;
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
     gap: 4px 10px;
     padding: 14px 16px;
@@ -116,6 +117,7 @@ const siblings = (cat.parent ? cat.parent.children : vault.categories()).filter(
     transform: translateY(-2px);
   }
   .sub-cat-name {
+    overflow-wrap: anywhere;
     font-weight: 650;
     color: var(--fg);
   }

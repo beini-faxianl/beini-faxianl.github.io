@@ -138,7 +138,7 @@ const jsonLd = {
           note.tags.length > 0 && (
             <div class="article-tags">
               {note.tags.map((t) => (
-                <a href={tagUrl(t)} class="tag-pill">
+                <a href={tagUrl(t)} class="tag-pill" title={`#${t}`}>
                   #{t}
                 </a>
               ))}
@@ -367,12 +367,8 @@ const jsonLd = {
     text-align: center;
   }
   .article-category {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: center;
-    gap: 6px;
     margin-bottom: 18px;
+    overflow-wrap: anywhere;
     font-size: 13.5px;
     font-weight: 600;
     color: var(--fg-muted);
@@ -384,6 +380,7 @@ const jsonLd = {
     color: var(--accent-text);
   }
   .crumb-sep {
+    margin-inline: 0.5em;
     color: var(--fg-faint);
     font-weight: 400;
   }
@@ -757,8 +754,7 @@ const jsonLd = {
     .article-header {
       text-align: left;
     }
-    .article-meta,
-    .article-category {
+    .article-meta {
       justify-content: flex-start;
     }
     .article-footer-nav {

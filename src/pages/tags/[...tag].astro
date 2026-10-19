@@ -30,8 +30,8 @@ const parent = tag.name.includes('/') ? all.find((t) => t.name.toLowerCase() ===
       children.length > 0 && (
         <div class="sub-tags">
           {children.map((c) => (
-            <a href={c.url} class="chip">
-              #{c.name} <span class="count">{c.posts.length}</span>
+            <a href={c.url} class="chip" title={`#${c.name}`}>
+              <span class="chip-label">#{c.name}</span> <span class="count">{c.posts.length}</span>
             </a>
           ))}
         </div>

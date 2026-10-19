@@ -38,7 +38,7 @@ const totalWords = posts.reduce((s, p) => s + p.words, 0);
                       {p.title}
                     </span>
                   </span>
-                  <span class="archive-cat">{p.categoryLabel}</span>
+                  <span class="archive-cat" title={p.categoryLabel}>{p.categoryLabel}</span>
                 </a>
               </li>
             ))}
@@ -55,7 +55,7 @@ const totalWords = posts.reduce((s, p) => s + p.words, 0);
   }
   .year-block {
     display: grid;
-    grid-template-columns: 160px 1fr;
+    grid-template-columns: 160px minmax(0, 1fr);
     gap: 24px;
     padding-block: 32px;
     border-top: 1px solid var(--border);
@@ -84,7 +84,7 @@ const totalWords = posts.reduce((s, p) => s + p.words, 0);
   }
   .archive-item {
     display: grid;
-    grid-template-columns: 56px 1fr auto;
+    grid-template-columns: 56px minmax(0, 1fr) auto;
     align-items: baseline;
     gap: 16px;
     padding: 12px 14px;
@@ -104,16 +104,25 @@ const totalWords = posts.reduce((s, p) => s + p.words, 0);
     font-size: 16.5px;
     font-weight: 550;
   }
+  /* inline-block 的基线默认取最后一行；顶端对齐后整行基线落在标题首行 */
+  .archive-title .vt-title {
+    vertical-align: top;
+  }
   .archive-item:hover .archive-title {
     color: var(--accent-text);
   }
+  /* 分类路径过长时省略，给标题留出空间 */
   .archive-cat {
+    max-width: 16em;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
     font-size: 13px;
     color: var(--fg-faint);
   }
   @media (max-width: 640px) {
     .year-block {
-      grid-template-columns: 1fr;
+      grid-template-columns: minmax(0, 1fr);
       gap: 12px;
     }
     .year {
@@ -128,7 +137,7 @@ const totalWords = posts.reduce((s, p) => s + p.words, 0);
       display: none;
     }
     .archive-item {
-      grid-template-columns: 52px 1fr;
+      grid-template-columns: 52px minmax(0, 1fr);
     }
   }
 </style>

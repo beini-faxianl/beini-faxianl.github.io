@@ -45,6 +45,8 @@ const sorted = [...tags].sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
     background: var(--bg-subtle);
   }
   .cloud-tag {
+    min-width: 0;
+    overflow-wrap: anywhere;
     font-size: calc(15px + var(--w) * 17px);
     font-weight: calc(450 + var(--w) * 250);
     letter-spacing: -0.01em;

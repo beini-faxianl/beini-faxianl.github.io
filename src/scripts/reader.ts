@@ -14,7 +14,7 @@ const DEFAULTS = {
   paraSpacing: 1.15,
   width: 720,
   contrast: 90,
-  font: 'serif' as 'serif' | 'sans' | 'kai',
+  font: 'serif' as 'serif' | 'han-sans' | 'sans' | 'kai',
   justify: false,
   indent: false,
 };
@@ -40,23 +40,29 @@ const FORMAT: Record<NumKey, (v: number) => string> = {
 
 let settings: Settings = { ...DEFAULTS, ...store.get<Partial<Settings>>('reader-settings', {}) };
 
-let kaiLoaded = false;
 /**
- * 楷体（霞鹜文楷）只在选中时才加载。以字符串形式导入再注入 <style>，
- * 否则构建时这份含数百条 @font-face 的样式会被当作页面样式提前加载、阻塞首屏渲染。
+ * 可选字体只在选中时才加载（楷体：霞鹜文楷；思源黑体：Noto Sans SC）。
+ * 以字符串形式导入再注入 <style>，否则构建时这些含上百条 @font-face 的样式
+ * 会被当作页面样式提前加载、阻塞首屏渲染。字体文件本身也只下载页面用到的分片。
  */
+const FONT_LOADERS: Partial<Record<Settings['font'], () => Promise<{ default: string }>>> = {
+  kai: () => import('lxgw-wenkai-screen-webfont/lxgwwenkaigbscreen.css?inline'),
+  'han-sans': () => import('@fontsource-variable/noto-sans-sc/index.css?inline'),
+};
+const loadedFonts = new Set<string>();
 function ensureFont() {
-  if (settings.font === 'kai' && !kaiLoaded) {
-    kaiLoaded = true;
-    import('lxgw-wenkai-screen-webfont/lxgwwenkaigbscreen.css?inline')
-      .then(({ default: css }) => {
-        const style = document.createElement('style');
-        style.dataset.font = 'kai';
-        style.textContent = css;
-        document.head.append(style);
-      })
-      .catch(() => (kaiLoaded = false));
-  }
+  const key = settings.font;
+  const load = FONT_LOADERS[key];
+  if (!load || loadedFonts.has(key)) return;
+  loadedFonts.add(key);
+  load()
+    .then(({ default: css }) => {
+      const style = document.createElement('style');
+      style.dataset.font = key;
+      style.textContent = css;
+      document.head.append(style);
+    })
+    .catch(() => loadedFonts.delete(key));
 }
 
 function applySettings() {

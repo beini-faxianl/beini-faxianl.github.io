@@ -37,6 +37,9 @@
   --font-serif: 'Source Serif 4 Variable', 'Source Serif 4', 'Noto Serif SC Variable', 'Noto Serif SC', 'Songti SC',
     'STSong', 'SimSun', Georgia, serif;
   --font-kai: 'LXGW WenKai Screen', 'Source Serif 4 Variable', 'Kaiti SC', 'STKaiti', 'KaiTi', serif;
+  /* 思源黑体：本机已安装则直接使用，否则加载自托管的 Noto Sans SC（与思源黑体同一套字形） */
+  --font-han-sans: 'DM Sans Variable', 'Source Han Sans SC', 'Source Han Sans CN', 'Noto Sans CJK SC', 'Noto Sans SC Variable',
+    'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
   --font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas,
     'PingFang SC', 'Microsoft YaHei', monospace;
 
@@ -156,4 +159,7 @@
 }
 :root[data-reader-font='kai'] {
   --reader-font: var(--font-kai);
+}
+:root[data-reader-font='han-sans'] {
+  --reader-font: var(--font-han-sans);
 }

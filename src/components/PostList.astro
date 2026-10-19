@@ -9,10 +9,13 @@ interface Props {
   /** 首屏显示数量；超出部分先隐藏，由“加载更多”展开 */
   pageSize?: number;
   showCategory?: boolean;
+  /** 置顶标记的范围：分类页传入分类 slug（显示分类置顶），首页不传（显示首页置顶） */
+  pinScope?: string;
 }
-const { posts, pageSize = Infinity, showCategory = true } = Astro.props;
+const { posts, pageSize = Infinity, showCategory = true, pinScope } = Astro.props;
 const vault = getVault();
 const coverUrl = (p: Note) => vault.cover(p)?.url;
+const isPinned = (p: Note) => (pinScope ? p.pinnedIn.includes(pinScope) : p.pinned);
 ---
 
 <ol class="post-list" data-post-list data-page-size={Number.isFinite(pageSize) ? pageSize : undefined}>
@@ -20,16 +23,22 @@ const coverUrl = (p: Note) => vault.cover(p)?.url;
     posts.map((p, i) => {
       const cover = coverUrl(p);
       return (
-        <li class="post-item" data-categories={p.categorySlugs.join(' ')} hidden={i >= pageSize ? true : undefined}>
+        <li
+          class="post-item"
+          data-categories={p.categorySlugs.join(' ')}
+          data-pinned={p.pinned ? '' : undefined}
+          data-pinned-in={p.pinnedIn.length ? p.pinnedIn.join(' ') : undefined}
+          hidden={i >= pageSize ? true : undefined}
+        >
           <a href={p.url} class="post-link">
             <time class="post-date" datetime={p.date.toISOString()}>
               {formatDate(p.date, 'short')}
             </time>
             <div class="post-main">
               <div class="post-eyebrow">
-                {showCategory && <span>{p.categoryLabel}</span>}
-                {p.pinned && (
-                  <span class="badge badge-pin">
+                {showCategory && <span class="post-cat" title={p.categoryLabel}>{p.categoryLabel}</span>}
+                {(p.pinned || p.pinnedIn.length > 0) && (
+                  <span class="badge badge-pin" hidden={isPinned(p) ? undefined : true}>
                     <Fragment set:html={icon('pin', 12)} />
                     置顶
                   </span>
@@ -93,7 +102,15 @@ const coverUrl = (p: Note) => vault.cover(p)?.url;
   .post-eyebrow:empty {
     display: none;
   }
+  /* 分类路径过长时省略，徽章始终完整显示 */
+  .post-cat {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
   .badge {
+    flex: none;
     display: inline-flex;
     align-items: center;
     gap: 3px;
@@ -106,6 +123,9 @@ const coverUrl = (p: Note) => vault.cover(p)?.url;
   .badge-pin {
     background: var(--accent-soft);
     color: var(--accent-text);
+  }
+  .badge[hidden] {
+    display: none;
   }
   .badge-draft {
     background: var(--bg-muted);
@@ -149,6 +169,11 @@ const coverUrl = (p: Note) => vault.cover(p)?.url;
     color: var(--fg-faint);
   }
   .post-tag {
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
     color: var(--accent-text);
     opacity: 0.85;
   }

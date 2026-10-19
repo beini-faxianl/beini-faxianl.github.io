@@ -82,8 +82,8 @@ const websiteLd = JSON.stringify({
         <button type="button" class="chip" aria-pressed="true" data-filter="">全部 <span class="count">{posts.length}</span></button>
         {
           categories.map((c) => (
-            <button type="button" class="chip" aria-pressed="false" data-filter={c.slug} data-root>
-              {c.name} <span class="count">{c.posts.length}</span>
+            <button type="button" class="chip" aria-pressed="false" data-filter={c.slug} data-root title={c.name}>
+              <span class="chip-label">{c.name}</span> <span class="count">{c.posts.length}</span>
             </button>
           ))
         }
@@ -97,8 +97,8 @@ const websiteLd = JSON.stringify({
           <div class="sub-filter" data-sub-of={c.slug} hidden>
             <span class="sub-filter-label">{c.name} ›</span>
             {c.children.map((s) => (
-              <button type="button" class="chip chip-sm" aria-pressed="false" data-filter={s.slug}>
-                {s.name} <span class="count">{s.posts.length}</span>
+              <button type="button" class="chip chip-sm" aria-pressed="false" data-filter={s.slug} title={s.name}>
+                <span class="chip-label">{s.name}</span> <span class="count">{s.posts.length}</span>
               </button>
             ))}
             <a href={c.url} class="sub-filter-more">
@@ -131,8 +131,17 @@ const websiteLd = JSON.stringify({
     // 选中分类本身或它的任意下级
     const within = (slug: string) => !!slug && (category === slug || category.startsWith(slug + '/'));
 
+    // “全部”时显示首页置顶；选中某个分类时，该分类的置顶文章排到最前并显示置顶标记
+    const pinnedHere = (li: HTMLElement) => (category ? (li.dataset.pinnedIn ?? '').split(' ').includes(category) : li.hasAttribute('data-pinned'));
+
     const render = () => {
-      const matching = items.filter((li) => !category || (li.dataset.categories ?? '').split(' ').includes(category));
+      const ordered = category ? [...items].sort((a, b) => Number(pinnedHere(b)) - Number(pinnedHere(a))) : items;
+      list.append(...ordered);
+      items.forEach((li) => {
+        const badge = li.querySelector<HTMLElement>('.badge-pin');
+        if (badge) badge.hidden = !pinnedHere(li);
+      });
+      const matching = ordered.filter((li) => !category || (li.dataset.categories ?? '').split(' ').includes(category));
       items.forEach((li) => (li.hidden = true));
       matching.slice(0, shown).forEach((li) => (li.hidden = false));
       more.hidden = matching.length <= shown;
@@ -343,6 +352,8 @@ const websiteLd = JSON.stringify({
     }
   }
   .sub-filter-label {
+    min-width: 0;
+    overflow-wrap: anywhere;
     margin-right: 2px;
     font-size: 13px;
     font-weight: 600;
@@ -352,6 +363,8 @@ const websiteLd = JSON.stringify({
     display: inline-flex;
     align-items: center;
     gap: 4px;
+    min-width: 0;
+    overflow-wrap: anywhere;
     margin-left: auto;
     font-size: 13px;
     color: var(--fg-muted);

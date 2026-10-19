@@ -189,20 +189,20 @@ export function initSearch() {
     body.innerHTML =
       (history.length
         ? `<div class="search-group-label">最近搜索<button type="button" class="search-clear" data-clear-history>清除</button></div><div class="search-tags">${history
-            .map((q) => `<button type="button" class="chip" data-query="${escapeHtml(q)}">${icon('clock', 13)}${escapeHtml(q)}</button>`)
+            .map((q) => `<button type="button" class="chip" data-query="${escapeHtml(q)}" title="${escapeHtml(q)}">${icon('clock', 13)}<span class="chip-label">${escapeHtml(q)}</span></button>`)
             .join('')}</div>`
         : '') +
       `<div class="search-group-label">最近更新</div>` +
       recent
         .map(
           (d, i) => `<a class="search-result" role="option" id="sr-${i}" href="${d.u}">
-            <div class="search-result-title">${escapeHtml(d.t)}<span class="arrow">${icon('enter', 15)}</span></div>
+            <div class="search-result-title"><span>${escapeHtml(d.t)}</span><span class="arrow">${icon('enter', 15)}</span></div>
             <div class="search-result-meta">${escapeHtml(d.c)} · ${formatDate(d.d)}</div></a>`,
         )
         .join('') +
       (tags.length
         ? `<div class="search-group-label">标签</div><div class="search-tags">${tags
-            .map((t) => `<button type="button" class="chip" data-tag="${escapeHtml(t.name)}">#${escapeHtml(t.name)} <span class="count">${t.count}</span></button>`)
+            .map((t) => `<button type="button" class="chip" data-tag="${escapeHtml(t.name)}" title="#${escapeHtml(t.name)}"><span class="chip-label">#${escapeHtml(t.name)}</span> <span class="count">${t.count}</span></button>`)
             .join('')}</div>`
         : '');
     stat.textContent = `共 ${docs.length} 篇文章`;

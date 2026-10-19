@@ -2,10 +2,13 @@
 title: Obsidian 语法全览
 date: 2026-10-08
 updated: 2026-10-10
-tags: [obsidian, 写作/markdown]
+tags:
+  - obsidian
+  - 写作/markdown
 description: 这篇文章演示了本博客支持的全部 Obsidian 语法：双链、嵌入、Callout、高亮、数学公式、Mermaid、脚注、任务列表、块引用……
-aliases: [语法示例, Syntax Showcase]
-pinned: true
+aliases:
+  - 语法示例
+  - Syntax Showcase
 ---
 
 # Obsidian 语法全览

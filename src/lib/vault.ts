@@ -50,7 +50,10 @@ export interface Note {
   date: Date;
   updated?: Date;
   draft: boolean;
+  /** 首页置顶（frontmatter: pinned） */
   pinned: boolean;
+  /** 在哪些分类中置顶（分类 slug；frontmatter: categoryPinned） */
+  pinnedIn: string[];
   /** 摘要：frontmatter 中的 description，或自动截取的正文开头 */
   description: string;
   /** 仅当 frontmatter 明确写了 description / summary 时存在，作为文章副标题展示 */
@@ -93,8 +96,10 @@ export interface CategoryInfo {
   url: string;
   /** 0 = 顶级分类 */
   depth: number;
-  /** 本分类及所有子分类下的文章（时间倒序） */
+  /** 本分类及所有子分类下的文章：先是本分类的置顶文章，其余按时间倒序 */
   posts: Note[];
+  /** 在本分类中置顶的文章（时间倒序） */
+  pinned: Note[];
   /** 直接属于本分类的文章 */
   directPosts: Note[];
   children: CategoryInfo[];
@@ -228,6 +233,7 @@ export class Vault {
             url: withBase(`/categories/${slug}/`),
             depth: i,
             posts: [],
+            pinned: [],
             directPosts: [],
             children: [],
             parent,
@@ -242,7 +248,12 @@ export class Vault {
     }
     const sort = (list: CategoryInfo[]) => {
       list.sort((a, b) => b.posts.length - a.posts.length || a.name.localeCompare(b.name, 'zh'));
-      list.forEach((c) => sort(c.children));
+      list.forEach((c) => {
+        // 本分类的置顶文章排在最前面
+        c.pinned = c.posts.filter((p) => p.pinnedIn.includes(c.slug));
+        if (c.pinned.length) c.posts = [...c.pinned, ...c.posts.filter((p) => !c.pinned.includes(p))];
+        sort(c.children);
+      });
     };
     sort(roots);
     this.catRoots = roots;
@@ -435,6 +446,32 @@ function resolveCategoryPath(fm: Record<string, unknown>, id: string): string[] 
   return segs.length ? segs : [siteConfig.content.defaultCategory];
 }
 
+/**
+ * 分类置顶：
+ * - categoryPinned: true            → 在文章所属的分类中置顶
+ * - categoryPinned: Web 安全         → 在上级分类「Web 安全」中置顶（可写分类名或完整路径 Web 安全/JWT）
+ * - categoryPinned: [JWT, Web 安全]  → 同时在多个分类中置顶
+ * 只能是文章所属的分类或它的上级分类。
+ */
+function resolveCategoryPins(raw: unknown, slugs: string[], id: string): string[] {
+  if (raw == null || raw === false) return [];
+  const own = slugs[slugs.length - 1];
+  const out = new Set<string>();
+  for (const value of Array.isArray(raw) ? raw : [raw]) {
+    if (value === true || value === 'true') {
+      out.add(own);
+      continue;
+    }
+    const v = String(value).replace(/^\[\[|\]\]$/g, '').trim();
+    if (!v) continue;
+    const path = v.split(/\s*(?:\/|›|>)\s*/).filter(Boolean).map(slugify).join('/');
+    const hit = slugs.find((s) => s === path) ?? slugs.find((s) => s.split('/').pop() === path);
+    if (hit) out.add(hit);
+    else console.warn(`[vault] ${id}：categoryPinned 中的「${v}」不是这篇文章所属的分类或其上级分类，已忽略`);
+  }
+  return [...out];
+}
+
 function parseFrontmatter(raw: string): { data: Record<string, unknown>; body: string } {
   const src = raw.replace(/^﻿/, '').replace(/\r\n?/g, '\n');
   const m = src.match(/^---\n([\s\S]*?)\n---[ \t]*(?:\n|$)/);
@@ -550,6 +587,7 @@ function buildVault(): Vault {
       updated: updated && +updated !== +date ? updated : undefined,
       draft,
       pinned: fm.pinned === true || fm.pin === true || fm.sticky === true,
+      pinnedIn: resolveCategoryPins(fm.categoryPinned, categorySlugs, id),
       description: String(fm.description ?? fm.summary ?? fm.excerpt ?? excerpt(body)).trim(),
       lede: String(fm.description ?? fm.summary ?? '').trim() || undefined,
       cover: typeof (fm.cover ?? fm.image ?? fm.banner) === 'string' ? String(fm.cover ?? fm.image ?? fm.banner) : undefined,
