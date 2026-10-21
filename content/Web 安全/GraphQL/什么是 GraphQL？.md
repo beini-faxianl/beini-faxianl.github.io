@@ -49,13 +49,27 @@ query {
 
 ## 核心概念
 
-### Schema（模式）
+### Type（类型）& Schema（模式）
 
-Schema 代表服务前端与后端之间的契约，它用一套专门的语法（SDL，Schema Definition Language）把 API 能提供的所有数据和操作都用一个个的类型（Type）完整地描述出来。客户端能查什么、怎么查、会拿到什么类型，全由它决定。
+客户端以什么样的请求格式访问 GraphQL 端点，GraphQL 端点会对应地给出什么信息，这些都有 Schema 决定。
 
-例子：
+而 Schema 是由一个个的 Type 组成的。
 
-```graphql hlt:Product,ID!,String!,Int
+类型共有六种：
+
+- 对象类型
+- 标量类型
+- 枚举类型
+- 接口类型
+- 联合类型
+- 输入对象类型
+
+>[!note]
+> 我并不会全部介绍，具体参见[官方文档](https://graphql.org/learn/schema)。
+
+#### 对象类型（Object types）
+
+```hlt:Product
 type Product {
     id: ID!
     name: String!
@@ -64,56 +78,123 @@ type Product {
 }
 ```
 
->[!note]
-> 其中，`!` 表示该字段在调用时不可为空。
+这里的 `Product` 就是对象类型，它由一个个的**字段**（`id`、`name`……）组成，每个字段都可以定义自己的类型（`:` 后就是对应的类型）。
 
-高亮部分都是“类型”。类型可以使用内置的，也可以使用自定义的。
+每个字段都可以有 0 个或者多个参数，比如：
 
-### Query（查询）
-
-Query 用于从数据存储中检索数据，通常包含以下关键组成部分：
-
-| 组成部分 | 描述                              |
-| ---- | ------------------------------- |
-| 操作类型 | 可选，但建议使用，因为它能明确告诉服务器传入的请求是一个查询。 |
-| 名称   | 可以任意命名。可选，但建议使用，因为它有助于调试。       |
-| 数据结构 | 查询应返回的数据。                       |
-
-示例：
-
-```graphql
-query myGetProductQuery {
-    getProduct(id: 123) {
-        name
-        description
-    }
+```
+type Starship {
+  id: ID!
+  name: String!
+  length(unit: LengthUnit = METER): Float
 }
 ```
 
 其中：
 
-- `query` 是操作类型
-- `myGetProductQuery` 是名称
-- 主体部分（被 `query myGetProductQuery{}` 包裹的部分）就是数据结构
+- `unit` 为 `length` 字段的参数
+- `unit` 的默认值为 `METER`
+- `LengthUnit` 是该参数的类型
 
-关于这些组成的构造，都需要参照服务器上对应的 Schema。
+#### 标量类型（Scalar types）
 
-### Mutation（变更）
+除“标量类型”外的其他类型都需要继续往下定义（比如对象类型、接口类型还要定义里面的字段、参数；联合类型还要定义联合成员……），标量类型就是最终的“叶子”。
 
-Mutation 会以某种方式改变数据（包括添加、删除或编辑数据），与查询一样，通常有下述组成部分：
+下例中的 `ID`、`String`、`Int` 就是标量类型：
 
-- 操作类型
-- 名称
-- 数据结构
+```
+type Product {
+    id: ID!
+    name: String!
+    description: String!
+    price: Int
+}
+```
 
-例子：
+#### 类型修饰符
 
-```graphql
-mutation {
-    createProduct(name: "Flamin' Cocktail Glasses", listed: "yes") {
-        id
-        name
-        listed
+共有两个类型修饰符：
+
+- `!`
+- `[]`
+
+在标量类型后面跟上 `!` 修饰符，即 `Type!`，意味着服务器始终需要为该标量类型修饰的字段返回一个非空值。
+
+在标量类型外面套上 `[]` 修饰符，即 `[Type]`，意味着该标量类型修饰的字段是一个列表。
+
+两个修饰符也可以组合使用：
+
+```
+myField: [String]!
+```
+
+### 操作类型
+
+对象类型中有三个特殊情况：
+
+- Query（查询）
+- Mutation（变更）
+- Subscription（订阅）
+
+它们被称为操作类型。服务端上的定义和常规对象类型没什么区别，下面主要讲述客户端如何构造请求。
+
+#### Query（查询）
+
+请求结构：
+
+```
+query HeroNameAndFriends {
+  hero {
+    name
+    friends {
+      name
+    }
+  }
+}
+```
+
+其中：
+
+- `query` 是操作类型标记
+- `HeroNameAndFriends` 是操作名称
+- `hero` 是服务器端上定义的对象类型名
+- `name`、`friends` 都是定义在 `hero` 中的字段
+- 由于 `friends` 不是叶子类型（标量类型），则还需往里面取，一直到标量类型定义的字段为止
+
+响应：
+
+```json
+{
+  "data": {
+    "hero": {
+      "name": "R2-D2",
+      "friends": [
+        {
+          "name": "Luke Skywalker"
+        },
+        {
+          "name": "Han Solo"
+        },
+        {
+          "name": "Leia Organa"
+        }
+      ]
+    }
+  }
+}
+```
+
+上面展示的只是最基础的请求，请求中还可以有：
+
+##### Arguments（参数）
+
+```graphql hlt:"id:1"
+query myGetEmployeeQuery {
+    getEmployees(id: 1) {
+        name {
+            firstname
+            lastname
+        }
     }
 }
 ```
@@ -121,25 +202,230 @@ mutation {
 ```json
 {
     "data": {
-        "createProduct": {
-            "id": 123,
-            "name": "Flamin' Cocktail Glasses",
-            "listed": "yes"
+        "getEmployees": [
+            {
+                "name": {
+                    "firstname": "Carlos",
+                    "lastname": "Montoya"
+                }
+            }
+        ]
+    }
+}
+```
+
+##### Variables（变量）
+
+让参数的取值来自一个单独的、格式因传输方式而异的（通常是 JSON）**变量字典**。这样就可以在多个查询之间复用同一个通用结构，对于值的变动只需修改变量字典。
+
+注意，构建使用变量的查询或[[#Mutation（变更）|变更]]时，你需要：
+
+- 声明变量及其类型
+- 在查询的适当位置加入变量名
+- 从变量字典中传入变量的键和值
+
+例子：
+
+```graphql
+query HeroNameAndFriends($episode: Episode) {
+  hero(episode: $episode) {
+    name
+    friends {
+      name
+    }
+  }
+}
+```
+
+其中：
+
+- `$episode: Episode` 在声明变量及其类型
+- `episode: $episode` 是使用变量给 `episode` 字段赋值
+
+变量字典：
+
+```json
+{
+  "episode": "JEDI"
+}
+```
+
+响应：
+
+```json
+{
+  "data": {
+    "hero": {
+      "name": "R2-D2",
+      "friends": [
+        {
+          "name": "Luke Skywalker"
+        },
+        {
+          "name": "Han Solo"
+        },
+        {
+          "name": "Leia Organa"
+        }
+      ]
+    }
+  }
+}
+```
+
+##### Aliases（别名）
+
+对同一个字段的不同参数查询，你不能直接：
+
+```
+query {
+  hero(episode: EMPIRE) {
+    name
+  }
+  hero(episode: JEDI) {
+    name
+  }
+}
+```
+
+因为服务器无法给出这样的响应：
+
+```json
+{
+  "data": {
+    "hero": {
+      "name": "Luke Skywalker"
+    },
+    "hero": {
+      "name": "R2-D2"
+    }
+  }
+}
+```
+
+>[!note]
+> 从 JSON 语法上，这其实可以使用（但不推荐），但在 GraphQL 中会因字段冲突而直接报错。
+
+你需要为他们设置别名：
+
+```
+query {
+  empireHero: hero(episode: EMPIRE) {
+    name
+  }
+  jediHero: hero(episode: JEDI) {
+    name
+  }
+}
+```
+
+结果：
+
+```json
+{
+  "data": {
+    "empireHero": {
+      "name": "Luke Skywalker"
+    },
+    "jediHero": {
+      "name": "R2-D2"
+    }
+  }
+}
+```
+
+##### Fragments（片段）
+
+片段是查询或[[#Mutation（变更）|变更]]中**可复用的部分**。片段定义后，如果后续修改了片段，所有调用该片段的查询或变更都会随之变化。
+
+片段定义示例：
+
+```graphql
+fragment productInfo on Product {
+    id
+    name
+    listed
+}
+```
+
+片段的使用：
+
+```graphql
+query {
+    getProduct(id: 1) {
+        ...productInfo
+        stock
+    }
+}
+```
+
+响应：
+
+```json
+{
+    "data": {
+        "getProduct": {
+            "id": 1,
+            "name": "Juice Extractor",
+            "listed": "no",
+            "stock": 5
         }
     }
 }
 ```
 
-### Subscription（订阅）
+#### Mutation（变更）
+
+Mutation 会以某种方式改变数据（包括添加、删除或编辑数据），具体可见[官方文档](https://graphql.org/learn/mutations/)。
+
+请求结构：
+
+```
+mutation CreateReviewForEpisode($ep: Episode!, $review: ReviewInput!) {
+  createReview(episode: $ep, review: $review) {
+    stars
+    commentary
+  }
+}
+```
+
+变量字典：
+
+```json
+{
+  "ep": "JEDI",
+  "review": {
+    "stars": 5,
+    "commentary": "This is a great movie!"
+  }
+}
+```
+
+响应：
+
+```json
+{
+  "data": {
+    "createReview": {
+      "stars": 5,
+      "commentary": "This is a great movie!"
+    }
+  }
+}
+```
+
+#### Subscription（订阅）
 
 Subscription 是一种特殊的查询。它让客户端能够与服务器建立长连接，使服务器可以向客户端推送实时更新，而客户端无需不断轮询数据。
+
+构造请求的方式与查询、变更几乎无异，这里不再过多演示，具体可见[官方文档](https://graphql.org/learn/subscriptions/)。
 
 >[!info]
 > 订阅通常用 WebSocket 实现。
 
-订阅主要适用于对大型对象进行的小幅更改，以及需要小规模实时更新的功能（如聊天系统或协同编辑）。
-
 ### Introspection（内省）
+
+> 待整理……
 
 Introspection 是 GraphQL 的一项内置功能，允许你向服务器查询有关模式的信息。GraphQL IDE 和文档生成工具等应用程序经常使用它。
 
@@ -171,208 +457,3 @@ query {
 ```
 
 内省可能带来严重的信息泄露风险，因为它可用于获取潜在的敏感信息（例如字段描述），并帮助攻击者了解如何与 API 交互。最佳实践是在生产环境中禁用内省。
-
-## 查询与变更的组成部分
-
-GraphQL 语法中包含若干查询和变更共用的组成部分。
-
-### Fields（字段）
-
-所有 GraphQL 类型都包含可查询的数据项，称为字段。发送查询或变更时，你需要指定希望 API 返回哪些字段。响应内容与请求中指定的内容一一对应。
-
-下面的示例展示了一个获取所有员工 ID 和姓名信息的查询及其响应。在本例中，请求的字段是 `id`、`name.firstname` 和 `name.lastname`。
-
-```graphql hlt:id,firstname,lastname
-query myGetEmployeeQuery {
-    getEmployees {
-        id
-        name {
-            firstname
-            lastname
-        }
-    }
-}
-```
-
-```json
-{
-    "data": {
-        "getEmployees": [
-            {
-                "id": 1,
-                "name": {
-                    "firstname": "Carlos",
-                    "lastname": "Montoya"
-                }
-            },
-            {
-                "id": 2,
-                "name": {
-                    "firstname": "Peter",
-                    "lastname": "Wiener"
-                }
-            }
-        ]
-    }
-}
-```
-
-### Arguments（参数）
-
-参数是为特定字段提供的值。某个类型可接受哪些参数由模式定义。
-
-当你发送包含参数的查询或变更时，GraphQL 服务器会根据其配置决定如何响应。例如，它可能只返回某个特定对象，而不是所有对象的详细信息。
-
-下面的示例展示了一个以员工 ID 作为参数的 `getEmployee` 请求。在本例中，服务器只返回与该 ID 匹配的员工的详细信息。
-
-```graphql hlt:"id:1"
-query myGetEmployeeQuery {
-    getEmployees(id: 1) {
-        name {
-            firstname
-            lastname
-        }
-    }
-}
-```
-
-```json
-{
-    "data": {
-        "getEmployees": [
-            {
-                "name": {
-                    "firstname": "Carlos",
-                    "lastname": "Montoya"
-                }
-            }
-        ]
-    }
-}
-```
-
-### Variables（变量）
-
-变量让你能够传入动态参数，而不必把参数直接写在查询本身中。
-
-参数的取值来自一个单独的、基于 JSON 的**变量字典**。这样就可以在多个查询之间复用同一个通用结构，只需改变变量本身的值。
-
-构建使用变量的查询或变更时，你需要：
-
-- 声明变量及其类型
-- 在查询的适当位置加入变量名
-- 从变量字典中传入变量的键和值
-
-下面的示例展示了与上一个示例相同的查询，只是 ID 以变量形式传入，而不是直接写在查询字符串中：
-
-```graphql
-query getEmployeeWithVariable($id: ID!) {
-    getEmployees(id: $id) {
-        name {
-            firstname
-            lastname
-        }
-    }
-}
-```
-
-变量：
-
-```json
-{
-    "id": 1
-}
-```
-
-变量在第一行通过 `$id: ID!` 声明，随后在第二行通过 `id: $id` 将其作为参数使用，最后，变量的值在变量 JSON 字典中设置。
-
-### Aliases（别名）
-
-GraphQL 对象不能包含多个**同名属性**。
-
-例如，下面的查询是无效的，因为它试图两次返回 `product` 类型。
-
-```graphql hl:3,7
-# 无效查询
-query getProductDetails {
-    getProduct(id: 1) {
-        id
-        name
-    }
-    getProduct(id: 2) {
-        id
-        name
-    }
-}
-```
-
-别名允许你通过显式命名希望 API 返回的属性来绕过这一限制。你可以使用别名在一次请求中返回同一类型对象的多个实例，从而减少所需的 API 调用次数。
-
-在下面的示例中，查询使用别名为两个产品分别指定了唯一的名称：
-
-```graphql hl:3,7
-# 使用别名的有效查询
-query getProductDetails {
-    product1: getProduct(id: "1") {
-        id
-        name
-    }
-    product2: getProduct(id: "2") {
-        id
-        name
-    }
-}
-```
-
-```json
-{
-    "data": {
-        "product1": {
-            "id": 1,
-            "name": "Juice Extractor"
-        },
-        "product2": {
-            "id": 2,
-            "name": "Fruit Overlays"
-        }
-    }
-}
-```
-
-### Fragments（片段）
-
-片段是查询或变更中**可复用的部分**，包含所关联类型的部分字段。
-
-片段定义后，可以被包含在查询或变更中。如果之后修改了片段，所有调用该片段的查询或变更都会随之变化。
-
-下面的示例展示了一个 `getProduct` 查询，其中产品的详细信息包含在 `productInfo` 片段中：
-
-```graphql
-fragment productInfo on Product {
-    id
-    name
-    listed
-}
-```
-
-```graphql
-query {
-    getProduct(id: 1) {
-        ...productInfo
-        stock
-    }
-}
-```
-
-```json
-{
-    "data": {
-        "getProduct": {
-            "id": 1,
-            "name": "Juice Extractor",
-            "listed": "no",
-            "stock": 5
-        }
-    }
-}
-```
