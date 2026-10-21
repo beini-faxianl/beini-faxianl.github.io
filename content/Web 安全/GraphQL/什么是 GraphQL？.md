@@ -425,9 +425,7 @@ Subscription 是一种特殊的查询。它让客户端能够与服务器建立�
 
 ### Introspection（内省）
 
-> 待整理……
-
-Introspection 是 GraphQL 的一项内置功能，允许你向服务器查询有关模式的信息。GraphQL IDE 和文档生成工具等应用程序经常使用它。
+Introspection 是 GraphQL 的一项内置功能，允许你向服务器查询有关模式的信息（因此在生产环境中通常被禁用）。
 
 GraphQL 内置了一些以双下划线 `__` 开头的特殊字段，专门用来查询模式。比如想知道 Product 有哪些字段：
 

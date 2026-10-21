@@ -5,7 +5,7 @@ updated: 2026-10-20
 tags:
   - BurpSuite
   - GraphQL
-description: 一句话摘要
+description: Burp Suite 中处理 GraphQL
 ---
 >[!tip]
 > 建议先了解什么是 GraphQL，参考[[什么是 GraphQL？|这篇文章]]。
@@ -15,6 +15,8 @@ description: 一句话摘要
 当 Burp Suite 检测到 GraphQL 请求之后，会在请求面板中出现一个 GraphQL 选项卡（无需安装任何插件）：
 
 ![[Pasted image 20261019233517.png|600]]
+
+但**注意**，如果 Burp Suite 没有发现 GraphQL 端点，该选项卡不会出现，并且[[#内省|构造内省查询]]的功能也无法使用。在“常规请求中没有发现 GraphQL 端点，你需要主动探测某些端点来确认目标是否使用 GraphQL”的情况中，Burp Suite 所提供的有关 GraphQL 的相关功能你是用不上了，此时你需要对目标端点发起常规请求或者通用查询，通过观察响应来判断端点是否为 GraphQL 端点。当然，一旦你发现了某端点是 GraphQL 端点，Burp Suite 也会发现，此时就可以正常使用其提供的功能了。
 
 ## 内省
 
