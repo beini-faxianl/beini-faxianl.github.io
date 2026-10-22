@@ -4,7 +4,11 @@ date: 2026-10-21
 updated: 2026-10-21
 tags:
   - GraphQL
-description: 一句话摘要
+  - CSRF
+  - 自省
+  - Schema
+  - Clairvoyance
+description: GraphQL API 漏洞
 ---
 >[!tip]
 > 如果你还不了解什么是 GraphQL，先看[[什么是 GraphQL？|这篇文章]]。
@@ -456,6 +460,127 @@ mutation test{
     }
   }
 }
+```
+
+## 自省被禁用了
+
+### 建议（Suggestions）
+
+[Apollo GraphQL](https://www.apollographql.com/) 是围绕 GraphQL 建立的完整的生态系统和平台，它提供了一个名为 Suggestions（建议）的功能，即针对报错信息：
+
+```
+Cannot query field "help" on type "Query"
+```
+
+建议会在后面添加额外信息：
+
+```
+Cannot query field "help" on type "Query". Did you mean "hello"?
+```
+
+这使得即使内省被完全禁用，也可以从建议中获取 Schema 的相关信息。
+
+而且，根据[官方文档](https://www.apollographql.com/docs/apollo-server/api/apollo-server)的描述，Suggestions 是默认被开启的。
+
+### 专用工具
+
+[clairvoyance](https://github.com/nikitastupin/clairvoyance) 是针对“自省被禁用”场景专门创建的工具。
+
+该工具会将 GraphQL 服务器返回的错误信息当侧信道，通过词表（内置，也可以自指定）进行不断的探测从而最大程度恢复出 Schema。
+
+### 绕过 GraphQL 的内省防御
+
+#### 插入特殊字符
+
+开发者在禁用内省时，可能会使用正则表达式来排除查询中的 `__schema` 关键字。你应该尝试在 `__shcema` 关键字后插入空格、换行符和逗号等字符，因为 GraphQL 会忽略它们（而有缺陷的正则不会，从而造成不匹配过滤规则使查询被放行）
+
+例子（假设开发者只排除了 `__schema{`），下面这个内省查询会被放行。
+
+```json hlt:换行符
+#带换行符的内省查询
+{
+    "query": "query{__schema
+    {queryType{name}}}"
+}
+```
+
+#### 切换 HTTP 方法
+
+内省可能仅在 POST 方式下被禁用，可以尝试 GET 请求，或将 `content-type` 的值换为 `x-www-form-urlencoded`。
+
+```http
+# 以 GET 请求发送的内省探测
+GET /graphql?query=query%7B__schema%0A%7BqueryType%7Bname%7D%7D%7D
+```
+
+## 使用别名绕过速率限制
+
+GraphQL 提供的部分功能可能涉及到一些敏感操作：
+
+- 查询优惠券是否有效
+- 查询用户是否存在
+- 登入是否成功
+- ……
+
+因此，对 GraphQL 的调用次数通常会受限。
+
+但 GraphQL 提供了别名，你可以通过一次调用实现多次查询。
+
+例子（用于检查商店折扣码是否有效）：
+
+```graphql
+#带别名查询的请求
+query isValidDiscount($code: Int) {
+    isValidDiscount(code:$code){
+        valid
+    }
+    isValidDiscount2:isValidDiscount(code:$code){
+        valid
+    }
+    isValidDiscount3:isValidDiscount(code:$code){
+        valid
+    }
+}
+```
+
+## GraphQL CSRF
+
+正常情况下，客户端以 `Content-Type` 为 `application/json` 对 GraphQL 端点发起 POST 请求。
+
+在该情况下，CSRF 几乎是无法实现的，因为 `Content-Type` 为 `application/json` 的请求属于复杂请求，客户端会先发送 `OPTIONS` 预检测请求，只有服务器明确返回允许的 CORS（Cross-Origin Resource Sharing，跨域资源请求）头，才会正常发起请求。
+
+但是，如果 GraphQL 端点没有正确校验 `Content-Type` 或者并没有限制请求方法，则可能出现 CSRF 漏洞。
+
+**需要注意的是**，当你将 `Content-Type` 改为 `application/x-www-form-urlencoded` 之后，你对应的请求体也要改为表单类型。
+
+原先：
+
+```http
+POST /graphql/v1 HTTP/2
+[snip]
+Content-Type: application/json
+[snip]
+
+{
+  "query": "\n    mutation changeEmail($input: ChangeEmailInput!) {\n        changeEmail(input: $input) {\n            email\n        }\n    }\n",
+  "operationName": "changeEmail",
+  "variables": {
+    "input": {
+      "email": "foo@test.com"
+    }
+  }
+}
+```
+
+修改后（注意 URL 编码）：
+
+```http
+POST /graphql/v1 HTTP/2
+[snip]
+Accept: application/x-www-urlencoded
+[snip]
+
+query=mutation+changeEmail%28%24input%3A+ChangeEmailInput%21%29+%7B%0A++changeEmail%28input%3A+%24input%29+%7B%0A++++email%0A++%7D%0A%7D&operationName=changeEmail&variables=%7B%22input%22%3A%7B%22email%22%3A%22hackerfoo%40test.com%22%7D%7D
 ```
 
 ## 附录
@@ -1671,103 +1796,3 @@ mutation test{
   }
 }
 ```
-
-# 待整理 ↓ ↓ ↓
-
-## 建议（Suggestions）
-
-即使内省被完全禁用，你有时也可以利用"建议"来获取 API 结构的相关信息。
-
-建议是 Apollo GraphQL 平台的一项功能，服务器可以在错误消息中建议如何修正查询。它通常用于查询略有错误但仍可识别的情况（例如："There is no entry for 'productInfo'. Did you mean 'productInformation' instead?"）。
-
-你可以从中获取有用信息，因为这样的响应实际上泄露了 schema 的有效部分。
-
-Clairvoyance 是一款利用建议来自动恢复全部或部分 GraphQL schema 的工具，即使内省已被禁用也同样有效。这大大减少了从建议响应中拼凑信息所需的时间。
-
-在 Apollo Server v4 及更高版本中，你可以使用 `hideSchemaDetailsFromClientErrors` 选项禁用建议。对于更早的版本，请参阅这个 GitHub 讨论帖中的变通方法。
-
-
-
-## 绕过 GraphQL 的内省防御
-
-如果你无法让内省查询在被测试的 API 上运行，可以尝试在 `__schema` 关键字之后插入一个特殊字符。
-
-开发者在禁用内省时，可能会使用正则表达式来排除查询中的 `__schema` 关键字。你应该尝试空格、换行符和逗号等字符，因为 GraphQL 会忽略它们，而有缺陷的正则表达式则不会。
-
-因此，如果开发者只排除了 `__schema{`，那么下面这个内省查询就不会被排除。
-
-```json
-#带换行符的内省查询
-{
-    "query": "query{__schema
-    {queryType{name}}}"
-}
-```
-
-如果这样不起作用，可以尝试通过其他请求方法运行探测，因为内省可能仅在 POST 方式下被禁用。可以尝试 GET 请求，或 content-type 为 `x-www-form-urlencoded` 的 POST 请求。
-
-下面的示例展示了通过 GET 发送、参数经过 URL 编码的内省探测。
-
-```
-# 以 GET 请求发送的内省探测
-GET /graphql?query=query%7B__schema%0A%7BqueryType%7Bname%7D%7D%7D
-```
-
-
-
-## 使用别名绕过速率限制
-
-通常情况下，GraphQL 对象不能包含多个同名属性。别名（aliases）通过显式命名你希望 API 返回的属性，使你能够绕过这一限制。你可以使用别名在一次请求中返回同一类型对象的多个实例。
-
-**更多信息**
-
-有关 GraphQL 别名的更多信息，请参阅 [别名](https://portswigger.net/web-security/graphql/what-is-graphql#aliases)。
-
-虽然别名的本意是减少你需要发起的 API 调用次数，但它们也可以被用来对 GraphQL 端点进行暴力破解。
-
-许多端点都设有某种速率限制器，以防止暴力破解攻击。有些速率限制器是根据收到的 HTTP 请求数量来工作的，而不是根据端点上执行的操作数量。由于别名实际上使你能够在单个 HTTP 消息中发送多个查询，因此可以绕过这一限制。
-
-下面这个简化的示例展示了一系列带别名的查询，用于检查商店折扣码是否有效。由于这是单个 HTTP 请求，该操作有可能绕过速率限制，而它却可能被用来一次性检查大量折扣码。
-
-```graphql
-#带别名查询的请求
-query isValidDiscount($code: Int) {
-    isValidDiscount(code:$code){
-        valid
-    }
-    isValidDiscount2:isValidDiscount(code:$code){
-        valid
-    }
-    isValidDiscount3:isValidDiscount(code:$code){
-        valid
-    }
-}
-```
-
-**实验：**
-
-- **实验 · 进阶级（PRACTITIONER）**：绕过 GraphQL 暴力破解防护
-
-## GraphQL CSRF
-
-跨站请求伪造（CSRF）漏洞使攻击者能够诱使用户执行并非其本意的操作。攻击者通过创建一个恶意网站，伪造发往存在漏洞的应用程序的跨域请求来实现这一点。
-
-**更多信息**
-
-有关 CSRF 漏洞的一般性信息，请参阅 [CSRF 学习主题](https://portswigger.net/web-security/csrf)。
-
-GraphQL 可以成为 CSRF 攻击的载体：攻击者创建一个利用代码，使受害者的浏览器以受害用户的身份发送恶意查询。
-
-### GraphQL 上的 CSRF 漏洞是如何产生的？
-
-当 GraphQL 端点不验证所收到请求的内容类型，且未实施 CSRF 令牌时，就可能出现 CSRF 漏洞。
-
-只要对内容类型进行了验证，使用 `application/json` 内容类型的 POST 请求就能防止伪造。在这种情况下，即使受害者访问了恶意网站，攻击者也无法让受害者的浏览器发送此类请求。
-
-然而，GET 等替代方法，或任何内容类型为 `x-www-form-urlencoded` 的请求，都可以由浏览器发送，因此如果端点接受这些请求，用户就可能面临攻击风险。在这种情况下，攻击者可能构造利用代码，向 API 发送恶意请求。
-
-对于基于 GraphQL 的 CSRF 漏洞，构造 CSRF 攻击和投递利用代码的步骤与"常规"CSRF 漏洞相同。有关此过程的更多信息，请参阅 [如何构造 CSRF 攻击](https://portswigger.net/web-security/csrf#how-to-construct-a-csrf-attack)。
-
-**实验：**
-
-- **实验 · 进阶级（PRACTITIONER）**：通过 GraphQL 实施 CSRF 利用

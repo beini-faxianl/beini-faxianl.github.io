@@ -58,15 +58,3 @@ Burp Suite 提供的内省查询适用于大多数 GraphQL 服务器。不过，
 对于内省请求的响应，在响应面板中任意位置右键，然后选择“GraphQL → Save GraphQL queries to site map”。
 
 Burp Suite 会将内省过程中发现的每个可用查询都作为一个节点保存到 Site Map 中，你可以检查这些查询，找到想要进一步调查的查询。
-
-## Scanner
-
-> 待整理
-
-自动发现 GraphQL 端点
-
-自动探测内省是否被启用
-
-![[Pasted image 20261020212120.png]]
-
-自动探测建议是否被启用

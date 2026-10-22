@@ -4,7 +4,7 @@ date: 2026-10-20
 updated: 2026-10-20
 tags:
   - GraphQL
-description: 一句话摘要
+description: 什么是 GraphQL？
 ---
 ## 什么是 GraphQL？
 
