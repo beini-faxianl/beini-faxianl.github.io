@@ -3,8 +3,7 @@ title: Ruby 语法
 date: 2026-10-19
 updated: 2026-10-19
 tags:
-  - 前端
-  - react
+  - Ruby
 description: Ruby
 ---
 # Claude Opus 5.5（High）

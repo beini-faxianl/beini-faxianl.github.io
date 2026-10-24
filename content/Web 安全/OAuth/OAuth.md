@@ -3,8 +3,7 @@ title: OAuth
 date: 2026-10-22
 updated: 2026-10-22
 tags:
-  - 前端
-  - react
+  - OAuth
 description: 一句话摘要
 ---
 ## OAuth
