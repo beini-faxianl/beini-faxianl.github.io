@@ -4,7 +4,7 @@ date: 2026-10-19
 updated: 2026-10-19
 tags:
   - Ruby
-description: Ruby
+description: 露比（Ruby）咻比~
 ---
 # Claude Opus 5.5（High）
 
