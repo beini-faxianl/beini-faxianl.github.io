@@ -1,5 +1,5 @@
 ---
-title: Cheatsheet
+title: yaml 模块
 date: 2026-10-24
 updated: 2026-10-24
 tags:
