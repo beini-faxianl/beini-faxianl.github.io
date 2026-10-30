@@ -889,7 +889,7 @@
       "avoidPageBreaks": false
     },
     "common": {
-      "enableInSourceMode": false
+      "enableInSourceMode": true
     },
     "prompts": {
       "editedDefaults": {},
