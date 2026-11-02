@@ -1,7 +1,7 @@
 ---
 title: CommonsCollections1
-date: 2026-10-01
-updated: 2026-10-05
+date: 2026-11-01
+updated: 2026-11-01
 tags:
   - CommonsCollections1
   - Java
