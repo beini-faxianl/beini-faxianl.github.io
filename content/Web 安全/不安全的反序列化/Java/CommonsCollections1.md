@@ -10,6 +10,9 @@ tags:
   - ysoserial
 description: CommonsCollections1
 ---
+>[!tip]
+> 阅读本文章前，建议先了解[[前置知识]]。
+
 ## 利用链全览 & 依赖
 
 ```
