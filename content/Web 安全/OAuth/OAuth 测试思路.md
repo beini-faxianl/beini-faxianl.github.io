@@ -1,18 +1,140 @@
 ---
-title: OAuth
+title: OAuth 测试思路
 date: 2026-10-22
 updated: 2026-10-22
 tags:
   - OAuth
-description: 一句话摘要
+description: OAuth 测试思路
 ---
-## OAuth
-
 >[!tip]
 > 目前处于待整理状态。
 
-- 访问令牌没有绑定资源所有者
-- 授权码没有没有绑定资源所有者
+## Recon
+
+在 OAuth 场景中，你往往能通过 Icon、页面上的提示（微信登入、Googgle 账户登入等）以及域名获得 OAuth 提供商的信息。
+
+OAuth 提供商往往会提供有关 OAuth 实现的详细文档，阅读该文档对后续测试 OAuth 有着极大的帮助。
+
+此外，一旦确认授权服务器的主机名之后，应尝试请求下述端点：
+
+```
+/.well-known/oauth-authorization-server
+/.well-known/openid-configuration
+```
+
+这些端点通常会返回一个 JSON 格式的配置文件，里面也许会提供官方文档未提供的信息。
+
+## 身份未绑定
+
+针对：隐式授权
+
+问题描述：客户端申请到的访问令牌并没有与资源所有者绑定，即授资源服务器仅判断访问令牌是否有效。
+
+导致：攻击者可以通过自己的访问令牌向资源服务器申请别人的信息。
+
+## 一半一半
+
+通过 CSRF，攻击者可以将一个完整的 OAuth 流程拆分成两半，分两个情况：
+
+- 前半部分由攻击者完成，后半部分由受害者完成 → 将攻击者信息绑定到受害者账户
+- 前半部分由受害者完成，后半部分由攻击者完成 → 将受害者信息绑定到攻击者账户
+
+`state` 参数会起到一定的防护作用，但是并不能根治 CSRF。比如在“前攻后受”的场景中，`state` 的值攻击者是完全知晓的。
+
+## 有缺陷的 `redirect_uri`
+
+根据 [RFC 规范](https://www.rfc-editor.org/info/rfc6749/#section-3.1.2.2)，客户端需要向授权服务器注册 `redirect_uri` 白名单。
+
+但规范毕竟只是规范，因此大可尝试将 `redirect_uri` 替换成自己的域名。在授权码授权类型中，配合 CSRF，该操作可将受害者的授权码发送到你的服务器，随后你可以让客户端完成后续的 OAuth 步骤。
+
+而且，即便客户端向授权服务器注册了白名单，也可能出现下述几种情况：
+
+| 可能的情况                | 处理方法                                                                                                               |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| 仅检查是否包含或者以 xxx 开头/结尾 | 尝试对合法 URL 进行修改（删除、添加查询参数、添加路径……），查看是否有不报错的情况。                                                                      |
+| 可向 URL 添加额外的值        | 利用不同组件间的解析差异，比如：`https://default-host.com &@foo.evil-user.net#@bar.evil-user.net/`。                                |
+| 冗余 `redirect_uri`    | 出现冗余参数的时候，服务器会进行对应的处理（取前者、取后者、合并成数组……）。如果服务器和白名单逻辑最终处理的参数值不一致，则白名单的限制就失效了。                                         |
+| `localhost` 的特殊处理    | `localhost` 经常在开发环境中被使用。在某些情况中，对 `localhost` 开头的 `redirect_uri` 都会被允许，这使得攻击者可以构造类似 `localhost.evil.com` 这样的域名实现绕过。 |
+| 目录穿越                 | `redirect_uri` 不总是能绕过白名单限制，但是可以在当前白名单 URI 的基础上尝试目录穿越，                                                              |
+
+**注意**，不要孤立地看 `redirect_uri` 参数，还要关注参数与参数之间的关系。比如当 `response_mode` 被设置为 `web_message` 的时候，代表 User-Agent（比如浏览器）上使用了辅助窗口来完成 OAuth 流程（想必大家都见过，当选择“使用 Google 账号完成登入”的时候，有时会弹出一个辅助窗口，OAuth 流程都在这个窗口中完成），在该情况中，为了方便跨窗口传递授权码等信息，授权服务器会访问 User-Agent 的 postMessage API 来实现信息传递，这可能需要在白名单中注册更多的信息，从而提供更多的可能。
+
+## OpenID Connect 漏洞
+
+### 动态客户端注册
+
+OpenID 提供了一种客户端向 OAuth 提供商注册的方式，称为“动态客户端注册”。
+
+客户端会向指定端点（通常根据 [[#Recon]] 得到）发起类似这样的请求：
+
+```http
+POST /register HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Host: server.example.com
+
+{
+ "redirect_uris": [
+   "https://client.example.org/callback",
+   "https://client.example.org/callback2"],
+ "client_name": "My Example Client",
+ "client_name#ja-Jpan-JP":
+    "\u30AF\u30E9\u30A4\u30A2\u30F3\u30C8\u540D",
+ "token_endpoint_auth_method": "client_secret_basic",
+ "logo_uri": "https://client.example.org/logo.png",
+ "jwks_uri": "https://client.example.org/my_public_keys.jwks",
+ "example_extension_parameter": "example_value"
+}
+```
+
+>[!info]
+> 注册元信息列表，可以参照 [Client Metadata](https://datatracker.ietf.org/doc/html/rfc7591#section-2)。
+
+在响应中，一般能看到注册的详细内容：
+
+```http
+HTTP/2 201 Created
+Content-Type: application/json; charset=utf-8
+Content-Length: xxx
+
+{
+  "application_type": "web",
+  "grant_types": [
+    "authorization_code"
+  ],
+  "id_token_signed_response_alg": "RS256",
+  "post_logout_redirect_uris": [],
+  "require_auth_time": false,
+  "response_types": [
+    "code"
+  ],
+  "subject_type": "public",
+  "token_endpoint_auth_method": "client_secret_basic",
+  "introspection_endpoint_auth_method": "client_secret_basic",
+  "revocation_endpoint_auth_method": "client_secret_basic",
+  "require_signed_request_object": false,
+  "request_uris": [],
+  "client_id_issued_at": 1794016723,
+  "client_id": "Je8lk95nEW7jBoKXvG_pj",
+  "client_secret_expires_at": 0,
+  "client_secret": "-OjNANNTFGpJA1Qx9J8SksS70cO1SK7S9BXAWhSTy9uFHfcgRnQGFefJ2uy2grNT6wojyO0yPW9qBhFFO_QCYw",
+  "redirect_uris": [
+    "http://example.com"
+  ],
+  "registration_client_uri": "https://oauth-0a9400390465f43f8036014f02a0003b.oauth-server.net/reg/Je8lk95nEW7jBoKXvG_pj",
+  "registration_access_token": "gnxnDq7fqm8s_ZWqi0w8Svw_8lIVO-I1ndSHIspfl9d"
+}
+```
+
+这些注册的信息，在后续 OAuth 的相关流程中可能被授权服务器所使用。比如 `logo_uri`，授权服务器可能会在某位置请求并展示客户端的 Logo 信息，这可能导致 SSRF（因为请求发起者是授权服务器）。
+
+
+
+
+# 待整理部分
+
+
+
 
 #### 如何识别
 

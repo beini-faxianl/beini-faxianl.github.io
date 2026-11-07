@@ -42,3 +42,7 @@ description: Claude 保号指南
 - 不要触发五小时限额
 - 不使用的时候记得彻底关闭应用
 - 关闭 Claude Desktop 的开机自启动
+
+## 其他
+
+如果你严格按照[[#指南]]行事，但还是被 Anthropic 封号了，可以检查一下自己是否真的违反了[规范](https://www.anthropic.com/legal/aup)。
