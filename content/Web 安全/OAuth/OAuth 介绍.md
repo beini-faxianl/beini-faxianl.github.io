@@ -243,19 +243,16 @@ Host: client-app.com
 
 ## OpenID Connect
 
-OAuth 仅作授权，并不验证当前使用客户端的用户是否是真正的资源所有者。
+OAuth 仅作授权，并不验证当前使用客户端的用户（在文档中常被叫为“终端用户”）是否是真正的资源所有者。
 
-为了弥补这个不足，引入了一个基于 OAuth 2.0 规范的框架，即 OpenID Connect（OIDC）。
+为了弥补这个不足，引入了一个基于 OAuth 2.0 规范的框架，即 [OpenID Connect](https://openid.net/specs/openid-connect-core-1_0.html)（OIDC）。
 
-#### OpenID Connect 中的声明和范围
+需要注意两个术语：
 
-“声明”指的是 `key:value` 对，用于表示资源服务器上有关资源所有者的信息，比如：
+- 实现了 OpenID Connect 的授权服务器被称为 OpenID Providers（简称 OP）
+- 在 OpenID Connect 框架中的客户端也被称为 Relying Parties（简称 RP）
 
-```
-"family_name":"Montoya"
-```
-
-要使用 OpenID Connect，客户端必须在授权请求中向 `scope` 参数添加 `openid`：
+若要使用 OpenID Connect，RP 必须在授权请求中向 `scope` 参数添加 `openid`：
 
 ```http hlt:openid
 GET /authorize?response_type=code&client_id=s6BhdRkqt3&redirect_uri=https%3A%2F%2Fclient.example.org%2Fcb&scope=openid%20profile%20email&state=af0ifjsldkj&nonce=n-0S6_WzA2Mj
@@ -264,10 +261,17 @@ Host: server.example.com
 
 #### ID 令牌
 
-OpenID Connect 会在资源所有者完成授权之后返回 `id_token`，其值为一个 JWS（JSON Web Signature，具体介绍可见[[什么是 JWT？|这篇笔记]]），其中的 Payload 部分会包含 `scope` 中所请求的内容，它还包含有关用户上次通过 OAuth 服务进行身份验证的方式和时间等信息。客户端可以利用 JWS 来获得用户的相关信息。
+在 OpenID Connect 框架中，用户在 OP 完成认证之后，OP 会向 RP 发送一个 ID Token，这是一个 JWT 格式的令牌，当然其出现的形式往往是 JWS 或者 JWE。
 
-> [!tip]
-> JWT 也存在诸多安全问题，但这并非分类的讨论重点，具体可见 JWT 分类。
+>[!tip]
+> 关于 JWT 的介绍，可见[[什么是 JWT？|这篇文章]]。
+
+客户端会从两方面验证 ID Token：
+
+- JWS/JWE 在密码学上的校验
+- JWT 中的声明
+
+这大大提升了客户端的可信度，但是无论是验证流程的具体实现还是 JWT 本身都可能存在不安全的实现。
 
 ### `response_type`
 
