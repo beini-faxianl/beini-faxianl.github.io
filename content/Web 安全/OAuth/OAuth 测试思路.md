@@ -55,7 +55,7 @@ OAuth 提供商往往会提供有关 OAuth 实现的详细文档，阅读该文�
 | 可向 URL 添加额外的值        | 利用不同组件间的解析差异，比如：`https://default-host.com &@foo.evil-user.net#@bar.evil-user.net/`。                                |
 | 冗余 `redirect_uri`    | 出现冗余参数的时候，服务器会进行对应的处理（取前者、取后者、合并成数组……）。如果服务器和白名单逻辑最终处理的参数值不一致，则白名单的限制就失效了。                                         |
 | `localhost` 的特殊处理    | `localhost` 经常在开发环境中被使用。在某些情况中，对 `localhost` 开头的 `redirect_uri` 都会被允许，这使得攻击者可以构造类似 `localhost.evil.com` 这样的域名实现绕过。 |
-| 目录穿越                 | `redirect_uri` 不总是能绕过白名单限制，但是可以在当前白名单 URI 的基础上尝试目录穿越，                                                              |
+| 目录穿越                 | `redirect_uri` 不总是能绕过白名单限制，但是可以在当前白名单 URI 的基础上尝试目录穿越。该场景通常需要和其他漏洞配合，比如开放重定向。                                       |
 
 **注意**，不要孤立地看 `redirect_uri` 参数，还要关注参数与参数之间的关系。比如当 `response_mode` 被设置为 `web_message` 的时候，代表 User-Agent（比如浏览器）上使用了辅助窗口来完成 OAuth 流程（想必大家都见过，当选择“使用 Google 账号完成登入”的时候，有时会弹出一个辅助窗口，OAuth 流程都在这个窗口中完成），在该情况中，为了方便跨窗口传递授权码等信息，授权服务器会访问 User-Agent 的 postMessage API 来实现信息传递，这可能需要在白名单中注册更多的信息，从而提供更多的可能。
 
