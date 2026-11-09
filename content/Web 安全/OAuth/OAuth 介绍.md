@@ -25,6 +25,24 @@ OAuth 中定义了四个角色：
 | 授权服务器 | 验证资源所有者身份，通过后向客户端颁发访问令牌     |
 | 资源服务器 | 托管资源所有者的数据的应用 B，并会接收和处理访问令牌 |
 
+客户端均需要在授权服务器上进行注册，注册的内容：
+
+- 客户端类型（必须）
+- `redirect_uri` 白名单（必须）
+- 其他授权服务器所要求的信息（视具体情况而定）
+
+客户端类型有两种：
+
+- 机密客户端 → 能够对其凭据保密
+- 公开客户端 → 
+
+是机密还是公开取决于客户端能否对其凭据进行保密（相对于资源所有者来说）。即资源所有者能看到凭据，则是公开；若看不到，则是机密。
+
+所谓客户端凭据，就是客户端在授权服务器上注册成功之后，授权服务器返回的一些用于客户端认证的凭据信息，常见的：
+
+- `client_id`
+- `client_secret`
+
 OAuth 定义了很多的访问令牌的颁发方式，这些方式被称为 OAuth 授权类型，主要包含：
 
 - 授权码
@@ -116,31 +134,24 @@ Host: client-app.com
 
 ### 第三步：访问令牌请求
 
-这一请求（包括下一步，即“[[#第四步：访问令牌响应|访问令牌响应]]”）是客户端与授权服务器之间的，资源所有者的浏览器看不到这一过程的（抓包工具自然也看不到）。这一“仅客户端与授权服务器之间的通信”行为，在许多文献或者博客中被称为“后通道（Back Channel）”。
+访问令牌请求、访问令牌响应，这是发生在客户端和授权服务器之间的，用户代理看不到该过程（在用户代理和客户端之间的抓包工具自然也看不到）。
 
-客户端会通过**后通道**，向授权服务器的令牌端点（Token Endpoint）发起请求。请求会携带之前申请到的授权码，用于兑换访问令牌。
+>[!info]
+> 这很像在“暗箱操作”，因此很多博客都称其为“后通道（Back Channel）”。
+
+访问令牌请求中，客户端会通过**后通道**，向授权服务器的令牌端点（Token Endpoint）发起请求。
 
 >[!tip]
 > 同“授权端点”，令牌端点也没有固定的名称，常见的：`/token`。
 
-示例：
+请求中，授权码通过 `code` 参数传递；授权类型通过 `grant_type` 参数传递，值必须为 `authorization_code`。
 
-```bash
-POST /token HTTP/1.1
-Host: oauth-authorization-server.com
-…
-client_id=12345&client_secret=SECRET&redirect_uri=https://client-app.com/callback&grant_type=authorization_code&code=a1b2c3d4e5f6g7h8
-```
+除此之外，客户端还需要提供凭据信息用于身份验证，常见的：
 
-除了用于携带授权码的 `code` 参数之外，还有一个必须提供的参数，即 `grant_type`，它用于指定 OAuth 授权类型，在授权码授权类型中，应固定地设置为：
+- `client_id`（通过请求参数传递）
+- `client_secret`
 
-```http
-grant_type=authorization_code
-```
-
-授权服务器不单单要验证授权码，还会验证客户端的身份，因此客户端还需要提供能验证身份的信息。
-
-客户端密码验证是最常见的做法。通过 HTTP Basic，向授权服务器发送：
+`client_secret` 大多通过 HTTP Basic 发送：
 
 ```http
 Authorization: Basic czZCaGRSa3F0Mzo3RmpmcDBaQnIxS3REUmJuZlZkbUl3
@@ -154,17 +165,26 @@ s6BhdRkqt3:7Fjfp0ZBr1KtDRbnfVdmIw
 czZCaGRSa3F0Mzo3RmpmcDBaQnIxS3REUmJuZlZkbUl3
 ```
 
-当然，还可以通过前面示例的方式，即通过提供：
+当然，也可以直接通过请求参数的方式进行传递（但 RFC 并不推荐此方法）：
 
 ```http
 client_id=12345&client_secret=czZCaGRSa3F0Mzo3RmpmcDBaQnIxS3REUmJuZlZkbUl3
 ```
 
-这两个参数来传递客户端密码（但这是 RFC 中不推荐的方式）。
+`redirect_uri` 参数是否需要存在取决于授权请求中是否存在该参数：
+
+- 存在 → 需要
+- 不存在 → 不需要
 
 ### 第四步：访问令牌响应
 
-授权服务器验证访问令牌请求，如果一切符合预期，则返回访问令牌（通常还会返回刷新令牌）：
+授权服务器收到请求后，需要干两件事情：
+
+- 验证客户端身份
+- 验证授权码
+- 验证 `redirect_uri`（如果有）是否与授权请求中提供的一致
+
+如果一切符合预期，则返回访问令牌（通常还会返回刷新令牌）：
 
 ```http
 HTTP/1.1 200 OK
