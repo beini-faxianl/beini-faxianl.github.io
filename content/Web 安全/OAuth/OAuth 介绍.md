@@ -16,7 +16,7 @@ OAuth 是一个开放标准。假设有两个网站 A 和 B，OAuth 允许 A 在
 
 平时看到的“第三方登入”就用到了 OAuth。
 
-OAuth 中定义了四个角色：
+OAuth 中定义了**四个角色**：
 
 | 角色    | 含义                          |
 | ----- | --------------------------- |
@@ -43,7 +43,7 @@ OAuth 中定义了四个角色：
 - `client_id`
 - `client_secret`
 
-OAuth 定义了很多的访问令牌的颁发方式，这些方式被称为 OAuth 授权类型，主要包含：
+OAuth 定义了很多的访问令牌的颁发方式，这些方式被称为 **OAuth 授权类型**，主要包含：
 
 - 授权码
 - 隐式授权 ← 在 Outh 2.1 中被弃用
@@ -52,6 +52,8 @@ OAuth 定义了很多的访问令牌的颁发方式，这些方式被称为 OAut
 - 客户端凭据
 
 这些都可以在[官方文档](https://oauth.net/2/grant-types/)中看到精确的解释，这里仅讲述“授权码”和“隐式授权”这两个，因为他们和本分类中的其他笔记关系最密切。
+
+注意，不同的授权类型有着不同的授权流程，授权流程在业界也常被称为 Dance（全称 OAuth Dance），因为整个交互流程留下的“轨迹”很像跳舞时在地板上留下的的舞步痕迹。
 
 ## 授权码
 
@@ -222,7 +224,7 @@ Authorization: Bearer z0y9x8w7v6u5
 
 ## 隐式授权
 
-这是早期为“客户端通过 JS 去走 OAuth 流程”设计的，其步骤如下：
+这是早期为“客户端通过 JS 去走 OAuth 流程”设计的，其步骤如下（图源于 [RFC 文档](https://www.rfc-editor.org/info/rfc6749/#section-4.2)）：
 
 ![[Pasted image 20261107031133.png|600]]
 
@@ -278,7 +280,7 @@ GET /authorize?response_type=code&client_id=s6BhdRkqt3&redirect_uri=https%3A%2F%
 Host: server.example.com
 ```
 
-#### ID 令牌
+### ID Token
 
 在 OpenID Connect 框架中，用户在 OP 完成认证之后，OP 会向 RP 发送一个 ID Token，这是一个 JWT 格式的令牌，当然其出现的形式往往是 JWS 或者 JWE。
 
@@ -306,3 +308,58 @@ response_type=id_token
 response_type=id_token token
 response_type=id_token code
 ```
+
+## PKCE
+
+针对授权码授权类型，有这么一类攻击，攻击者通过某种方式（CSRF、`redirect_uri` 修改等）获得了发起有效访问令牌请求的三要素：
+
+ - `client_id`
+ - `code`
+ - `client_secret`
+
+>[!tip]
+> `grant_type` 是必须提供的参数之一，之所以没放上面，是因为它的值在授权码授权类型中是固定的 `authorization_code`，无需从受害者那边窃取。
+
+此时，攻击者可模仿客户端向授权服务器发起访问令牌请求，一个 Python 代码示例：
+
+```python
+from authlib.integrations.requests_client import OAuth2Session
+
+client_id = "dc6209a9d196f34902d5228d39cef3778970697365f6de78deba171e704cc221"
+client_secret = "5cabdb56ad624bd7681fe159dfb11524cd03bfdb60e2144d5f8302936dd4f39a"
+scope = ""
+authorization_response = "http://u50evnpxmud5f9grewlnz5b1osuji96y.oastify.com/?code=b289eca458477cd3002296db2f4ebc73603ad70d1dc1a1d1b91080659e470990&state=2a3eeb79cc1d4c6e2d7c7805320a69669a7ac874a3c2a512"
+token_endpoint = "http://authorization-ptl-036a4bb909e2-1e9cddb3e956.libcurl.so/oauth/token"
+redirect_uri = "http://u50evnpxmud5f9grewlnz5b1osuji96y.oastify.com"
+
+client = OAuth2Session(client_id, client_secret, scope=scope, redirect_uri=redirect_uri)
+token = client.fetch_token(token_endpoint, authorization_response=authorization_response)
+print(token)
+```
+
+授权服务器并不会发现异样，因为用于验证客户端身份的关键参数（`client_id`、`client_secret` 等）都是攻击者窃取来的。
+
+PKCE（Proof Key for Code Exchange）的出现就是为了防止上述攻击的。
+
+在发起授权请求之前，客户端会生成一个高熵的代码验证器 `code_verifier`，其实就是一串随机字符串。接着，客户端用 `code_verifier` 配合某算法计算得到挑战码 `code_challenge`。常见的算法有两种：
+
+`plain`：
+
+```
+code_challenge = code_verifier
+```
+
+`S256`：
+
+```
+code_challenge = BASE64URL-ENCODE(SHA256(ASCII(code_verifier)))
+```
+
+然后，客户端发起授权请求，并将 `code_challenge` 以及生成算法一并发送给授权服务器。
+
+在后续的访问令牌请求中，客户端需要向授权服务器提供 `code_verifier`，授权服务器接收后会根据之前由客户端提供的算法计算挑战值：
+
+- 结果与之前提供的一致 → 开始正常的客户端授权、验授权码……
+- 结果与之前提供的不一致 → 拒绝本次请求
+
+由于有效的 `code_verifier` 只有真正的客户端有，因此可以有效防御前面介绍的攻击。

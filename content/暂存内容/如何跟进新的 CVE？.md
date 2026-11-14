@@ -25,12 +25,12 @@ description: 如何跟进新的 CVE？
 
 ### 2. 官方权威数据库
 
-| 来源 | 地址 | 特点 |
-|------|------|------|
-| **NVD** | [nvd.nist.gov](https://nvd.nist.gov/) | 美国官方，含 CVSS 评分、CPE 匹配，提供 JSON feeds 与 API（推荐用于自动化） |
-| **CVE.org / MITRE** | [cve.org](https://www.cve.org/) 或 [cve.mitre.org](https://cve.mitre.org/) | CVE 编号的源头 |
-| **CNNVD** | [cnnvd.org.cn](https://www.cnnvd.org.cn/) | 国内国家信息安全漏洞库 |
-| **CNVD** | [cnvd.org.cn](https://www.cnvd.org.cn/) | 国内漏洞共享平台，有周报/月报和安全公告 |
+| 来源                  | 地址                                                                        | 特点                                                 |
+| ------------------- | ------------------------------------------------------------------------- | -------------------------------------------------- |
+| **NVD**             | [nvd.nist.gov](https://nvd.nist.gov/)                                     | 美国官方，含 CVSS 评分、CPE 匹配，提供 JSON feeds 与 API（推荐用于自动化） |
+| **CVE.org / MITRE** | [cve.org](https://www.cve.org/) 或 [cve.mitre.org](https://cve.mitre.org/) | CVE 编号的源头                                          |
+| **CNNVD**           | [cnnvd.org.cn](https://www.cnnvd.org.cn/)                                 | 国内国家信息安全漏洞库                                        |
+| **CNVD**            | [cnvd.org.cn](https://www.cnvd.org.cn/)                                   | 国内漏洞共享平台，有周报/月报和安全公告                               |
 
 NVD 的数据 feeds 页面（[nvd.nist.gov/vuln/data-feeds](https://nvd.nist.gov/vuln/data-feeds)）提供 Recent / Modified 等 JSON 文件，适合脚本监控。
 
