@@ -47,11 +47,11 @@ OAuth 定义了很多的访问令牌的颁发方式，这些方式被称为 **OA
 
 - 授权码
 - 隐式授权 ← 在 Outh 2.1 中被弃用
-- 设备码
+- 设备授权许可
 - 刷新令牌
 - 客户端凭据
 
-这些都可以在[官方文档](https://oauth.net/2/grant-types/)中看到精确的解释，这里仅讲述“授权码”和“隐式授权”这两个，因为他们和本分类中的其他笔记关系最密切。
+这些都可以在[官方文档](https://oauth.net/2/grant-types/)中看到精确的解释，下面会对部分授权类型进行详细讲解。
 
 注意，不同的授权类型有着不同的授权流程，授权流程在业界也常被称为 Dance（全称 OAuth Dance），因为整个交互流程留下的“轨迹”很像跳舞时在地板上留下的的舞步痕迹。
 
@@ -261,6 +261,130 @@ Host: client-app.com
 ### 第四步：资源授权
 
 同授权码授权类型，不再赘述。
+
+## 设备授权许可
+
+该授权方式适合那些输入能力受限或缺乏合适浏览器的客户端（比如：智能电视、打印机等）上使用。
+
+其流程图（源于 [RFC 规范](https://www.rfc-editor.org/info/rfc8628/#section-1)）：
+
+![[Pasted image 20261115032819.png|600]]
+
+### 第一步：设备授权请求
+
+客户端直接向授权服务器的设备授权端点发起 POST 请求。
+
+通常会携带的参数：
+
+- `client_id`
+- `client_secret`
+- `scope`
+
+前两个用于客户端验证，`scope` 用于指定授权范围。
+
+### 第二步：设备授权响应
+
+收到请求并验证客户端身份之后，授权服务器会生成：
+
+- 一个唯一的设备验证码
+- 一个在有限时间内有效的终端用户验证码
+
+并使用“application/json”格式将它们包含在 HTTP 响应正文中。
+
+常见的参数：
+
+- `device_code` →  必选，用于存放设备验证码
+- `user_code` → 必选，用于存放终端用户验证码
+- `expires_in` → 必选，前面两个验证码的有效期
+- `interval` → 可选，默认为 5 秒，作为客户端轮询授权服务器的间隔时间
+- `verification_uri` → 必选，终端用户需要主动访问的验证 URI
+- `verification_uri_complete` → 可选，包含 `user_code`（或具有与 `user_code` 相同功能的其他信息）的验证 URI，专为非文本传输（如二维码、NFC 等）而设计
+
+示例：
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+Cache-Control: no-store
+
+{
+  "device_code": "GmRhmhcxhwAzkoEqiMEg_DnyEysNkuNhszIySk9eS",
+  "user_code": "WDJB-MJHT",
+  "verification_uri": "https://example.com/device",
+  "verification_uri_complete":
+      "https://example.com/device?user_code=WDJB-MJHT",
+  "expires_in": 1800,
+  "interval": 5
+}
+```
+
+### 第三步：用户交互
+
+客户端收到设备授权响应之后，会通过“屏幕显示”或者其他方式向终端用户传达：
+
+- `user_code`
+- `verification_uri`
+
+并指引用户访问 `verification_uri`。
+
+![[Pasted image 20261115035552.png]]
+
+终端用户访问指定 URI 后，授权服务器会先后验证：
+
+- 终端用户身份
+- `user_code`
+
+均成功之后，授权服务器会告知终端用户：
+
+- “你现在正在执行……操作”
+- “……权限/信息会被客户端获取”
+- ……
+
+终端用户批准之后，就能继续下一步。
+
+**但是**由于部分客户端不接受信息传入，这将导致它们无法感知“用户交互已完成”。因此，在“用户交互”完成之前的那段时间内，客户端会根据 `interval` 设定的间隔不断**轮询**令牌端点，来确保流程得以继续。
+
+当然，上面提到的是 `verification_uri` 的流程。如果还采用了 `verification_uri_complete`，则提示界面可能就是这样的：
+
+![[Pasted image 20261115041021.png]]
+
+通过扫描二维码或者近场通信 NFC，终端用户就可以省去手动输入 `user_code`（因为 `verification_uri_complete` 中会包含这个信息）这一步。
+
+### 第四步：设备访问令牌请求
+
+客户端在“用户交互”未完成期间会按照一定的时间间隔向授权服务器的令牌端点发起“设备访问令牌请求”（理由已经在[[#第三步：用户交互|上一小节]]提到）。
+
+常涉及到的参数：
+
+- `grant_type` → 必填，用于指定授权类型，在“设备授权许可”中，该值必须是 `urn:ietf:params:oauth:grant-type:device_code`
+- `device_code` → 必填，用于传输设备验证码
+- `client_id`
+- `client_secret`
+
+其中，后两个参数用于客户端身份验证。
+
+示例：
+
+```http
+POST /token HTTP/1.1
+Host: server.example.com
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code
+&device_code=GmRhmhcxhwAzkoEqiMEg_DnyEysNkuNhszIySk9eS
+&client_id=1406020730
+```
+
+### 第五步：设备访问令牌响应
+
+令牌端点会根据“用户交互是否完成”以及“终端用户是否批准了许可”来给出不同的响应。
+
+其中有几个关键的响应参数：
+
+- `authorization_pending` → 代表终端用户还未完成“用户交互”步骤
+- `slow_down` → `authorization_pending` 的一种变体，同样表示终端用户还未完成“用户交互”步骤，但是该参数会提醒客户端“当前轮询过于频繁，间隔增加 5 秒”
+- `access_denied` → 表示授权请求被拒绝
+- `expired_token` → 表示设备验证码已过期
 
 ## OpenID Connect
 
